@@ -93,6 +93,8 @@ class CreateReportController extends ChangeNotifier {
   Future<ReportModel?> submitReport({
     required String authorId,
     required String authorName,
+    String? authorUsername,
+    String? authorAvatarUrl,
     required String title,
     required String description,
   }) async {
@@ -129,6 +131,8 @@ class CreateReportController extends ChangeNotifier {
       final report = await reportRepository.createReport(
         authorId: authorId,
         authorName: authorName,
+        authorUsername: authorUsername,
+        authorAvatarUrl: authorAvatarUrl,
         title: title,
         description: description,
         category: _category,

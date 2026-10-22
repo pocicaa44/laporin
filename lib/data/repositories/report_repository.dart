@@ -25,7 +25,10 @@ class ReportRepository {
     final client = _service.client;
     if (client != null) {
       try {
-        final response = await client.from('reports').select();
+        // Query reports with author profiles relation to fetch author username and avatar
+        final response = await client
+            .from('reports')
+            .select('*, profiles(username, full_name, avatar_url)');
         final rawList = response as List;
 
         // Deserializing report records offloaded to background isolate
@@ -61,7 +64,16 @@ class ReportRepository {
         _reports.addAll(list);
         _hasFetchedFromSupabase = true;
       } catch (_) {
-        // Table does not exist in Supabase yet, keep _reports empty
+        try {
+          final fallbackResponse = await client.from('reports').select();
+          final rawList = fallbackResponse as List;
+          final list = await _parseReportsInIsolate(rawList);
+          _reports.clear();
+          _reports.addAll(list);
+          _hasFetchedFromSupabase = true;
+        } catch (_) {
+          // Table does not exist in Supabase yet, keep _reports empty
+        }
       }
     }
   }
@@ -259,7 +271,7 @@ class ReportRepository {
       try {
         final response = await client
             .from('reports')
-            .select()
+            .select('*, profiles(username, full_name, avatar_url)')
             .eq('id', id)
             .maybeSingle();
         if (response != null) {
@@ -283,7 +295,20 @@ class ReportRepository {
           _reports.add(fetched);
           return fetched;
         }
-      } catch (_) {}
+      } catch (_) {
+        try {
+          final response = await client
+              .from('reports')
+              .select()
+              .eq('id', id)
+              .maybeSingle();
+          if (response != null) {
+            final fetched = ReportModel.fromJson(response);
+            _reports.add(fetched);
+            return fetched;
+          }
+        } catch (_) {}
+      }
     }
 
     return null;
@@ -293,6 +318,8 @@ class ReportRepository {
   Future<ReportModel> createReport({
     required String authorId,
     required String authorName,
+    String? authorUsername,
+    String? authorAvatarUrl,
     required String title,
     required String description,
     required String category,
@@ -314,6 +341,8 @@ class ReportRepository {
           'LPR-${now.year}-${(_reports.length + 1).toString().padLeft(4, '0')}',
       authorId: authorId,
       authorName: authorName,
+      authorUsername: authorUsername,
+      authorAvatarUrl: authorAvatarUrl,
       areaId: 'area-jateng',
       areaName: areaName ?? BoundaryService.defaultAreaName,
       title: title.trim(),
@@ -334,7 +363,14 @@ class ReportRepository {
       try {
         await client.from('reports').insert(newReport.toJson());
       } catch (e) {
-        throw Exception('Gagal menyimpan laporan ke server: $e');
+        try {
+          final fallbackMap = newReport.toJson();
+          fallbackMap.remove('author_username');
+          fallbackMap.remove('author_avatar_url');
+          await client.from('reports').insert(fallbackMap);
+        } catch (_) {
+          throw Exception('Gagal menyimpan laporan ke server: $e');
+        }
       }
     }
 
