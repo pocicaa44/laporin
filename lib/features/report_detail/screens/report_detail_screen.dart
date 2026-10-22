@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../data/repositories/comment_repository.dart';
@@ -69,10 +70,14 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final controller = context.read<ReportDetailController>();
 
     final focusScope = FocusScope.of(context);
+    final authorDisplayName = (user != null && user.username.trim().isNotEmpty)
+        ? '@${user.username.trim().replaceFirst('@', '')}'
+        : (user?.fullName ?? 'Warga Laporin');
+
     controller
         .submitComment(
           authorId: user?.id ?? 'guest',
-          authorName: user?.fullName ?? 'Warga Laporin',
+          authorName: authorDisplayName,
           authorRole: user?.role ?? UserRole.user,
           body: text,
         )
@@ -159,35 +164,64 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
-                        // Category & Date
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
+                        // Author Header & Category
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              UserAvatar(
+                                name: report.authorName,
+                                username: report.authorUsername,
+                                avatarUrl: report.authorAvatarUrl,
+                                radius: 20,
                               ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                report.category,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryStrong,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      report.displayAuthorUsername,
+                                      style: AppTextStyles.label.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${report.authorName} • ${report.createdAt.toDisplayDateTime()}',
+                                      style: AppTextStyles.caption,
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            Text(
-                              report.createdAt.toDisplayDateTime(),
-                              style: AppTextStyles.caption,
-                            ),
-                          ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  report.category,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryStrong,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
 
                         // Title
                         Text(report.title, style: AppTextStyles.pageTitle),

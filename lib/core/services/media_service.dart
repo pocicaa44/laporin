@@ -132,6 +132,59 @@ class MediaService {
     );
   }
 
+  /// Uploads an avatar image to Supabase Storage bucket 'avatars' (fallback 'profiles').
+  /// Safe path format per user: 'avatars/$userId/avatar_$timestamp.$ext'
+  Future<String> uploadAvatar({
+    required String userId,
+    required XFile file,
+  }) async {
+    final client = SupabaseService.instance.client;
+    if (client == null) {
+      // Offline / test fallback
+      return file.path;
+    }
+
+    try {
+      final bytes = await _readFileBytesInIsolate(file);
+      final rawExt = file.name.split('.').last.toLowerCase();
+      final ext =
+          (rawExt == 'png' ||
+              rawExt == 'jpg' ||
+              rawExt == 'jpeg' ||
+              rawExt == 'webp')
+          ? rawExt
+          : 'jpg';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = 'avatars/$userId/avatar_$timestamp.$ext';
+
+      try {
+        await client.storage
+            .from('avatars')
+            .uploadBinary(
+              filePath,
+              bytes,
+              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+            );
+        return client.storage.from('avatars').getPublicUrl(filePath);
+      } catch (avatarError) {
+        debugPrint(
+          'Catatan upload bucket avatars: $avatarError. Mencoba bucket profiles...',
+        );
+        await client.storage
+            .from('profiles')
+            .uploadBinary(
+              filePath,
+              bytes,
+              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+            );
+        return client.storage.from('profiles').getPublicUrl(filePath);
+      }
+    } catch (e) {
+      debugPrint('Catatan upload avatar Supabase: $e');
+      throw Exception('Gagal mengunggah foto profil ke penyimpanan server: $e');
+    }
+  }
+
   /// Reads raw bytes from disk on a dedicated isolate to avoid blocking the main UI thread.
   static Future<Uint8List> _readFileBytesInIsolate(XFile file) async {
     if (kIsWeb) {

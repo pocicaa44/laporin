@@ -107,6 +107,8 @@ class _CreateReportFormState extends State<_CreateReportForm> {
     final report = await controller.submitReport(
       authorId: user.id,
       authorName: user.fullName.isNotEmpty ? user.fullName : 'Warga Laporin',
+      authorUsername: user.username.isNotEmpty ? user.username : null,
+      authorAvatarUrl: user.avatarUrl,
       title: _titleController.text,
       description: _descriptionController.text,
     );

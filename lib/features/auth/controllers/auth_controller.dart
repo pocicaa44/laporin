@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/services/media_service.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -49,6 +51,9 @@ class AuthController extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  bool _isUploadingAvatar = false;
+  bool get isUploadingAvatar => _isUploadingAvatar;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -147,6 +152,54 @@ class AuthController extends ChangeNotifier {
       return await authRepository.checkUsernameAvailability(username);
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Unggah foto avatar dari objek XFile yang dipilih
+  Future<bool> updateAvatar(XFile file) async {
+    _isUploadingAvatar = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authRepository.updateAvatar(file);
+      _isUploadingAvatar = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isUploadingAvatar = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Membuka galeri perangkat via image_picker dan mengunggah foto profil ke Supabase
+  Future<bool> pickAndUploadAvatar() async {
+    try {
+      final file = await MediaService.instance.pickImage(ImageSource.gallery);
+      if (file == null) {
+        return false;
+      }
+      return await updateAvatar(file);
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Memperbarui ulang profil aktif dari Supabase
+  Future<void> refreshProfile() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await authRepository.initSessionFromSupabase();
+    } catch (e) {
+      debugPrint('Catatan refreshProfile: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

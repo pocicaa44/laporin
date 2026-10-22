@@ -45,6 +45,8 @@ class ReportModel {
     required this.reportNumber,
     required this.authorId,
     required this.authorName,
+    this.authorUsername,
+    this.authorAvatarUrl,
     required this.areaId,
     required this.areaName,
     required this.title,
@@ -75,6 +77,8 @@ class ReportModel {
   final String reportNumber;
   final String authorId;
   final String authorName;
+  final String? authorUsername;
+  final String? authorAvatarUrl;
   final String areaId;
   final String areaName;
   final String title;
@@ -99,6 +103,22 @@ class ReportModel {
   final List<String> photoUrls;
   final String? completionProofUrl;
   final String? completionProofType;
+
+  /// Formatted username (e.g. '@budi_santoso') with fallback if username not set
+  String get displayAuthorUsername {
+    if (authorUsername != null && authorUsername!.trim().isNotEmpty) {
+      final clean = authorUsername!.trim().replaceFirst('@', '');
+      return '@$clean';
+    }
+    if (authorName.trim().isNotEmpty && authorName != 'Warga Laporin') {
+      final clean = authorName.trim().toLowerCase().replaceAll(
+        RegExp(r'\s+'),
+        '_',
+      );
+      return '@$clean';
+    }
+    return '@warga_laporin';
+  }
 
   /// Aturan visibilitas publik mutlak (PRD 5.4 & AGENTS.md 3.2):
   /// publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
@@ -130,6 +150,8 @@ class ReportModel {
     String? reportNumber,
     String? authorId,
     String? authorName,
+    String? authorUsername,
+    String? authorAvatarUrl,
     String? areaId,
     String? areaName,
     String? title,
@@ -160,6 +182,8 @@ class ReportModel {
       reportNumber: reportNumber ?? this.reportNumber,
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
+      authorUsername: authorUsername ?? this.authorUsername,
+      authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,
       areaId: areaId ?? this.areaId,
       areaName: areaName ?? this.areaName,
       title: title ?? this.title,
@@ -193,6 +217,8 @@ class ReportModel {
       'report_number': reportNumber,
       'author_id': authorId,
       'author_name': authorName,
+      'author_username': authorUsername,
+      'author_avatar_url': authorAvatarUrl,
       'area_id': areaId,
       'area_name': areaName,
       'title': title,
@@ -220,11 +246,33 @@ class ReportModel {
   }
 
   factory ReportModel.fromJson(Map<String, dynamic> json) {
+    String? authorUsername =
+        json['author_username'] as String? ?? json['username'] as String?;
+    String? authorAvatarUrl =
+        json['author_avatar_url'] as String? ?? json['avatar_url'] as String?;
+    String authorName = json['author_name'] as String? ?? 'Warga Laporin';
+
+    // Parse joined profiles table if available
+    if (json['profiles'] != null && json['profiles'] is Map<String, dynamic>) {
+      final p = json['profiles'] as Map<String, dynamic>;
+      if (p['username'] != null && (p['username'] as String).isNotEmpty) {
+        authorUsername = p['username'] as String;
+      }
+      if (p['full_name'] != null && (p['full_name'] as String).isNotEmpty) {
+        authorName = p['full_name'] as String;
+      }
+      if (p['avatar_url'] != null && (p['avatar_url'] as String).isNotEmpty) {
+        authorAvatarUrl = p['avatar_url'] as String;
+      }
+    }
+
     return ReportModel(
       id: json['id'] as String,
       reportNumber: json['report_number'] as String? ?? 'LPR-2026',
       authorId: json['author_id'] as String? ?? '',
-      authorName: json['author_name'] as String? ?? 'Warga Laporin',
+      authorName: authorName,
+      authorUsername: authorUsername,
+      authorAvatarUrl: authorAvatarUrl,
       areaId: json['area_id'] as String? ?? '',
       areaName: json['area_name'] as String? ?? 'Kota Administrasi',
       title: json['title'] as String? ?? '',

@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/report_model.dart';
 
 /// Reusable report card widget matching DESIGN.md Section 4.3
@@ -63,6 +64,36 @@ class ReportCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Author Row: UserAvatar + Username + Time
+                      Row(
+                        children: [
+                          UserAvatar(
+                            name: report.authorName,
+                            username: report.authorUsername,
+                            avatarUrl: report.authorAvatarUrl,
+                            radius: 12,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              report.displayAuthorUsername,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            report.createdAt.toRelativeTime(),
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
                       // Category & Status
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -99,7 +130,7 @@ class ReportCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // Location & Time metadata
+                      // Location metadata
                       Row(
                         children: [
                           const FaIcon(
@@ -115,11 +146,6 @@ class ReportCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: AppTextStyles.caption,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            report.createdAt.toRelativeTime(),
-                            style: AppTextStyles.caption,
                           ),
                         ],
                       ),

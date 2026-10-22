@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/services/media_service.dart';
 import '../models/user_profile_model.dart';
 import '../services/supabase_service.dart';
 
@@ -43,6 +45,7 @@ class AuthRepository {
     final client = _service.client;
     String? dbUsername;
     String? dbFullName;
+    String? dbAvatarUrl;
     UserRole userRole = UserRole.fromString(
       user.userMetadata?['role'] as String?,
     );
@@ -57,6 +60,7 @@ class AuthRepository {
         if (profile != null) {
           dbUsername = profile['username'] as String?;
           dbFullName = profile['full_name'] as String?;
+          dbAvatarUrl = profile['avatar_url'] as String?;
           userRole = UserRole.fromString(profile['role'] as String?);
         }
       } catch (e) {
@@ -71,12 +75,15 @@ class AuthRepository {
         user.userMetadata?['full_name'] as String? ??
         fallbackFullName ??
         'Warga Laporin';
+    final resolvedAvatarUrl =
+        dbAvatarUrl ?? user.userMetadata?['avatar_url'] as String?;
 
     return UserProfileModel(
       id: user.id,
       email: user.email ?? fallbackEmail ?? '',
       fullName: resolvedFullName,
       username: resolvedUsername,
+      avatarUrl: resolvedAvatarUrl,
       role: userRole,
     );
   }
@@ -253,6 +260,63 @@ class AuthRepository {
             .replaceFirst('Exception: ', ''),
       );
     }
+  }
+
+  /// Unggah foto profil baru ke Supabase Storage dan perbarui kolom avatar_url di tabel profiles
+  Future<UserProfileModel> updateAvatar(XFile file) async {
+    final client = _service.client;
+    final user = client?.auth.currentUser;
+    final userId = _currentUserProfile?.id ?? user?.id;
+
+    if (userId == null) {
+      throw Exception('Sesi pengguna tidak ditemukan.');
+    }
+
+    // 1. Upload ke Supabase Storage (path aman: avatars/{userId}/avatar_{timestamp}.{ext})
+    final avatarUrl = await MediaService.instance.uploadAvatar(
+      userId: userId,
+      file: file,
+    );
+
+    // 2. Perbarui kolom avatar_url pada tabel public.profiles di Supabase jika client aktif
+    if (client != null) {
+      try {
+        await client.from('profiles').upsert({
+          'id': userId,
+          'avatar_url': avatarUrl,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (profileError) {
+        debugPrint('Catatan update avatar di profiles: $profileError');
+        throw Exception(
+          'Gagal memperbarui foto profil di database: $profileError',
+        );
+      }
+
+      // 3. Perbarui user metadata di auth session
+      try {
+        await client.auth.updateUser(
+          UserAttributes(data: {'avatar_url': avatarUrl}),
+        );
+      } catch (authMetaError) {
+        debugPrint('Catatan update user metadata: $authMetaError');
+      }
+    }
+
+    // 4. Perbarui state lokal currentUserProfile secara reaktif
+    _currentUserProfile =
+        _currentUserProfile?.copyWith(avatarUrl: avatarUrl) ??
+        UserProfileModel(
+          id: userId,
+          email: user?.email ?? '',
+          fullName:
+              user?.userMetadata?['full_name'] as String? ?? 'Warga Laporin',
+          username: user?.userMetadata?['username'] as String? ?? '',
+          avatarUrl: avatarUrl,
+          role: UserRole.fromString(user?.userMetadata?['role'] as String?),
+        );
+
+    return _currentUserProfile!;
   }
 
   Future<UserProfileModel> signInWithEmail(
