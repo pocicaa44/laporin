@@ -33,6 +33,12 @@ class ReportDetailController extends ChangeNotifier {
   bool _isSendingComment = false;
   bool get isSendingComment => _isSendingComment;
 
+  bool _isVoting = false;
+  bool get isVoting => _isVoting;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
   bool _isDisposed = false;
 
   @override
@@ -75,15 +81,41 @@ class ReportDetailController extends ChangeNotifier {
   }
 
   Future<void> vote(String userId, String voteType) async {
-    if (_report == null) return;
+    final currentReport = _report;
+    // 1. In-flight lock & validasi laporan
+    if (currentReport == null || _isVoting) return;
+
+    // Invarian Produk: Laporan harus publik dan non-terminal
+    if (!currentReport.isPubliclyVisible || currentReport.isTerminal) return;
+
+    // 2. Optimistic UI Update: Update seketika tanpa menunggu respon jaringan
+    final previousReport = currentReport;
+    final optimisticReport = currentReport.calculateOptimisticVote(voteType);
+
+    _isVoting = true;
+    _report = optimisticReport;
+    _errorMessage = null;
+    notifyListeners();
+
+    // 3. Eksekusi request backend asinkron
     try {
-      _report = await reportRepository.voteReport(
+      final updated = await reportRepository.voteReport(
         reportId: reportId,
         userId: userId,
         voteType: voteType,
       );
+      if (_isDisposed) return;
+      _report = updated;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      if (_isDisposed) return;
+      // 4. Rollback State jika request gagal
+      _report = previousReport;
+      _errorMessage = 'Gagal memperbarui vote. Silakan coba kembali.';
+      notifyListeners();
+    } finally {
+      _isVoting = false;
+    }
   }
 
   Future<bool> submitComment({

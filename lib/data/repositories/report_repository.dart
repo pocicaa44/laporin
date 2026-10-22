@@ -16,6 +16,8 @@ class ReportRepository {
 
   // In-memory reports store (starts empty; populated from Supabase or created reports)
   final List<ReportModel> _reports = [];
+  // In-memory votes per report and user: reportId -> { userId: voteType }
+  final Map<String, Map<String, String>> _reportUserVotes = {};
   bool _hasFetchedFromSupabase = false;
 
   Future<void> _fetchFromSupabaseIfAvailable() async {
@@ -28,6 +30,33 @@ class ReportRepository {
 
         // Deserializing report records offloaded to background isolate
         final list = await _parseReportsInIsolate(rawList);
+
+        // Jika user aktif terautentikasi, sinkronkan status vote aktif dari tabel votes
+        final currentUserId = client.auth.currentUser?.id;
+        if (currentUserId != null && list.isNotEmpty) {
+          try {
+            final userVotes = await client
+                .from('votes')
+                .select('report_id, vote_type')
+                .eq('user_id', currentUserId);
+            final voteMap = <String, String>{};
+            for (final v in (userVotes as List)) {
+              final rId = v['report_id']?.toString();
+              final vType = v['vote_type']?.toString();
+              if (rId != null && vType != null) {
+                voteMap[rId] = vType;
+              }
+            }
+            for (var i = 0; i < list.length; i++) {
+              if (voteMap.containsKey(list[i].id)) {
+                list[i] = list[i].copyWith(
+                  currentUserVote: voteMap[list[i].id],
+                );
+              }
+            }
+          } catch (_) {}
+        }
+
         _reports.clear();
         _reports.addAll(list);
         _hasFetchedFromSupabase = true;
@@ -59,12 +88,33 @@ class ReportRepository {
     String? category,
     String? searchQuery,
     String? sortBy, // 'newest', 'popular'
+    String? userId,
   }) async {
     await _fetchFromSupabaseIfAvailable();
 
     if (_reports.isEmpty) return const [];
 
-    final reportsSnapshot = List<ReportModel>.from(_reports);
+    final effectiveUserId = userId ?? _service.client?.auth.currentUser?.id;
+    final List<ReportModel> reportsSnapshot;
+    if (effectiveUserId != null && _reportUserVotes.isNotEmpty) {
+      reportsSnapshot = _reports.map((r) {
+        final hasVote =
+            _reportUserVotes[r.id]?.containsKey(effectiveUserId) ?? false;
+        if (hasVote) {
+          final userVote = _reportUserVotes[r.id]![effectiveUserId];
+          return r.copyWith(
+            currentUserVote: userVote,
+            clearCurrentUserVote: userVote == null,
+          );
+        } else if (_reportUserVotes.containsKey(r.id)) {
+          // Laporan memiliki vote dari user lain, maka untuk user ini adalah null
+          return r.copyWith(clearCurrentUserVote: true);
+        }
+        return r;
+      }).toList();
+    } else {
+      reportsSnapshot = List<ReportModel>.from(_reports);
+    }
 
     if (kIsWeb || reportsSnapshot.length < 25) {
       return _filterAndSortFeed(
@@ -213,7 +263,23 @@ class ReportRepository {
             .eq('id', id)
             .maybeSingle();
         if (response != null) {
-          final fetched = ReportModel.fromJson(response);
+          var fetched = ReportModel.fromJson(response);
+          final currentUserId = client.auth.currentUser?.id;
+          if (currentUserId != null) {
+            try {
+              final userVote = await client
+                  .from('votes')
+                  .select('vote_type')
+                  .eq('report_id', id)
+                  .eq('user_id', currentUserId)
+                  .maybeSingle();
+              if (userVote != null) {
+                fetched = fetched.copyWith(
+                  currentUserVote: userVote['vote_type'] as String?,
+                );
+              }
+            } catch (_) {}
+          }
           _reports.add(fetched);
           return fetched;
         }
@@ -292,20 +358,30 @@ class ReportRepository {
       throw Exception('Laporan tidak dapat menerima interaksi vote.');
     }
 
+    final userVotesForReport = _reportUserVotes.putIfAbsent(reportId, () => {});
+    final existingUserVote = userVotesForReport[userId];
+
     int up = current.upvotesCount;
     int down = current.downvotesCount;
     String? newVote;
 
-    if (current.currentUserVote == voteType) {
-      // Cabut vote
+    if (existingUserVote == voteType) {
+      // Toggle off / batalkan vote
+      userVotesForReport.remove(userId);
       newVote = null;
-      if (voteType == 'up') up = (up > 0) ? up - 1 : 0;
-      if (voteType == 'down') down = (down > 0) ? down - 1 : 0;
+      if (voteType == 'up') up = up > 0 ? up - 1 : 0;
+      if (voteType == 'down') down = down > 0 ? down - 1 : 0;
+    } else if (existingUserVote != null) {
+      // Switch vote
+      userVotesForReport[userId] = voteType;
+      newVote = voteType;
+      if (existingUserVote == 'up') up = up > 0 ? up - 1 : 0;
+      if (existingUserVote == 'down') down = down > 0 ? down - 1 : 0;
+      if (voteType == 'up') up++;
+      if (voteType == 'down') down++;
     } else {
-      // Ganti atau beri vote baru
-      if (current.currentUserVote == 'up') up = (up > 0) ? up - 1 : 0;
-      if (current.currentUserVote == 'down') down = (down > 0) ? down - 1 : 0;
-
+      // Vote baru
+      userVotesForReport[userId] = voteType;
       newVote = voteType;
       if (voteType == 'up') up++;
       if (voteType == 'down') down++;
@@ -328,10 +404,60 @@ class ReportRepository {
       upvotesCount: up,
       downvotesCount: down,
       currentUserVote: newVote,
+      clearCurrentUserVote: newVote == null,
       publicationState: newPubState,
       moderationReason: moderationReason,
       updatedAt: DateTime.now(),
     );
+
+    // Sinkronisasi dengan Supabase jika client aktif
+    final client = _service.client;
+    final currentAuthUser = client?.auth.currentUser;
+    if (client != null && currentAuthUser != null) {
+      final effectiveUserId = userId.isNotEmpty ? userId : currentAuthUser.id;
+
+      try {
+        // Coba panggil RPC atomik vote_report terlebih dahulu jika tersedia di database
+        await client.rpc(
+          'vote_report',
+          params: {'p_report_id': reportId, 'p_vote_type': voteType},
+        );
+      } catch (_) {
+        // Fallback: Query tabel votes dan update reports secara langsung
+        try {
+          if (updated.currentUserVote == null) {
+            // Batalkan vote
+            await client
+                .from('votes')
+                .delete()
+                .eq('report_id', reportId)
+                .eq('user_id', effectiveUserId);
+          } else {
+            // Simpan / update vote
+            await client.from('votes').upsert({
+              'report_id': reportId,
+              'user_id': effectiveUserId,
+              'vote_type': updated.currentUserVote,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            });
+          }
+
+          // Sinkronisasi agregat count & status ke tabel reports
+          await client
+              .from('reports')
+              .update({
+                'upvotes_count': updated.upvotesCount,
+                'downvotes_count': updated.downvotesCount,
+                'publication_state': updated.publicationState.value,
+                'moderation_reason': updated.moderationReason,
+                'updated_at': updated.updatedAt.toUtc().toIso8601String(),
+              })
+              .eq('id', reportId);
+        } catch (dbError) {
+          debugPrint('Catatan sinkronisasi vote Supabase: $dbError');
+        }
+      }
+    }
 
     _reports[index] = updated;
     return updated;

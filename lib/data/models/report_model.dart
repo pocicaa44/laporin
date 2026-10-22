@@ -125,6 +125,61 @@ class ReportModel {
       (downvotesCount >= 6) &&
       (downvotePercentage >= 70.0);
 
+  /// Menghitung state baru laporan secara deterministik untuk Upvote, Downvote, Switch Vote, dan Cancel Vote.
+  /// Menerapkan aturan PRD FR-05 & AGENTS.md 3.3 (Threshold downvote).
+  ReportModel calculateOptimisticVote(String targetVoteType) {
+    int up = upvotesCount;
+    int down = downvotesCount;
+    String? newVote;
+
+    if (currentUserVote == targetVoteType) {
+      // Toggle off / batalkan vote
+      newVote = null;
+      if (targetVoteType == 'up') {
+        up = up > 0 ? up - 1 : 0;
+      } else if (targetVoteType == 'down') {
+        down = down > 0 ? down - 1 : 0;
+      }
+    } else {
+      // Switch vote atau vote baru
+      if (currentUserVote == 'up') {
+        up = up > 0 ? up - 1 : 0;
+      } else if (currentUserVote == 'down') {
+        down = down > 0 ? down - 1 : 0;
+      }
+
+      newVote = targetVoteType;
+      if (targetVoteType == 'up') {
+        up++;
+      } else if (targetVoteType == 'down') {
+        down++;
+      }
+    }
+
+    // Evaluasi ambang batas downvote
+    PublicationState newPubState = publicationState;
+    String? newModerationReason = moderationReason;
+
+    final totalVotes = up + down;
+    final downPercentage = totalVotes > 0 ? (down / totalVotes) * 100 : 0.0;
+
+    if (totalVotes >= 10 && down >= 6 && downPercentage >= 70.0) {
+      newPubState = PublicationState.held;
+      newModerationReason =
+          'Ambang batas downvote tercapai (${downPercentage.toStringAsFixed(1)}%). Ditahan untuk review moderasi.';
+    }
+
+    return copyWith(
+      upvotesCount: up,
+      downvotesCount: down,
+      currentUserVote: newVote,
+      clearCurrentUserVote: newVote == null,
+      publicationState: newPubState,
+      moderationReason: newModerationReason,
+      updatedAt: DateTime.now(),
+    );
+  }
+
   ReportModel copyWith({
     String? id,
     String? reportNumber,
@@ -151,6 +206,7 @@ class ReportModel {
     int? downvotesCount,
     int? commentsCount,
     String? currentUserVote,
+    bool clearCurrentUserVote = false,
     List<String>? photoUrls,
     String? completionProofUrl,
     String? completionProofType,
@@ -180,7 +236,9 @@ class ReportModel {
       upvotesCount: upvotesCount ?? this.upvotesCount,
       downvotesCount: downvotesCount ?? this.downvotesCount,
       commentsCount: commentsCount ?? this.commentsCount,
-      currentUserVote: currentUserVote ?? this.currentUserVote,
+      currentUserVote: clearCurrentUserVote
+          ? null
+          : (currentUserVote ?? this.currentUserVote),
       photoUrls: photoUrls ?? this.photoUrls,
       completionProofUrl: completionProofUrl ?? this.completionProofUrl,
       completionProofType: completionProofType ?? this.completionProofType,
