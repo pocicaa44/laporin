@@ -57,9 +57,10 @@ void main() async {
 }
 
 class LaporinApp extends StatelessWidget {
-  const LaporinApp({super.key, this.authRepository});
+  const LaporinApp({super.key, this.authRepository, this.reportRepository});
 
   final AuthRepository? authRepository;
+  final ReportRepository? reportRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,7 @@ class LaporinApp extends StatelessWidget {
             return repo;
           },
         ),
-        Provider(create: (_) => ReportRepository()),
+        Provider(create: (_) => reportRepository ?? ReportRepository()),
         Provider(create: (_) => CommentRepository()),
         Provider(create: (_) => NotificationRepository()),
 
