@@ -1,0 +1,304 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+
+import 'boundary_service.dart';
+
+/// Exception thrown when device GPS toggle is turned off
+class LocationServiceDisabledException implements Exception {
+  const LocationServiceDisabledException();
+  @override
+  String toString() => 'Layanan lokasi (GPS) pada perangkat belum aktif.';
+}
+
+/// Exception thrown when location permission is permanently denied in system settings
+class LocationPermissionPermanentlyDeniedException implements Exception {
+  const LocationPermissionPermanentlyDeniedException();
+  @override
+  String toString() =>
+      'Izin akses lokasi ditolak permanen. Silakan aktifkan di Pengaturan.';
+}
+
+/// Data class representing a resolved geographic location
+class LocationResult {
+  const LocationResult({
+    required this.address,
+    required this.latitude,
+    required this.longitude,
+    required this.areaName,
+    required this.isValidRegion,
+  });
+
+  final String address;
+  final double latitude;
+  final double longitude;
+  final String areaName;
+  final bool isValidRegion;
+}
+
+/// Service handling GPS permissions, position acquisition, and reverse geocoding
+class LocationService {
+  LocationService._();
+  static final LocationService instance = LocationService._();
+
+  /// Default fallback coordinate (Semarang, Central Java)
+  static const double defaultLat = BoundaryService.defaultLat;
+  static const double defaultLng = BoundaryService.defaultLng;
+  static const String defaultAreaName = BoundaryService.defaultAreaName;
+
+  /// Open device system location settings (GPS toggle page)
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
+
+  /// Open application permission settings in device Settings
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+
+  /// Check GPS status and permissions, then return the current position.
+  /// Uses a resilient multi-tiered approach:
+  /// 1. Verifies GPS is active on the device.
+  /// 2. Requests/verifies location permissions.
+  /// 3. Obtains last-known position as candidate/fallback.
+  /// 4. Requests current position with balanced accuracy (Wi-Fi + Cellular + GPS) and strict timeout.
+  /// 5. Automatically falls back to last-known location if satellite lock takes too long indoors.
+  Future<Position> getCurrentLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw const LocationServiceDisabledException();
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Izin akses lokasi ditolak oleh pengguna.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw const LocationPermissionPermanentlyDeniedException();
+    }
+
+    // 1. Fetch last known position as fast fallback
+    Position? lastKnown;
+    try {
+      lastKnown = await Geolocator.getLastKnownPosition();
+    } catch (_) {}
+
+    // 2. Request current fix with balanced/medium accuracy and strict timeout
+    try {
+      final LocationSettings locationSettings;
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        locationSettings = AndroidSettings(
+          accuracy: LocationAccuracy.medium,
+          distanceFilter: 5,
+          intervalDuration: const Duration(seconds: 3),
+        );
+      } else {
+        locationSettings = const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        );
+      }
+
+      final freshPosition = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      ).timeout(const Duration(seconds: 7));
+
+      return freshPosition;
+    } catch (_) {
+      // 3. Fallback to last known position if available
+      if (lastKnown != null) {
+        return lastKnown;
+      }
+
+      // 4. Try low accuracy (cellular/Wi-Fi only) with short timeout as final attempt
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+          ),
+        ).timeout(const Duration(seconds: 4));
+      } catch (_) {
+        throw Exception(
+          'Tidak dapat mengunci sinyal GPS saat ini. Pastikan GPS aktif dan berada di area terbuka, atau pilih titik langsung pada peta.',
+        );
+      }
+    }
+  }
+
+  // In-memory cache for reverse geocoded coordinates to prevent redundant network I/O
+  static final Map<String, LocationResult> _addressCache = {};
+
+  /// Reverse geocode coordinates to a human-readable street address and administrative area.
+  Future<LocationResult> getAddressFromCoordinates(
+    double lat,
+    double lng,
+  ) async {
+    final cacheKey = '${lat.toStringAsFixed(4)},${lng.toStringAsFixed(4)}';
+    if (_addressCache.containsKey(cacheKey)) {
+      return _addressCache[cacheKey]!;
+    }
+
+    final isValid = BoundaryService.instance.isInsideCentralJava(lat, lng);
+
+    // 1. Pada Web Browser: gunakan OpenStreetMap Nominatim langsung karena plugin geocoding native tidak mendukung web
+    if (kIsWeb) {
+      final nominatimResult = await _reverseGeocodeNominatim(lat, lng, isValid);
+      if (nominatimResult != null) {
+        if (_addressCache.length > 200) _addressCache.clear();
+        _addressCache[cacheKey] = nominatimResult;
+        return nominatimResult;
+      }
+    } else {
+      // 2. Pada Mobile (Android & iOS): gunakan native Geocoder dengan fallback ke Nominatim
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          lat,
+          lng,
+        ).timeout(const Duration(seconds: 4));
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          final parts = <String>[];
+
+          if (place.street != null && place.street!.trim().isNotEmpty) {
+            parts.add(place.street!.trim());
+          }
+          if (place.subLocality != null &&
+              place.subLocality!.trim().isNotEmpty) {
+            parts.add('Kel. ${place.subLocality!.trim()}');
+          }
+          if (place.locality != null && place.locality!.trim().isNotEmpty) {
+            parts.add('Kec. ${place.locality!.trim()}');
+          }
+          if (place.subAdministrativeArea != null &&
+              place.subAdministrativeArea!.trim().isNotEmpty) {
+            parts.add(place.subAdministrativeArea!.trim());
+          } else if (place.administrativeArea != null &&
+              place.administrativeArea!.trim().isNotEmpty) {
+            parts.add(place.administrativeArea!.trim());
+          }
+
+          final fullAddress = parts.isNotEmpty
+              ? parts.join(', ')
+              : 'Titik Koordinat: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+
+          final area = place.subAdministrativeArea?.trim().isNotEmpty == true
+              ? place.subAdministrativeArea!.trim()
+              : place.administrativeArea?.trim().isNotEmpty == true
+              ? place.administrativeArea!.trim()
+              : defaultAreaName;
+
+          final result = LocationResult(
+            address: fullAddress,
+            latitude: lat,
+            longitude: lng,
+            areaName: area,
+            isValidRegion: isValid,
+          );
+          if (_addressCache.length > 200) _addressCache.clear();
+          _addressCache[cacheKey] = result;
+          return result;
+        }
+      } catch (_) {
+        // Fallback ke Nominatim jika geocoder native perangkat gagal / offline
+        final nominatimResult = await _reverseGeocodeNominatim(
+          lat,
+          lng,
+          isValid,
+        );
+        if (nominatimResult != null) {
+          if (_addressCache.length > 200) _addressCache.clear();
+          _addressCache[cacheKey] = nominatimResult;
+          return nominatimResult;
+        }
+      }
+    }
+
+    final fallback = LocationResult(
+      address:
+          'Koordinat (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})',
+      latitude: lat,
+      longitude: lng,
+      areaName: isValid ? defaultAreaName : 'Di Luar Jawa Tengah',
+      isValidRegion: isValid,
+    );
+    _addressCache[cacheKey] = fallback;
+    return fallback;
+  }
+
+  /// Reverse geocoding via OpenStreetMap Nominatim for Web & cross-platform fallback
+  Future<LocationResult?> _reverseGeocodeNominatim(
+    double lat,
+    double lng,
+    bool isValid,
+  ) async {
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng&addressdetails=1',
+      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'User-Agent': 'LaporinApp/1.0 (laporin.jawatengah@gmail.com)',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final addressMap = data['address'] as Map<String, dynamic>?;
+        if (addressMap != null) {
+          final parts = <String>[];
+          final road = addressMap['road'] ?? addressMap['pedestrian'];
+          if (road != null && road.toString().trim().isNotEmpty) {
+            parts.add(road.toString().trim());
+          }
+          final village =
+              addressMap['village'] ??
+              addressMap['suburb'] ??
+              addressMap['neighbourhood'];
+          if (village != null && village.toString().trim().isNotEmpty) {
+            parts.add('Kel. ${village.toString().trim()}');
+          }
+          final district =
+              addressMap['city_district'] ??
+              addressMap['subdistrict'] ??
+              addressMap['municipality'];
+          if (district != null && district.toString().trim().isNotEmpty) {
+            parts.add('Kec. ${district.toString().trim()}');
+          }
+          final city =
+              addressMap['city'] ??
+              addressMap['regency'] ??
+              addressMap['county'];
+          if (city != null && city.toString().trim().isNotEmpty) {
+            parts.add(city.toString().trim());
+          } else if (addressMap['state'] != null) {
+            parts.add(addressMap['state'].toString().trim());
+          }
+
+          final fullAddress = parts.isNotEmpty
+              ? parts.join(', ')
+              : (data['display_name'] as String? ??
+                    'Koordinat: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}');
+
+          final areaName = (city != null && city.toString().trim().isNotEmpty)
+              ? city.toString().trim()
+              : (isValid ? defaultAreaName : 'Di Luar Jawa Tengah');
+
+          return LocationResult(
+            address: fullAddress,
+            latitude: lat,
+            longitude: lng,
+            areaName: areaName,
+            isValidRegion: isValid,
+          );
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+}

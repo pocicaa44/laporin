@@ -1,0 +1,273 @@
+import 'dart:io' as io;
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/status_badge.dart';
+import '../../../data/models/report_model.dart';
+
+/// Reusable report card widget matching DESIGN.md Section 4.3
+class ReportCard extends StatelessWidget {
+  const ReportCard({
+    super.key,
+    required this.report,
+    required this.onTap,
+    required this.onUpvote,
+    required this.onDownvote,
+  });
+
+  final ReportModel report;
+  final VoidCallback onTap;
+  final VoidCallback onUpvote;
+  final VoidCallback onDownvote;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [AppColors.cardShadow],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Clickable card content (thumbnail, title, category, location)
+          InkWell(
+            onTap: onTap,
+            mouseCursor: SystemMouseCursors.click,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thumbnail if photos exist (safe web-rendering)
+                if (report.photoUrls.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: _buildThumbnail(report.photoUrls.first),
+                    ),
+                  ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Category & Status
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              report.category,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryStrong,
+                              ),
+                            ),
+                          ),
+                          HandlingStatusBadge(status: report.handlingStatus),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Title
+                      Text(
+                        report.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.sectionTitle,
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Location & Time metadata
+                      Row(
+                        children: [
+                          const FaIcon(
+                            FontAwesomeIcons.locationDot,
+                            size: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              report.locationAddress,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.caption,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            report.createdAt.toRelativeTime(),
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(height: 1),
+          ),
+
+          // Independent interactions row: Upvote, Downvote, Comments
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _VoteButton(
+                  icon: FontAwesomeIcons.thumbsUp,
+                  count: report.upvotesCount,
+                  isActive: report.currentUserVote == 'up',
+                  activeColor: AppColors.primary,
+                  onTap: onUpvote,
+                ),
+                const SizedBox(width: 12),
+                _VoteButton(
+                  icon: FontAwesomeIcons.thumbsDown,
+                  count: report.downvotesCount,
+                  isActive: report.currentUserVote == 'down',
+                  activeColor: AppColors.danger,
+                  onTap: onDownvote,
+                ),
+                const Spacer(),
+                InkWell(
+                  onTap: onTap,
+                  mouseCursor: SystemMouseCursors.click,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        const FaIcon(
+                          FontAwesomeIcons.comment,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${report.commentsCount} komentar',
+                          style: AppTextStyles.caption.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(String url) {
+    final isNetwork =
+        url.startsWith('http://') ||
+        url.startsWith('https://') ||
+        url.startsWith('blob:') ||
+        url.startsWith('data:');
+    if (isNetwork) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        cacheWidth: kIsWeb ? null : 800,
+        errorBuilder: (_, _, _) => _brokenPlaceholder(),
+      );
+    }
+    if (!kIsWeb) {
+      return Image.file(
+        io.File(url),
+        fit: BoxFit.cover,
+        cacheWidth: 800,
+        errorBuilder: (_, _, _) => _brokenPlaceholder(),
+      );
+    }
+    return _brokenPlaceholder();
+  }
+
+  Widget _brokenPlaceholder() {
+    return Container(
+      color: AppColors.primarySoft,
+      child: const Center(
+        child: Icon(Icons.broken_image_rounded, color: AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+class _VoteButton extends StatelessWidget {
+  const _VoteButton({
+    required this.icon,
+    required this.count,
+    required this.isActive,
+    required this.activeColor,
+    required this.onTap,
+  });
+
+  final FaIconData icon;
+  final int count;
+  final bool isActive;
+  final Color activeColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      mouseCursor: SystemMouseCursors.click,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          children: [
+            FaIcon(
+              icon,
+              size: 14,
+              color: isActive ? activeColor : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: isActive ? activeColor : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
