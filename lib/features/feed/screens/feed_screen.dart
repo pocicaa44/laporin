@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/report_model.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/feed_controller.dart';
 import '../widgets/category_filter_bar.dart';
@@ -75,8 +76,10 @@ class _FeedScreenState extends State<FeedScreen> {
     }
 
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
-        titleSpacing: 16,
+        leading: const DrawerMenuButton(),
+        titleSpacing: 0,
         title: Row(
           children: [
             Container(

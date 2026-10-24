@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/notification_model.dart';
+import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/notification_controller.dart';
 
@@ -18,7 +19,9 @@ class NotificationsScreen extends StatelessWidget {
     final controller = context.watch<NotificationController>();
 
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: const DrawerMenuButton(),
         title: const Text('Notifikasi'),
         actions: [
           if (controller.unreadCount > 0)

@@ -230,6 +230,56 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     }
   }
 
+  void _handlePublishDraft(ReportModel currentReport) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Publikasikan Laporan?'),
+        content: const Text(
+          'Laporan akan dipublikasikan ke publik dan diteruskan ke petugas untuk penanganan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Publikasikan'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final controller = context.read<ReportDetailController>();
+    final success = await controller.publishDraft();
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Laporan berhasil dipublikasikan!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            controller.errorMessage ?? 'Gagal mempublikasikan laporan.',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   void _openAdminStatusSheet(ReportModel currentReport) async {
     final res = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -401,7 +451,11 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Center(
-                    child: HandlingStatusBadge(status: report.handlingStatus),
+                    child: HandlingStatusBadge(
+                      status: report.handlingStatus,
+                      createdAt: report.createdAt,
+                      isDraft: report.isDraft,
+                    ),
                   ),
                 ),
                 if (isAdmin && !isFinalized) ...[
@@ -466,6 +520,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     onSelected: (val) {
                       if (val == 'edit') {
                         _openEditScreen(report);
+                      } else if (val == 'publish_draft') {
+                        _handlePublishDraft(report);
                       } else if (val == 'delete') {
                         _showDeleteDialog(report, currentUserId);
                       } else if (val == 'toggle_discussion') {
@@ -473,6 +529,21 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                       }
                     },
                     itemBuilder: (ctx) => [
+                      if (report.isDraft)
+                        const PopupMenuItem(
+                          value: 'publish_draft',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.public_rounded,
+                                size: 20,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(child: Text('Publikasikan Laporan')),
+                            ],
+                          ),
+                        ),
                       if (!report.isTerminal)
                         const PopupMenuItem(
                           value: 'edit',
@@ -549,6 +620,80 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
+                        // Draft banner jika laporan masih dalam status draft
+                        if (report.isDraft) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF8E7),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFDD888),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit_note_rounded,
+                                      color: Color(0xFFD98205),
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Draft Laporan',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFFB45309),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Laporan ini masih disimpan sebagai draft dan belum dapat dilihat publik atau ditangani petugas.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF78350F),
+                                    height: 1.35,
+                                  ),
+                                ),
+                                if (isOwner) ...[
+                                  const SizedBox(height: 10),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: const Size.fromHeight(38),
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.public_rounded,
+                                      size: 16,
+                                    ),
+                                    label: const Text(
+                                      'Publikasikan Sekarang',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        _handlePublishDraft(report),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+
                         // Author Header & Category
                         Container(
                           padding: const EdgeInsets.all(12),

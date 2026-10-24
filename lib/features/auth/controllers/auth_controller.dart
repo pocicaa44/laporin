@@ -178,6 +178,25 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  /// Hapus foto profil dan kembali menggunakan avatar default generic
+  Future<bool> removeAvatar() async {
+    _isUploadingAvatar = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authRepository.removeAvatar();
+      _isUploadingAvatar = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isUploadingAvatar = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Membuka galeri perangkat via image_picker dan mengunggah foto profil teroptimasi ke Supabase
   Future<bool> pickAndUploadAvatar() async {
     if (_isUploadingAvatar) return false;

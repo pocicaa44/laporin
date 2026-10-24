@@ -5,12 +5,55 @@ import '../theme/app_colors.dart';
 
 /// Distinct badge for handling_status (Diterima, Diproses, Selesai, Ditolak, Dibatalkan)
 class HandlingStatusBadge extends StatelessWidget {
-  const HandlingStatusBadge({super.key, required this.status});
+  const HandlingStatusBadge({
+    super.key,
+    required this.status,
+    this.createdAt,
+    this.isDraft = false,
+  });
 
   final HandlingStatus status;
+  final DateTime? createdAt;
+  final bool isDraft;
 
   @override
   Widget build(BuildContext context) {
+    if (isDraft) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF8E7),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFFFDD888)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.edit_note_rounded, size: 14, color: Color(0xFFD98205)),
+            SizedBox(width: 4),
+            Text(
+              'Draft',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFB45309),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Hilangkan badge "Baru" jika laporan berstatus newReport namun sudah lebih dari 1 jam
+    if (status == HandlingStatus.newReport && createdAt != null) {
+      final now = DateTime.now();
+      final effectiveDate = createdAt!.isAfter(now) ? now : createdAt!;
+      final diff = now.difference(effectiveDate);
+      if (diff.inMinutes >= 60) {
+        return const SizedBox.shrink();
+      }
+    }
+
     Color bg;
     Color fg;
     IconData icon;
@@ -76,12 +119,46 @@ class HandlingStatusBadge extends StatelessWidget {
 
 /// Distinct badge for publication_state (Menunggu Review, Dipublikasikan, Ditahan, Diarsipkan)
 class PublicationStateBadge extends StatelessWidget {
-  const PublicationStateBadge({super.key, required this.state});
+  const PublicationStateBadge({
+    super.key,
+    required this.state,
+    this.isDraft = false,
+  });
 
   final PublicationState state;
+  final bool isDraft;
 
   @override
   Widget build(BuildContext context) {
+    if (isDraft) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF8E7),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: const Color(0xFFD98205).withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.edit_note_rounded, size: 12, color: Color(0xFFD98205)),
+            SizedBox(width: 4),
+            Text(
+              'Draft',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFB45309),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     Color bg;
     Color fg;
     IconData icon;

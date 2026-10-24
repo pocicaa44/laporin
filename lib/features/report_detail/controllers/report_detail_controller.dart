@@ -243,4 +243,25 @@ class ReportDetailController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Mempublikasikan laporan jika berstatus draft
+  Future<bool> publishDraft() async {
+    if (_report == null || !_report!.isDraft) return false;
+
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updated = await reportRepository.publishDraft(reportId);
+      if (_isDisposed) return false;
+      _report = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if (_isDisposed) return false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

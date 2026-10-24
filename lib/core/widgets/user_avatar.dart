@@ -42,6 +42,10 @@ class UserAvatar extends StatelessWidget {
     return 'W';
   }
 
+  /// Path asset untuk avatar default Laporin.
+  /// Disimpan sebagai asset lokal agar tidak membebani server/database.
+  static const String defaultAvatarAsset = 'assets/generic-avatar.png';
+
   @override
   Widget build(BuildContext context) {
     final avatarWidget = Stack(
@@ -50,7 +54,7 @@ class UserAvatar extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: radius,
-          backgroundColor: backgroundColor ?? AppColors.primarySoft,
+          backgroundColor: backgroundColor ?? Colors.grey.shade100,
           child: _buildAvatarContent(),
         ),
         if (isLoading)
@@ -120,13 +124,25 @@ class UserAvatar extends StatelessWidget {
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,
-          placeholder: _fallbackText(),
-          errorWidget: _fallbackText(),
+          placeholder: _buildDefaultAssetAvatar(),
+          errorWidget: _buildDefaultAssetAvatar(),
         ),
       );
     }
 
-    return _fallbackText();
+    return _buildDefaultAssetAvatar();
+  }
+
+  Widget _buildDefaultAssetAvatar() {
+    return ClipOval(
+      child: Image.asset(
+        defaultAvatarAsset,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _fallbackText(),
+      ),
+    );
   }
 
   Widget _fallbackText() {

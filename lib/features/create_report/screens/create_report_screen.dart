@@ -15,7 +15,9 @@ import '../widgets/report_media_uploader.dart';
 
 /// Screen for citizens creating a new report (< 180 lines per skills.md)
 class CreateReportScreen extends StatelessWidget {
-  const CreateReportScreen({super.key});
+  const CreateReportScreen({super.key, this.controller});
+
+  final CreateReportController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,13 @@ class CreateReportScreen extends StatelessWidget {
             Navigator.of(context).pop();
           }
         },
+      );
+    }
+
+    if (controller != null) {
+      return ChangeNotifierProvider<CreateReportController>.value(
+        value: controller!,
+        child: const _CreateReportForm(),
       );
     }
 
@@ -104,6 +113,104 @@ class _CreateReportFormState extends State<_CreateReportForm> {
     return leave ?? false;
   }
 
+  Future<String?> _showConfirmationDialog(BuildContext context) {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.send_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Kirim Laporan',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Apakah Anda ingin menyimpan laporan ini sebagai draft atau langsung mempublikasikannya?',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Tombol Simpan Draft
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                foregroundColor: AppColors.primary,
+              ),
+              icon: const Icon(Icons.drafts_outlined, size: 20),
+              label: const Text(
+                'Simpan Draft',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => Navigator.pop(ctx, 'draft'),
+            ),
+            const SizedBox(height: 10),
+            // Tombol Publikasikan
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.public_rounded, size: 20),
+              label: const Text(
+                'Publikasikan',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => Navigator.pop(ctx, 'publish'),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'Batal / Lanjut Mengedit',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -131,6 +238,23 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       return;
     }
 
+    if (controller.locationAddress.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Harap tentukan titik lokasi kejadian terlebih dahulu.',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final action = await _showConfirmationDialog(context);
+    if (action == null || !mounted) return;
+
+    final isDraft = action == 'draft';
+
     final report = await controller.submitReport(
       authorId: user.id,
       authorName: user.fullName.isNotEmpty ? user.fullName : 'Warga Laporin',
@@ -139,15 +263,22 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       title: _titleController.text,
       description: _descriptionController.text,
       isCallerAdmin: auth.isAdmin,
+      isDraft: isDraft,
     );
 
     if (!mounted) return;
 
     if (report != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Laporan berhasil dikirim dan siap dipantau.'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(
+            isDraft
+                ? 'Laporan berhasil disimpan ke dalam Draft.'
+                : 'Laporan berhasil dikirim dan siap dipantau.',
+          ),
+          backgroundColor: isDraft
+              ? const Color(0xFFD98205)
+              : AppColors.success,
         ),
       );
       Navigator.pushReplacement(
@@ -161,7 +292,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            controller.errorMessage ?? 'Gagal mengirim laporan. Coba lagi.',
+            controller.errorMessage ?? 'Gagal memproses laporan. Coba lagi.',
           ),
           backgroundColor: AppColors.danger,
         ),

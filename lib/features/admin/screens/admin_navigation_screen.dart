@@ -7,6 +7,8 @@ import '../../../core/widgets/access_denied_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../feed/screens/feed_screen.dart';
 import '../../profile/screens/profile_screen.dart';
+import '../../navigation/controllers/navigation_controller.dart';
+import '../../navigation/widgets/app_drawer.dart';
 import 'admin_announcements_screen.dart';
 import 'admin_dashboard_screen.dart';
 
@@ -19,7 +21,7 @@ class AdminNavigationScreen extends StatefulWidget {
 }
 
 class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
-  int _currentIndex = 0;
+  int _localIndex = 0;
 
   final List<Widget> _screens = const [
     FeedScreen(),
@@ -27,6 +29,14 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
     AdminAnnouncementsScreen(isEmbedded: true),
     ProfileScreen(),
   ];
+
+  void _onTabTapped(int index) {
+    try {
+      context.read<NavigationController>().setIndex(index);
+    } catch (_) {
+      setState(() => _localIndex = index);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +54,14 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
           }
         },
       );
+    }
+
+    int activeIndex = _localIndex;
+    try {
+      activeIndex = context.watch<NavigationController>().currentIndex;
+    } catch (_) {}
+    if (activeIndex < 0 || activeIndex >= _screens.length) {
+      activeIndex = 0;
     }
 
     return Container(
@@ -65,7 +83,8 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
             ],
           ),
           child: Scaffold(
-            body: IndexedStack(index: _currentIndex, children: _screens),
+            drawer: const AppDrawer(),
+            body: IndexedStack(index: activeIndex, children: _screens),
             bottomNavigationBar: Container(
               decoration: const BoxDecoration(
                 color: AppColors.surface,
@@ -80,29 +99,37 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _AdminNavBarItem(
-                        icon: FontAwesomeIcons.house,
-                        label: 'Beranda',
-                        isSelected: _currentIndex == 0,
-                        onTap: () => setState(() => _currentIndex = 0),
+                      Expanded(
+                        child: _AdminNavBarItem(
+                          icon: FontAwesomeIcons.house,
+                          label: 'Beranda',
+                          isSelected: activeIndex == 0,
+                          onTap: () => _onTabTapped(0),
+                        ),
                       ),
-                      _AdminNavBarItem(
-                        icon: FontAwesomeIcons.tableColumns,
-                        label: 'Panel',
-                        isSelected: _currentIndex == 1,
-                        onTap: () => setState(() => _currentIndex = 1),
+                      Expanded(
+                        child: _AdminNavBarItem(
+                          icon: FontAwesomeIcons.tableColumns,
+                          label: 'Panel',
+                          isSelected: activeIndex == 1,
+                          onTap: () => _onTabTapped(1),
+                        ),
                       ),
-                      _AdminNavBarItem(
-                        icon: FontAwesomeIcons.bullhorn,
-                        label: 'Pengumuman',
-                        isSelected: _currentIndex == 2,
-                        onTap: () => setState(() => _currentIndex = 2),
+                      Expanded(
+                        child: _AdminNavBarItem(
+                          icon: FontAwesomeIcons.bullhorn,
+                          label: 'Pengumuman',
+                          isSelected: activeIndex == 2,
+                          onTap: () => _onTabTapped(2),
+                        ),
                       ),
-                      _AdminNavBarItem(
-                        icon: FontAwesomeIcons.user,
-                        label: 'Profil',
-                        isSelected: _currentIndex == 3,
-                        onTap: () => setState(() => _currentIndex = 3),
+                      Expanded(
+                        child: _AdminNavBarItem(
+                          icon: FontAwesomeIcons.user,
+                          label: 'Profil',
+                          isSelected: activeIndex == 3,
+                          onTap: () => _onTabTapped(3),
+                        ),
                       ),
                     ],
                   ),
@@ -138,14 +165,17 @@ class _AdminNavBarItem extends StatelessWidget {
       mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             FaIcon(icon, color: color, size: 20),
             const SizedBox(height: 2),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

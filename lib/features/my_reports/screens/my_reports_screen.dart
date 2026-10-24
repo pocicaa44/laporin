@@ -9,6 +9,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/my_reports_controller.dart';
 
@@ -23,7 +24,11 @@ class MyReportsScreen extends StatelessWidget {
 
     if (!auth.isAuthenticated || userId.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Laporan Saya')),
+        drawer: const AppDrawer(),
+        appBar: AppBar(
+          leading: const DrawerMenuButton(),
+          title: const Text('Laporan Saya'),
+        ),
         body: const EmptyState(
           title: 'Belum Masuk',
           message: 'Silakan masuk ke akun Anda untuk melihat daftar laporan yang pernah Anda buat.',
@@ -78,7 +83,9 @@ class _MyReportsViewState extends State<_MyReportsView> {
     final controller = context.watch<MyReportsController>();
 
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: const DrawerMenuButton(),
         title: const Text('Laporan Saya'),
         actions: [
           IconButton(
@@ -173,7 +180,11 @@ class _MyReportItem extends StatelessWidget {
                       color: AppColors.primary,
                     ),
                   ),
-                  HandlingStatusBadge(status: report.handlingStatus),
+                  HandlingStatusBadge(
+                    status: report.handlingStatus,
+                    createdAt: report.createdAt,
+                    isDraft: report.isDraft,
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -194,7 +205,10 @@ class _MyReportItem extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  PublicationStateBadge(state: report.publicationState),
+                  PublicationStateBadge(
+                    state: report.publicationState,
+                    isDraft: report.isDraft,
+                  ),
                   Text(
                     report.createdAt.toReportTimeLabel(),
                     style: AppTextStyles.caption,

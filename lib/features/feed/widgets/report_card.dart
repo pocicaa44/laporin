@@ -175,7 +175,11 @@ class ReportCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          HandlingStatusBadge(status: report.handlingStatus),
+                          HandlingStatusBadge(
+                            status: report.handlingStatus,
+                            createdAt: report.createdAt,
+                            isDraft: report.isDraft,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 10),

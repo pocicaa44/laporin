@@ -74,6 +74,7 @@ class ReportModel {
     this.completionProofType,
     this.completionNotes,
     this.isDiscussionActive = true,
+    this.isDraft = false,
   });
 
   final String id;
@@ -109,6 +110,7 @@ class ReportModel {
   final String? completionProofType;
   final String? completionNotes;
   final bool isDiscussionActive;
+  final bool isDraft;
 
   /// Formatted username (e.g. '@budi_santoso') with fallback if username not set
   String get displayAuthorUsername {
@@ -130,9 +132,10 @@ class ReportModel {
   bool get isDeleted => deletedAt != null;
 
   /// Aturan visibilitas publik mutlak (PRD 5.4 & AGENTS.md 3.2):
-  /// !isDeleted AND publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
+  /// !isDeleted AND !isDraft AND publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
   bool get isPubliclyVisible =>
       !isDeleted &&
+      !isDraft &&
       publicationState == PublicationState.published &&
       handlingStatus != HandlingStatus.rejected &&
       handlingStatus != HandlingStatus.cancelled;
@@ -169,6 +172,7 @@ class ReportModel {
   /// - Status diterima / dilihat (accepted) atau sedang diproses (in_progress): TIDAK DAPAT dihapus.
   bool get canAuthorDelete {
     if (isDeleted) return false;
+    if (isDraft) return true;
     if (handlingStatus == HandlingStatus.accepted ||
         handlingStatus == HandlingStatus.inProgress) {
       return false;
@@ -284,6 +288,7 @@ class ReportModel {
     String? completionNotes,
     bool clearCompletionNotes = false,
     bool? isDiscussionActive,
+    bool? isDraft,
   }) {
     return ReportModel(
       id: id ?? this.id,
@@ -323,6 +328,7 @@ class ReportModel {
           ? null
           : (completionNotes ?? this.completionNotes),
       isDiscussionActive: isDiscussionActive ?? this.isDiscussionActive,
+      isDraft: isDraft ?? this.isDraft,
     );
   }
 
@@ -360,6 +366,7 @@ class ReportModel {
       'completion_proof_type': completionProofType,
       'completion_notes': completionNotes,
       'is_discussion_active': isDiscussionActive,
+      'is_draft': isDraft,
     };
   }
 
@@ -448,6 +455,7 @@ class ReportModel {
       completionProofType: json['completion_proof_type'] as String?,
       completionNotes: json['completion_notes'] as String?,
       isDiscussionActive: parsedDiscussionActive,
+      isDraft: (json['is_draft'] as bool?) ?? false,
     );
   }
 }

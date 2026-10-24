@@ -10,6 +10,7 @@ import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../../report_detail/widgets/delete_report_dialog.dart';
 import '../controllers/admin_report_controller.dart';
@@ -73,7 +74,9 @@ class _AdminDashboardView extends StatelessWidget {
             ],
           ),
           child: Scaffold(
+            drawer: const AppDrawer(),
             appBar: AppBar(
+              leading: isEmbedded ? const DrawerMenuButton() : null,
               automaticallyImplyLeading: !isEmbedded,
               title: const Text('Panel Laporan'),
               actions: [
@@ -472,7 +475,11 @@ class _AdminReportCard extends StatelessWidget {
                 children: [
                   PublicationStateBadge(state: report.publicationState),
                   const SizedBox(width: 6),
-                  HandlingStatusBadge(status: report.handlingStatus),
+                  HandlingStatusBadge(
+                    status: report.handlingStatus,
+                    createdAt: report.createdAt,
+                    isDraft: report.isDraft,
+                  ),
                 ],
               ),
             ],

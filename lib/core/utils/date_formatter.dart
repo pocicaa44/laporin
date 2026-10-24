@@ -76,7 +76,7 @@ extension DateTimeFormatX on DateTime {
     // Cegah waktu di masa depan (akibat clock drift / timezone desync)
     final effectiveDate = isAfter(now) ? now : this;
     final difference = now.difference(effectiveDate);
-    final isLessThanOneHour = difference.inHours < 1;
+    final isLessThanOneHour = difference.inMinutes < 60;
 
     if (isAdmin) {
       // Untuk admin: jika < 1 jam dan BELUM membuka detail -> 'Baru'

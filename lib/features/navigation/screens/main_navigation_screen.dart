@@ -12,6 +12,8 @@ import '../../my_reports/screens/my_reports_screen.dart';
 import '../../notifications/controllers/notification_controller.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../profile/screens/profile_screen.dart';
+import '../controllers/navigation_controller.dart';
+import '../widgets/app_drawer.dart';
 
 /// Main navigation shell with 5-item bottom bar per DESIGN.md Section 2.2
 class MainNavigationScreen extends StatefulWidget {
@@ -22,7 +24,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
+  int _localIndex = 0;
 
   final List<Widget> _screens = const [
     FeedScreen(),
@@ -51,7 +53,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       });
       return;
     }
-    setState(() => _currentIndex = index);
+    try {
+      context.read<NavigationController>().setIndex(index);
+    } catch (_) {
+      setState(() => _localIndex = index);
+    }
   }
 
   @override
@@ -62,6 +68,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     final unreadNotif = context.watch<NotificationController>().unreadCount;
+
+    int activeIndex = _localIndex;
+    try {
+      activeIndex = context.watch<NavigationController>().currentIndex;
+    } catch (_) {}
 
     return Container(
       color: const Color(0xFFF0F2F5),
@@ -82,8 +93,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ],
           ),
           child: Scaffold(
+            drawer: const AppDrawer(),
             body: IndexedStack(
-              index: _currentIndex == 2 ? 0 : _currentIndex,
+              index: activeIndex == 2 ? 0 : activeIndex,
               children: _screens,
             ),
             bottomNavigationBar: Container(
@@ -103,13 +115,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       _NavBarItem(
                         icon: FontAwesomeIcons.house,
                         label: 'Beranda',
-                        isSelected: _currentIndex == 0,
+                        isSelected: activeIndex == 0,
                         onTap: () => _onTabTapped(0),
                       ),
                       _NavBarItem(
                         icon: FontAwesomeIcons.clipboardList,
                         label: 'Laporan',
-                        isSelected: _currentIndex == 1,
+                        isSelected: activeIndex == 1,
                         onTap: () => _onTabTapped(1),
                       ),
 
@@ -146,14 +158,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       _NavBarItem(
                         icon: FontAwesomeIcons.bell,
                         label: 'Notifikasi',
-                        isSelected: _currentIndex == 3,
+                        isSelected: activeIndex == 3,
                         badgeCount: unreadNotif,
                         onTap: () => _onTabTapped(3),
                       ),
                       _NavBarItem(
                         icon: FontAwesomeIcons.user,
                         label: 'Profil',
-                        isSelected: _currentIndex == 4,
+                        isSelected: activeIndex == 4,
                         onTap: () => _onTabTapped(4),
                       ),
                     ],

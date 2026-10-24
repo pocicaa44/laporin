@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/services/media_service.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/repositories/announcement_repository.dart';
 
 /// Controller untuk manajemen pengumuman oleh Admin
 class AdminAnnouncementController extends ChangeNotifier {
   AdminAnnouncementController({required this.repository}) {
+    repository.addListener(_onRepositoryChanged);
     fetchAnnouncements();
   }
 
@@ -25,9 +28,16 @@ class AdminAnnouncementController extends ChangeNotifier {
 
   bool _isDisposed = false;
 
+  void _onRepositoryChanged() {
+    if (_isDisposed) return;
+    _announcements = repository.cachedAnnouncements;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _isDisposed = true;
+    repository.removeListener(_onRepositoryChanged);
     super.dispose();
   }
 
@@ -68,6 +78,8 @@ class AdminAnnouncementController extends ChangeNotifier {
     String category = 'Umum',
     required String authorId,
     required String authorName,
+    XFile? imageFile,
+    String? imageUrl,
   }) async {
     if (_isSubmitting) return false;
     _isSubmitting = true;
@@ -75,10 +87,19 @@ class AdminAnnouncementController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      String? resolvedImageUrl = imageUrl;
+      if (imageFile != null) {
+        resolvedImageUrl = await MediaService.instance.uploadAnnouncementPhoto(
+          authorId: authorId,
+          file: imageFile,
+        );
+      }
+
       await repository.createAnnouncement(
         title: title,
         content: content,
         category: category,
+        imageUrl: resolvedImageUrl,
         authorId: authorId,
         authorName: authorName,
       );
@@ -86,6 +107,72 @@ class AdminAnnouncementController extends ChangeNotifier {
       _isSubmitting = false;
       notifyListeners();
       return true;
+    } catch (e) {
+      _isSubmitting = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateAnnouncement({
+    required String id,
+    required String title,
+    required String content,
+    String category = 'Umum',
+    String? currentImageUrl,
+    XFile? newImageFile,
+    bool removeImage = false,
+    String? authorId,
+  }) async {
+    if (_isSubmitting) return false;
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      String? resolvedImageUrl = currentImageUrl;
+      if (removeImage) {
+        resolvedImageUrl = null;
+      } else if (newImageFile != null) {
+        resolvedImageUrl = await MediaService.instance.uploadAnnouncementPhoto(
+          authorId: authorId ?? 'admin',
+          file: newImageFile,
+        );
+      }
+
+      await repository.updateAnnouncement(
+        id: id,
+        title: title,
+        content: content,
+        category: category,
+        imageUrl: resolvedImageUrl,
+        clearImageUrl: removeImage,
+      );
+      _announcements = repository.cachedAnnouncements;
+      _isSubmitting = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isSubmitting = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteAnnouncement(String id) async {
+    if (_isSubmitting) return false;
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await repository.deleteAnnouncement(id);
+      _announcements = repository.cachedAnnouncements;
+      _isSubmitting = false;
+      notifyListeners();
+      return success;
     } catch (e) {
       _isSubmitting = false;
       _errorMessage = e.toString().replaceFirst('Exception: ', '');

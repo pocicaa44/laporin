@@ -98,6 +98,7 @@ class CreateReportController extends ChangeNotifier {
     required String title,
     required String description,
     bool isCallerAdmin = false,
+    bool isDraft = false,
   }) async {
     if (_isLoading) return null;
     _isLoading = true;
@@ -150,6 +151,7 @@ class CreateReportController extends ChangeNotifier {
         locationAddress: _locationAddress,
         areaName: _areaName,
         photoUrls: photoUrls,
+        isDraft: isDraft,
       );
 
       _isLoading = false;

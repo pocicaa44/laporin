@@ -5,6 +5,7 @@ class AnnouncementModel {
     required this.title,
     required this.content,
     this.category = 'Umum',
+    this.imageUrl,
     required this.authorId,
     required this.authorName,
     this.isPublished = true,
@@ -16,6 +17,7 @@ class AnnouncementModel {
   final String title;
   final String content;
   final String category;
+  final String? imageUrl;
   final String authorId;
   final String authorName;
   final bool isPublished;
@@ -27,6 +29,8 @@ class AnnouncementModel {
     String? title,
     String? content,
     String? category,
+    String? imageUrl,
+    bool clearImageUrl = false,
     String? authorId,
     String? authorName,
     bool? isPublished,
@@ -38,6 +42,7 @@ class AnnouncementModel {
       title: title ?? this.title,
       content: content ?? this.content,
       category: category ?? this.category,
+      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
       isPublished: isPublished ?? this.isPublished,
@@ -52,6 +57,7 @@ class AnnouncementModel {
       'title': title,
       'content': content,
       'category': category,
+      'image_url': ?imageUrl,
       'author_id': authorId,
       'author_name': authorName,
       'is_published': isPublished,
@@ -66,6 +72,7 @@ class AnnouncementModel {
       title: json['title'] as String? ?? '',
       content: json['content'] as String? ?? '',
       category: json['category'] as String? ?? 'Umum',
+      imageUrl: json['image_url'] as String?,
       authorId: json['author_id'] as String? ?? '',
       authorName: json['author_name'] as String? ?? 'Petugas Laporin',
       isPublished: json['is_published'] as bool? ?? true,

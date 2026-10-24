@@ -373,7 +373,7 @@ class ReportRepository {
     List<ReportModel> reports,
     String? filterStatus,
   ) {
-    var list = reports.where((r) => !r.isDeleted).toList();
+    var list = reports.where((r) => !r.isDeleted && !r.isDraft).toList();
 
     if (filterStatus == 'held') {
       list = list
@@ -502,6 +502,7 @@ class ReportRepository {
     String? areaName,
     List<String> photoUrls = const [],
     bool isCallerAdmin = false,
+    bool isDraft = false,
   }) async {
     // Invarian PRD: Admin tidak dapat membuat laporan baru
     if (isCallerAdmin) {
@@ -573,7 +574,11 @@ class ReportRepository {
       longitude: longitude,
       locationAddress: locationAddress,
       handlingStatus: HandlingStatus.newReport,
-      publicationState: PublicationState.published,
+      publicationState: isDraft
+          ? PublicationState.pendingReview
+          : PublicationState.published,
+      publishedAt: isDraft ? null : now,
+      isDraft: isDraft,
       createdAt: now,
       updatedAt: now,
       photoUrls: photoUrls,
@@ -607,6 +612,45 @@ class ReportRepository {
 
     _reports.insert(0, newReport);
     return newReport;
+  }
+
+  /// Mempublikasikan laporan yang sebelumnya disimpan sebagai draft
+  Future<ReportModel> publishDraft(String reportId) async {
+    final index = _reports.indexWhere((r) => r.id == reportId);
+    if (index == -1) throw Exception('Laporan tidak ditemukan');
+
+    final current = _reports[index];
+    if (!current.isDraft) {
+      throw Exception('Laporan ini bukan draft.');
+    }
+
+    final now = DateTime.now();
+    final updated = current.copyWith(
+      isDraft: false,
+      publicationState: PublicationState.published,
+      publishedAt: now,
+      updatedAt: now,
+    );
+
+    final client = _service.client;
+    if (client != null) {
+      try {
+        await client
+            .from('reports')
+            .update({
+              'is_draft': false,
+              'publication_state': PublicationState.published.value,
+              'published_at': now.toUtc().toIso8601String(),
+              'updated_at': now.toUtc().toIso8601String(),
+            })
+            .eq('id', reportId);
+      } catch (e) {
+        throw Exception('Gagal mempublikasikan draft: $e');
+      }
+    }
+
+    _reports[index] = updated;
+    return updated;
   }
 
   /// Vote / Unvote dengan evaluasi ambang batas downvote secara atomik

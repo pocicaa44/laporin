@@ -13,9 +13,11 @@ import 'data/repositories/comment_repository.dart';
 import 'data/repositories/notification_repository.dart';
 import 'data/repositories/report_repository.dart';
 import 'data/services/supabase_service.dart';
+import 'features/announcements/controllers/announcement_controller.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/screens/app_gate.dart';
 import 'features/feed/controllers/feed_controller.dart';
+import 'features/navigation/controllers/navigation_controller.dart';
 import 'features/notifications/controllers/notification_controller.dart';
 
 void main() async {
@@ -107,6 +109,12 @@ class LaporinApp extends StatelessWidget {
           create: (context) => NotificationController(
             repository: context.read<NotificationRepository>(),
           ),
+        ),
+        ChangeNotifierProvider(create: (context) => NavigationController()),
+        ChangeNotifierProvider(
+          create: (context) => AnnouncementController(
+            repository: context.read<AnnouncementRepository>(),
+          )..fetchAnnouncements(),
         ),
       ],
       child: MaterialApp(

@@ -100,14 +100,18 @@ class AuthRepository {
 
   /// Cek apakah username tersedia dan belum digunakan oleh user lain.
   Future<bool> checkUsernameAvailability(String username) async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception('Koneksi Supabase belum terhubung.');
-    }
-
     final trimmed = username.trim().toLowerCase();
     if (trimmed.length < 3 || trimmed.length > 30) {
       return false;
+    }
+
+    final client = _service.client;
+    if (client == null) {
+      if (_currentUserProfile != null) {
+        // Offline / mock testing fallback when profile is initialized
+        return true;
+      }
+      throw Exception('Koneksi Supabase belum terhubung.');
     }
 
     try {
@@ -207,12 +211,10 @@ class AuthRepository {
   /// Simpan atau perbarui username akun pengguna
   Future<UserProfileModel> updateUsername(String newUsername) async {
     final client = _service.client;
-    if (client == null) {
-      throw Exception('Koneksi Supabase belum terhubung.');
-    }
+    final user = client?.auth.currentUser;
+    final userId = _currentUserProfile?.id ?? user?.id;
 
-    final user = client.auth.currentUser;
-    if (user == null) {
+    if (userId == null) {
       throw Exception('Sesi pengguna tidak ditemukan.');
     }
 
@@ -224,42 +226,44 @@ class AuthRepository {
       throw Exception('Username "$cleanUsername" sudah digunakan.');
     }
 
-    try {
-      final displayName =
-          _currentUserProfile?.fullName ??
-          user.userMetadata?['full_name'] as String? ??
-          cleanUsername;
+    final displayName =
+        _currentUserProfile?.fullName ??
+        user?.userMetadata?['full_name'] as String? ??
+        cleanUsername;
 
-      await client.from('profiles').upsert({
-        'id': user.id,
-        'username': cleanUsername,
-        'full_name': displayName,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      });
+    if (client != null) {
+      try {
+        await client.from('profiles').upsert({
+          'id': userId,
+          'username': cleanUsername,
+          'full_name': displayName,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
 
-      await client.auth.updateUser(
-        UserAttributes(data: {'username': cleanUsername}),
-      );
-
-      _currentUserProfile =
-          _currentUserProfile?.copyWith(username: cleanUsername) ??
-          UserProfileModel(
-            id: user.id,
-            email: user.email ?? '',
-            fullName: displayName,
-            username: cleanUsername,
-            role: UserRole.fromString(user.userMetadata?['role'] as String?),
-          );
-
-      return _currentUserProfile!;
-    } catch (e) {
-      throw Exception(
-        e
-            .toString()
-            .replaceFirst('AuthException: ', '')
-            .replaceFirst('Exception: ', ''),
-      );
+        await client.auth.updateUser(
+          UserAttributes(data: {'username': cleanUsername}),
+        );
+      } catch (e) {
+        throw Exception(
+          e
+              .toString()
+              .replaceFirst('AuthException: ', '')
+              .replaceFirst('Exception: ', ''),
+        );
+      }
     }
+
+    _currentUserProfile =
+        _currentUserProfile?.copyWith(username: cleanUsername) ??
+        UserProfileModel(
+          id: userId,
+          email: user?.email ?? '',
+          fullName: displayName,
+          username: cleanUsername,
+          role: UserRole.fromString(user?.userMetadata?['role'] as String?),
+        );
+
+    return _currentUserProfile!;
   }
 
   /// Unggah foto profil baru ke Supabase Storage dan perbarui kolom avatar_url di tabel profiles
@@ -324,6 +328,43 @@ class AuthRepository {
           role: UserRole.fromString(user?.userMetadata?['role'] as String?),
         );
 
+    return _currentUserProfile!;
+  }
+
+  /// Reset / hapus foto profil kustom dan kembali ke avatar default generic.
+  /// Menghindari penyimpanan URL palsu dan tidak membebani server/storage.
+  Future<UserProfileModel> removeAvatar() async {
+    final client = _service.client;
+    final user = client?.auth.currentUser;
+    final userId = _currentUserProfile?.id ?? user?.id;
+
+    if (userId == null) {
+      throw Exception('Sesi pengguna tidak ditemukan.');
+    }
+
+    if (client != null) {
+      try {
+        await client
+            .from('profiles')
+            .update({
+              'avatar_url': null,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', userId);
+      } catch (profileError) {
+        debugPrint('Catatan reset avatar di profiles: $profileError');
+      }
+
+      try {
+        await client.auth.updateUser(
+          UserAttributes(data: {'avatar_url': null}),
+        );
+      } catch (authMetaError) {
+        debugPrint('Catatan reset avatar di user metadata: $authMetaError');
+      }
+    }
+
+    _currentUserProfile = _currentUserProfile?.copyWith(resetAvatar: true);
     return _currentUserProfile!;
   }
 

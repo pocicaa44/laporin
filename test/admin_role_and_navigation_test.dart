@@ -13,20 +13,27 @@ import 'package:laporin/features/admin/controllers/admin_announcement_controller
 import 'package:laporin/features/admin/controllers/admin_report_controller.dart';
 import 'package:laporin/features/admin/screens/admin_announcements_screen.dart';
 import 'package:laporin/features/admin/screens/admin_dashboard_screen.dart';
+import 'package:laporin/features/admin/screens/admin_create_announcement_screen.dart';
+import 'package:laporin/features/admin/screens/admin_edit_announcement_screen.dart';
 import 'package:laporin/features/admin/screens/admin_navigation_screen.dart';
 import 'package:laporin/features/admin/screens/admin_resolve_sheet.dart';
 import 'package:laporin/features/admin/screens/admin_status_update_sheet.dart';
+import 'package:laporin/features/admin/widgets/admin_delete_announcement_dialog.dart';
 import 'package:laporin/features/auth/controllers/auth_controller.dart';
 import 'package:laporin/features/create_report/controllers/create_report_controller.dart';
 import 'package:laporin/features/create_report/screens/create_report_screen.dart';
 import 'package:laporin/features/feed/controllers/feed_controller.dart';
 import 'package:laporin/features/feed/widgets/report_card.dart';
+import 'package:laporin/features/announcements/controllers/announcement_controller.dart';
+import 'package:laporin/features/navigation/controllers/navigation_controller.dart';
+import 'package:laporin/features/navigation/widgets/app_drawer.dart';
 import 'package:laporin/features/navigation/screens/main_navigation_screen.dart';
 import 'package:laporin/features/notifications/controllers/notification_controller.dart';
 import 'package:laporin/features/profile/screens/profile_screen.dart';
 import 'package:laporin/features/report_detail/screens/report_detail_screen.dart';
 import 'package:laporin/main.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Admin Role and Navigation Test Suite', () {
@@ -53,6 +60,7 @@ void main() {
     );
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       authRepo = AuthRepository();
       reportRepo = ReportRepository();
       announcementRepo = AnnouncementRepository();
@@ -61,11 +69,12 @@ void main() {
     Widget createTestApp({
       required Widget child,
       required UserProfileModel user,
+      Key? key,
     }) {
       authRepo.setCurrentUserProfileForTesting(user);
 
       return MultiProvider(
-        key: ValueKey('provider-${user.id}'),
+        key: key ?? UniqueKey(),
         providers: [
           Provider<AuthRepository>.value(value: authRepo),
           Provider<ReportRepository>.value(value: reportRepo),
@@ -83,6 +92,10 @@ void main() {
           ChangeNotifierProvider(
             create: (_) =>
                 NotificationController(repository: NotificationRepository()),
+          ),
+          ChangeNotifierProvider(create: (_) => NavigationController()),
+          ChangeNotifierProvider(
+            create: (_) => AnnouncementController(repository: announcementRepo),
           ),
         ],
         child: MaterialApp(home: child),
@@ -106,6 +119,102 @@ void main() {
         // Verify '+' (create report) and 'Laporan Saya' do not exist
         expect(find.byIcon(Icons.add), findsNothing);
         expect(find.text('Laporan Saya'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Admin AppDrawer displays correct 4 admin menus and navigates between tabs properly',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1200, 1600);
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        await tester.pumpWidget(
+          createTestApp(child: const AdminNavigationScreen(), user: testAdmin),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Open drawer using DrawerMenuButton on FeedScreen
+        final menuBtn = find.byType(DrawerMenuButton);
+        expect(menuBtn, findsOneWidget);
+        await tester.tap(menuBtn);
+        await tester.pumpAndSettle();
+
+        // 2. Verify drawer content for admin
+        expect(find.byType(AppDrawer), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AppDrawer),
+            matching: find.text('ADMIN'),
+          ),
+          findsWidgets,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppDrawer),
+            matching: find.text('Panel Laporan'),
+          ),
+          findsOneWidget,
+        );
+        // Notifikasi and Laporan Saya should NOT be present in admin drawer
+        expect(
+          find.descendant(
+            of: find.byType(AppDrawer),
+            matching: find.text('Notifikasi'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppDrawer),
+            matching: find.text('Laporan Saya'),
+          ),
+          findsNothing,
+        );
+
+        // 3. Tap 'Panel Laporan' in drawer
+        final panelDrawerItem = find.descendant(
+          of: find.byType(AppDrawer),
+          matching: find.text('Panel Laporan'),
+        );
+        await tester.tap(panelDrawerItem);
+        await tester.pumpAndSettle();
+
+        // Drawer is closed and AdminDashboardScreen is displayed
+        expect(find.byType(AdminDashboardScreen), findsOneWidget);
+
+        // 4. Open drawer again from AdminDashboardScreen (which now has DrawerMenuButton)
+        final menuBtnOnDashboard = find.byType(DrawerMenuButton);
+        expect(menuBtnOnDashboard, findsOneWidget);
+        await tester.tap(menuBtnOnDashboard);
+        await tester.pumpAndSettle();
+
+        // 5. Tap 'Pengumuman' in drawer
+        final announcementsDrawerItem = find.descendant(
+          of: find.byType(AppDrawer),
+          matching: find.text('Pengumuman'),
+        );
+        await tester.tap(announcementsDrawerItem);
+        await tester.pumpAndSettle();
+
+        // Tab changes to AdminAnnouncementsScreen
+        expect(find.byType(AdminAnnouncementsScreen), findsOneWidget);
+
+        // 6. Open drawer again from AdminAnnouncementsScreen
+        final menuBtnOnAnnouncements = find.byType(DrawerMenuButton);
+        expect(menuBtnOnAnnouncements, findsOneWidget);
+        await tester.tap(menuBtnOnAnnouncements);
+        await tester.pumpAndSettle();
+
+        // 7. Tap 'Profil' in drawer
+        final profileDrawerItem = find.descendant(
+          of: find.byType(AppDrawer),
+          matching: find.text('Profil'),
+        );
+        await tester.tap(profileDrawerItem);
+        await tester.pumpAndSettle();
+
+        // Tab changes to ProfileScreen
+        expect(find.byType(ProfileScreen), findsOneWidget);
       },
     );
 
@@ -330,6 +439,316 @@ void main() {
           announcements.any((a) => a.title == 'Pemberitahuan Perbaikan Jalan'),
           isTrue,
         );
+
+        final created = announcements.firstWhere(
+          (a) => a.title == 'Pemberitahuan Perbaikan Jalan',
+        );
+
+        // 3. Update announcement
+        final updateSuccess = await controller.updateAnnouncement(
+          id: created.id,
+          title: 'Judul Diperbarui Admin',
+          content: 'Isi pengumuman telah diperbarui oleh admin yang bertugas.',
+          category: 'Darurat',
+        );
+        expect(updateSuccess, isTrue);
+        final updated = controller.announcements.firstWhere(
+          (a) => a.id == created.id,
+        );
+        expect(updated.title, 'Judul Diperbarui Admin');
+        expect(updated.category, 'Darurat');
+
+        // 4. Delete announcement
+        final deleteSuccess = await controller.deleteAnnouncement(created.id);
+        expect(deleteSuccess, isTrue);
+        expect(
+          controller.announcements.any((a) => a.id == created.id),
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      'Admin does NOT receive badge icon on DrawerMenuButton or AppDrawer when there are new announcements',
+      (WidgetTester tester) async {
+        announcementRepo.setAnnouncementsForTesting([
+          AnnouncementModel(
+            id: 'ann-1',
+            title: 'Pengumuman Baru Warga',
+            content: 'Informasi pengumuman penting untuk seluruh warga.',
+            category: 'Umum',
+            authorId: 'admin-001',
+            authorName: 'Petugas Admin',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ]);
+
+        expect(announcementRepo.unreadCount, 1);
+
+        // 1. Test as Admin
+        await tester.pumpWidget(
+          createTestApp(child: const AdminNavigationScreen(), user: testAdmin),
+        );
+        await tester.pumpAndSettle();
+
+        // DrawerMenuButton should NOT show badge label for admin
+        final adminMenuBtn = tester.widget<DrawerMenuButton>(
+          find.byType(DrawerMenuButton).first,
+        );
+        final adminBadgeFinder = find.descendant(
+          of: find.byWidget(adminMenuBtn),
+          matching: find.byType(Badge),
+        );
+        final adminBadge = tester.widget<Badge>(adminBadgeFinder);
+        expect(adminBadge.isLabelVisible, isFalse);
+
+        // Open drawer and check Pengumuman item
+        await tester.tap(find.byWidget(adminMenuBtn));
+        await tester.pumpAndSettle();
+
+        // Admin announcement item in drawer has NO badge count
+        expect(
+          find.descendant(of: find.byType(AppDrawer), matching: find.text('1')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'AdminAnnouncementsScreen allows admin to edit and delete announcement',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1200, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        announcementRepo.setAnnouncementsForTesting([
+          AnnouncementModel(
+            id: 'ann-edit-1',
+            title: 'Pengumuman Awal',
+            content: 'Isi pengumuman awal yang akan diedit oleh admin.',
+            category: 'Umum',
+            authorId: 'admin-001',
+            authorName: 'Petugas Admin',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ]);
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: const AdminAnnouncementsScreen(isEmbedded: true),
+            user: testAdmin,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Pengumuman Awal'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text('Pengumuman Awal'), findsOneWidget);
+
+        // 1. Open popup menu
+        final popupMenu = find.byTooltip('Opsi Pengumuman');
+        expect(popupMenu, findsOneWidget);
+        await tester.tap(popupMenu);
+        await tester.pumpAndSettle();
+
+        // 2. Tap 'Edit Pengumuman'
+        await tester.tap(find.text('Edit Pengumuman'));
+        await tester.pumpAndSettle();
+
+        // Edit screen appears
+        expect(find.byType(AdminEditAnnouncementScreen), findsOneWidget);
+        final editTitleField = find
+            .descendant(
+              of: find.byType(AdminEditAnnouncementScreen),
+              matching: find.byType(TextFormField),
+            )
+            .first;
+        await tester.enterText(editTitleField, 'Pengumuman Telah Diedit');
+        await tester.pumpAndSettle();
+
+        final saveBtn = find.descendant(
+          of: find.byType(AdminEditAnnouncementScreen),
+          matching: find.text('Simpan Perubahan'),
+        );
+        await tester.tap(saveBtn);
+        await tester.pumpAndSettle();
+
+        // Verify edited title appears
+        expect(find.text('Pengumuman Telah Diedit'), findsOneWidget);
+
+        // 3. Open popup menu again for Delete
+        await tester.tap(find.byTooltip('Opsi Pengumuman'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Hapus Pengumuman'));
+        await tester.pumpAndSettle();
+
+        // Delete dialog appears
+        expect(find.byType(AdminDeleteAnnouncementDialog), findsOneWidget);
+        final confirmDeleteBtn = find.descendant(
+          of: find.byType(AdminDeleteAnnouncementDialog),
+          matching: find.text('Hapus'),
+        );
+        await tester.tap(confirmDeleteBtn);
+        await tester.pumpAndSettle();
+
+        // Announcement is removed, empty state appears
+        expect(find.text('Pengumuman Telah Diedit'), findsNothing);
+        expect(find.text('Belum Ada Pengumuman'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'AdminEditAnnouncementScreen validates minimum characters and displays error',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1200, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final dummyAnnouncement = AnnouncementModel(
+          id: 'ann-dialog-test',
+          title: 'Judul Asli Awal',
+          content: 'Isi pengumuman awal sebelum diedit oleh admin penguji.',
+          category: 'Umum',
+          authorId: testAdmin.id,
+          authorName: testAdmin.fullName,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final controller = AdminAnnouncementController(
+          repository: announcementRepo,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AdminEditAnnouncementScreen(
+              announcement: dummyAnnouncement,
+              controller: controller,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Verify initial fields populated
+        expect(find.text('Judul Asli Awal'), findsOneWidget);
+        expect(
+          find.text('Isi pengumuman awal sebelum diedit oleh admin penguji.'),
+          findsOneWidget,
+        );
+
+        // 2. Clear title and content to test validation
+        final textFields = find.byType(TextFormField);
+        final titleField = textFields.at(0);
+        final contentField = textFields.at(1);
+
+        await tester.enterText(titleField, 'abc');
+        await tester.enterText(contentField, 'pendek');
+        await tester.pumpAndSettle();
+
+        final saveBtn = find.text('Simpan Perubahan');
+        await tester.ensureVisible(saveBtn);
+        await tester.tap(saveBtn);
+        await tester.pumpAndSettle();
+
+        // Expect validation errors
+        expect(find.text('Judul minimal 5 karakter'), findsOneWidget);
+        expect(find.text('Isi pengumuman minimal 10 karakter'), findsOneWidget);
+
+        // 3. Select different category chip
+        await tester.tap(find.widgetWithText(ChoiceChip, 'Darurat'));
+        await tester.pumpAndSettle();
+
+        // 4. Fill valid data and save
+        await tester.enterText(titleField, 'Judul Baru Valid');
+        await tester.enterText(
+          contentField,
+          'Isi pengumuman baru yang sangat lengkap dan valid.',
+        );
+        await tester.pumpAndSettle();
+
+        // Set announcements in repo for test
+        announcementRepo.setAnnouncementsForTesting([dummyAnnouncement]);
+
+        await tester.ensureVisible(saveBtn);
+        await tester.tap(saveBtn);
+        await tester.pumpAndSettle();
+
+        final updatedInRepo = announcementRepo.cachedAnnouncements.firstWhere(
+          (a) => a.id == dummyAnnouncement.id,
+        );
+        expect(updatedInRepo.title, 'Judul Baru Valid');
+        expect(updatedInRepo.category, 'Darurat');
+      },
+    );
+
+    testWidgets(
+      'AdminAnnouncementsScreen FAB navigates to AdminCreateAnnouncementScreen and publishes announcement',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1200, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: const AdminAnnouncementsScreen(isEmbedded: true),
+            user: testAdmin,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Verify FAB is present and tap it
+        final fab = find.byKey(const Key('admin_add_announcement_fab'));
+        expect(fab, findsOneWidget);
+        await tester.tap(fab);
+        await tester.pumpAndSettle();
+
+        // 2. AdminCreateAnnouncementScreen is opened
+        expect(find.byType(AdminCreateAnnouncementScreen), findsOneWidget);
+        expect(find.text('Tambah Pengumuman'), findsWidgets);
+
+        // 3. Fill form
+        final textFields = find.descendant(
+          of: find.byType(AdminCreateAnnouncementScreen),
+          matching: find.byType(TextFormField),
+        );
+        final titleField = textFields.at(0);
+        final contentField = textFields.at(1);
+
+        await tester.enterText(titleField, 'Pemberitahuan Terbit FAB');
+        await tester.enterText(
+          contentField,
+          'Isi pengumuman lengkap yang diterbitkan lewat form layar penuh.',
+        );
+        await tester.pumpAndSettle();
+
+        // 4. Select category
+        await tester.tap(find.widgetWithText(ChoiceChip, 'Pemeliharaan'));
+        await tester.pumpAndSettle();
+
+        // 5. Tap Terbitkan Pengumuman
+        final publishBtn = find.text('Terbitkan Pengumuman');
+        expect(publishBtn, findsOneWidget);
+        await tester.tap(publishBtn);
+        await tester.pumpAndSettle();
+
+        // 6. Pop back to AdminAnnouncementsScreen and verify list updated
+        expect(find.byType(AdminCreateAnnouncementScreen), findsNothing);
+        expect(find.text('Pemberitahuan Terbit FAB'), findsOneWidget);
       },
     );
 

@@ -191,6 +191,42 @@ class MediaService {
     return results;
   }
 
+  /// Uploads an announcement photo to Supabase Storage bucket 'report-attachments'.
+  /// Returns the public accessible URL.
+  Future<String> uploadAnnouncementPhoto({
+    required String authorId,
+    required XFile file,
+  }) async {
+    final client = SupabaseService.instance.client;
+    if (client == null) {
+      return file.path;
+    }
+
+    try {
+      final bytes = await _readFileBytesInIsolate(file);
+      final rawExt = file.name.split('.').last.toLowerCase();
+      final ext = (rawExt == 'png' || rawExt == 'webp') ? rawExt : 'jpeg';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = 'announcements/$authorId/$timestamp.$ext';
+
+      await client.storage
+          .from('report-attachments')
+          .uploadBinary(
+            filePath,
+            bytes,
+            fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+          );
+
+      final publicUrl = client.storage
+          .from('report-attachments')
+          .getPublicUrl(filePath);
+      return publicUrl;
+    } catch (e) {
+      debugPrint('Catatan upload foto pengumuman Supabase: $e');
+      return file.path;
+    }
+  }
+
   /// Uploads an avatar image to Supabase Storage bucket 'avatars' (fallback 'profiles').
   /// Safe path format per user: 'avatars/$userId/avatar_$timestamp.$ext'
   Future<String> uploadAvatar({
