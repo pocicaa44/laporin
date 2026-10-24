@@ -74,6 +74,7 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
 
             // Status Options
             ...[
+              HandlingStatus.newReport,
               HandlingStatus.accepted,
               HandlingStatus.inProgress,
               HandlingStatus.rejected,

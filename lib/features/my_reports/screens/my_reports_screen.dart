@@ -196,7 +196,7 @@ class _MyReportItem extends StatelessWidget {
                 children: [
                   PublicationStateBadge(state: report.publicationState),
                   Text(
-                    report.createdAt.toRelativeTime(),
+                    report.createdAt.toReportTimeLabel(),
                     style: AppTextStyles.caption,
                   ),
                 ],

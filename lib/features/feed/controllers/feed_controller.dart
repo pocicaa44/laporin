@@ -47,6 +47,14 @@ class FeedController extends ChangeNotifier {
   final Set<String> _votingReportIds = <String>{};
   bool isVoting(String reportId) => _votingReportIds.contains(reportId);
 
+  bool isReportViewedByAdmin(String reportId) =>
+      reportRepository.isReportViewedByAdmin(reportId);
+
+  void markReportAsViewedByAdmin(String reportId) {
+    reportRepository.markReportAsViewedByAdmin(reportId);
+    notifyListeners();
+  }
+
   Timer? _searchDebounceTimer;
   bool _isDisposed = false;
 

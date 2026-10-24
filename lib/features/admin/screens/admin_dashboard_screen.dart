@@ -3,32 +3,52 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
+import '../../../core/widgets/access_denied_screen.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
+import '../../report_detail/widgets/delete_report_dialog.dart';
 import '../controllers/admin_report_controller.dart';
 import 'admin_resolve_sheet.dart';
 import 'admin_status_update_sheet.dart';
 
 /// Admin Dashboard & Moderation portal per PRD.md Section 4.3 & DESIGN.md Section 6
 class AdminDashboardScreen extends StatelessWidget {
-  const AdminDashboardScreen({super.key});
+  const AdminDashboardScreen({super.key, this.isEmbedded = false});
+
+  final bool isEmbedded;
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthController>();
+
+    // Route guard: hanya akun admin yang berhak mengakses Panel
+    if (!auth.isAdmin) {
+      return AccessDeniedScreen(
+        title: 'Akses Khusus Petugas',
+        message: 'Panel Laporan hanya dapat diakses oleh akun dengan peran Petugas / Admin.',
+        buttonText: 'Kembali ke Beranda',
+        onButtonPressed: () => Navigator.of(context).pop(),
+      );
+    }
+
     return ChangeNotifierProvider(
       create: (context) => AdminReportController(
         reportRepository: context.read<ReportRepository>(),
       ),
-      child: const _AdminDashboardView(),
+      child: _AdminDashboardView(isEmbedded: isEmbedded),
     );
   }
 }
 
 class _AdminDashboardView extends StatelessWidget {
-  const _AdminDashboardView();
+  const _AdminDashboardView({required this.isEmbedded});
+
+  final bool isEmbedded;
 
   @override
   Widget build(BuildContext context) {
@@ -54,10 +74,12 @@ class _AdminDashboardView extends StatelessWidget {
           ),
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Panel Petugas / Admin'),
+              automaticallyImplyLeading: !isEmbedded,
+              title: const Text('Panel Laporan'),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded),
+                  tooltip: 'Segarkan Data',
                   onPressed: () => controller.fetchReports(),
                 ),
               ],
@@ -154,6 +176,31 @@ class _AdminDashboardView extends StatelessWidget {
                           ...controller.reports.map(
                             (report) => _AdminReportCard(
                               report: report,
+                              onDelete: () async {
+                                final auth = context.read<AuthController>();
+                                final adminId = auth.currentUser?.id ?? 'admin';
+                                final deleted = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => DeleteReportDialog(
+                                    reportNumber: report.reportNumber,
+                                    onConfirmDelete: () =>
+                                        controller.deleteReport(
+                                          reportId: report.id,
+                                          adminId: adminId,
+                                        ),
+                                  ),
+                                );
+                                if (deleted == true && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Laporan ${report.reportNumber} berhasil dihapus.',
+                                      ),
+                                      backgroundColor: AppColors.success,
+                                    ),
+                                  );
+                                }
+                              },
                               onUpdateStatus: () async {
                                 final res =
                                     await showModalBottomSheet<
@@ -170,12 +217,27 @@ class _AdminDashboardView extends StatelessWidget {
                                         report: report,
                                       ),
                                     );
-                                if (res != null) {
-                                  controller.updateStatus(
+                                if (res != null && context.mounted) {
+                                  final success = await controller.updateStatus(
                                     reportId: report.id,
                                     newStatus: res['status'] as HandlingStatus,
                                     reason: res['reason'] as String?,
                                   );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          success
+                                              ? 'Status laporan berhasil diperbarui.'
+                                              : (controller.errorMessage ??
+                                                    'Gagal memperbarui status laporan. Coba lagi.'),
+                                        ),
+                                        backgroundColor: success
+                                            ? AppColors.success
+                                            : AppColors.danger,
+                                      ),
+                                    );
+                                  }
                                 }
                               },
                               onResolve: () async {
@@ -193,20 +255,51 @@ class _AdminDashboardView extends StatelessWidget {
                                       builder: (_) =>
                                           AdminResolveSheet(report: report),
                                     );
-                                if (res != null) {
-                                  controller.updateStatus(
+                                if (res != null && context.mounted) {
+                                  final success = await controller.updateStatus(
                                     reportId: report.id,
                                     newStatus: HandlingStatus.completed,
                                     reason: res['notes'] as String?,
                                     proofUrl: res['proofUrl'] as String?,
                                   );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          success
+                                              ? 'Laporan berhasil diselesaikan dengan bukti foto.'
+                                              : (controller.errorMessage ??
+                                                    'Gagal menyelesaikan laporan. Coba lagi.'),
+                                        ),
+                                        backgroundColor: success
+                                            ? AppColors.success
+                                            : AppColors.danger,
+                                      ),
+                                    );
+                                  }
                                 }
                               },
-                              onRestorePublication: () {
-                                controller.restorePublication(
-                                  report.id,
-                                  'Laporan telah ditinjau ulang oleh petugas dan dinyatakan valid.',
-                                );
+                              onRestorePublication: () async {
+                                final success = await controller
+                                    .restorePublication(
+                                      report.id,
+                                      'Laporan telah ditinjau ulang oleh petugas dan dinyatakan valid.',
+                                    );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        success
+                                            ? 'Publikasi laporan berhasil dipulihkan.'
+                                            : (controller.errorMessage ??
+                                                  'Gagal memulihkan publikasi laporan.'),
+                                      ),
+                                      backgroundColor: success
+                                          ? AppColors.success
+                                          : AppColors.danger,
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ),
@@ -300,16 +393,27 @@ class _AdminReportCard extends StatelessWidget {
     required this.onUpdateStatus,
     required this.onResolve,
     required this.onRestorePublication,
+    this.onDelete,
   });
 
   final ReportModel report;
   final VoidCallback onUpdateStatus;
   final VoidCallback onResolve;
   final VoidCallback onRestorePublication;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
     final isHeld = report.publicationState == PublicationState.held;
+    final isFinalized =
+        report.handlingStatus == HandlingStatus.completed ||
+        report.handlingStatus == HandlingStatus.rejected;
+    final controller = context.watch<AdminReportController?>();
+    final isViewed = controller?.isReportViewed(report.id) ?? false;
+    final timeLabel = report.createdAt.toReportTimeLabel(
+      isAdmin: true,
+      isViewedByAdmin: isViewed,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -329,9 +433,40 @@ class _AdminReportCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                report.reportNumber,
-                style: AppTextStyles.label.copyWith(color: AppColors.primary),
+              Row(
+                children: [
+                  Text(
+                    report.reportNumber,
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (timeLabel == 'Baru')
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Baru',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      timeLabel,
+                      style: AppTextStyles.caption.copyWith(fontSize: 11),
+                    ),
+                ],
               ),
               Row(
                 children: [
@@ -363,54 +498,91 @@ class _AdminReportCard extends StatelessWidget {
           const SizedBox(height: 12),
           const Divider(),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.visibility_outlined, size: 16),
-                label: const Text('Detail'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ReportDetailScreen(
-                        reportId: report.id,
-                        initialReport: report,
+          if (isFinalized)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                  label: const Text('Detail'),
+                  onPressed: () async {
+                    controller?.markReportAsViewed(report.id);
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportDetailScreen(
+                          reportId: report.id,
+                          initialReport: report,
+                        ),
                       ),
+                    );
+                    controller?.fetchReports(forceRefresh: true);
+                  },
+                ),
+                if (onDelete != null)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: const Text('Hapus'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: const BorderSide(color: AppColors.danger),
                     ),
-                  );
-                },
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.edit_note_rounded, size: 16),
-                label: const Text('Ubah Status'),
-                onPressed: onUpdateStatus,
-              ),
-              if (report.handlingStatus != HandlingStatus.completed)
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.task_alt, size: 16),
-                  label: const Text('Selesaikan'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    onPressed: onDelete,
                   ),
-                  onPressed: onResolve,
+              ],
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                  label: const Text('Detail'),
+                  onPressed: () async {
+                    controller?.markReportAsViewed(report.id);
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportDetailScreen(
+                          reportId: report.id,
+                          initialReport: report,
+                        ),
+                      ),
+                    );
+                    controller?.fetchReports(forceRefresh: true);
+                  },
                 ),
-              if (isHeld)
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.public, size: 16),
-                  label: const Text('Pulihkan Publikasi'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.edit_note_rounded, size: 16),
+                  label: const Text('Ubah Status'),
+                  onPressed: onUpdateStatus,
+                ),
+                if (report.handlingStatus != HandlingStatus.completed)
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.task_alt, size: 16),
+                    label: const Text('Selesaikan'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    onPressed: onResolve,
                   ),
-                  onPressed: onRestorePublication,
-                ),
-            ],
-          ),
+                if (isHeld)
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.public, size: 16),
+                    label: const Text('Pulihkan Publikasi'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    onPressed: onRestorePublication,
+                  ),
+              ],
+            ),
         ],
       ),
     );

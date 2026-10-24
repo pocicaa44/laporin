@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
+import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../data/models/report_model.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Modal bottom sheet for resolving report with mandatory proof per PRD FR-08 & DESIGN 5.9
 class AdminResolveSheet extends StatefulWidget {
-  const AdminResolveSheet({super.key, required this.report});
+  const AdminResolveSheet({
+    super.key,
+    required this.report,
+    this.initialProofUrl,
+  });
 
   final ReportModel report;
+  final String? initialProofUrl;
 
   @override
   State<AdminResolveSheet> createState() => _AdminResolveSheetState();
@@ -18,11 +28,26 @@ class AdminResolveSheet extends StatefulWidget {
 
 class _AdminResolveSheetState extends State<AdminResolveSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _notesController = TextEditingController(
-    text: 'Pekerjaan perbaikan telah selesai dilaksanakan oleh tim dinas.',
-  );
-  final String _proofUrl =
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800';
+  late final TextEditingController _notesController;
+
+  XFile? _selectedImage;
+  String? _proofUrl;
+  String? _proofError;
+  bool _isUploading = false;
+
+  static const List<String> _resolutionTemplates = [
+    'Pekerjaan perbaikan telah selesai',
+    'Permasalahan telah berhasil ditangani',
+    'Keluhan telah ditindaklanjuti dan diselesaikan',
+    'Tindak lanjut atas laporan telah selesai dilakukan',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _proofUrl = widget.initialProofUrl;
+    _notesController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -30,8 +55,142 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final file = await MediaService.instance.pickImage(source);
+      if (file != null && mounted) {
+        setState(() {
+          _selectedImage = file;
+          _proofError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showImageSourcePicker(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Pilih Sumber Foto Bukti',
+                style: AppTextStyles.sectionTitle,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                title: const Text('Ambil Foto dari Kamera'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Pilih dari Galeri Perangkat'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source != null) {
+      await _pickImage(source);
+    }
+  }
+
+  void _applyTemplate(String template) {
+    setState(() {
+      _notesController.text = template;
+      _notesController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _notesController.text.length),
+      );
+    });
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _proofError = null;
+    });
+
+    final hasProof =
+        _selectedImage != null || (_proofUrl != null && _proofUrl!.isNotEmpty);
+    if (!hasProof) {
+      setState(() {
+        _proofError = 'Foto bukti penyelesaian wajib dilampirkan.';
+      });
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      String finalProofUrl = _proofUrl ?? '';
+
+      if (_selectedImage != null) {
+        String authorId = widget.report.authorId;
+        try {
+          final auth = Provider.of<AuthController>(context, listen: false);
+          if (auth.currentUser?.id != null) {
+            authorId = auth.currentUser!.id;
+          }
+        } catch (_) {}
+
+        finalProofUrl = await MediaService.instance.uploadPhoto(
+          authorId: authorId,
+          file: _selectedImage!,
+          index: 0,
+        );
+      }
+
+      if (!mounted) return;
+
+      Navigator.pop(context, {
+        'proofUrl': finalProofUrl,
+        'notes': _notesController.text.trim(),
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengunggah foto bukti: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasProof =
+        _selectedImage != null || (_proofUrl != null && _proofUrl!.isNotEmpty);
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -39,101 +198,313 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
         top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Selesaikan Laporan',
-                  style: AppTextStyles.pageTitle,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${widget.report.reportNumber} - ${widget.report.title}',
-              style: AppTextStyles.bodySecondary,
-            ),
-            const SizedBox(height: 16),
-
-            // Mandatory Proof Image
-            const Text(
-              'Foto Bukti Penyelesaian * (Wajib)',
-              style: AppTextStyles.label,
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.network(_proofUrl, fit: BoxFit.cover),
+                  const Text(
+                    'Selesaikan Laporan',
+                    style: AppTextStyles.pageTitle,
                   ),
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xBF000000),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 14,
-                            color: AppColors.success,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Foto Terverifikasi',
-                            style: TextStyle(color: Colors.white, fontSize: 11),
-                          ),
-                        ],
-                      ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${widget.report.reportNumber} - ${widget.report.title}',
+                style: AppTextStyles.bodySecondary,
+              ),
+              const SizedBox(height: 16),
+
+              // Mandatory Proof Image Header
+              Row(
+                children: [
+                  const Text(
+                    'Foto Bukti Penyelesaian',
+                    style: AppTextStyles.label,
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    '* (Wajib)',
+                    style: TextStyle(
+                      color: AppColors.danger,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-            TextFormField(
-              controller: _notesController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Catatan Penanganan *',
-                hintText: 'Uraikan hasil pekerjaan penyelesaian...',
+              // Proof Image Picker / Preview
+              if (!hasProof)
+                InkWell(
+                  key: const Key('admin_proof_picker_button'),
+                  onTap: () => _showImageSourcePicker(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 24,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _proofError != null
+                          ? const Color(0xFFFDECEE)
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _proofError != null
+                            ? AppColors.danger
+                            : AppColors.border,
+                        width: _proofError != null ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_a_photo_outlined,
+                          size: 36,
+                          color: _proofError != null
+                              ? AppColors.danger
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Pilih / Ambil Foto Bukti Penyelesaian',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _proofError != null
+                                ? AppColors.danger
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Wajib menyertakan foto hasil pekerjaan selesai (Kamera/Galeri)',
+                          style: AppTextStyles.caption.copyWith(
+                            color: _proofError != null
+                                ? AppColors.danger
+                                : AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: AppImage(
+                          imageSource: _selectedImage?.path ?? _proofUrl ?? '',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Material(
+                              color: Colors.black54,
+                              shape: const CircleBorder(),
+                              child: IconButton(
+                                key: const Key('admin_proof_replace_button'),
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                tooltip: 'Ganti Foto',
+                                onPressed: () =>
+                                    _showImageSourcePicker(context),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Material(
+                              color: Colors.black54,
+                              shape: const CircleBorder(),
+                              child: IconButton(
+                                key: const Key('admin_proof_delete_button'),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                tooltip: 'Hapus Foto',
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedImage = null;
+                                    _proofUrl = null;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xBF000000),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 14,
+                                color: AppColors.success,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Bukti Foto Terlampir',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              if (_proofError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _proofError!,
+                  key: const Key('admin_proof_error_text'),
+                  style: const TextStyle(
+                    color: AppColors.danger,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              // Template Catatan Penyelesaian
+              Row(
+                children: [
+                  const Icon(Icons.bolt, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Pilih Template Catatan:',
+                    style: AppTextStyles.label.copyWith(fontSize: 13),
+                  ),
+                ],
               ),
-              validator: (v) => AppValidators.validateRequired(v, 'Catatan'),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _resolutionTemplates.map((template) {
+                  final isSelected = _notesController.text.trim() == template;
+                  return InkWell(
+                    key: Key('template_chip_$template'),
+                    onTap: () => _applyTemplate(template),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isSelected
+                                ? Icons.check
+                                : Icons.format_quote_rounded,
+                            size: 14,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              template,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
 
-            AppButton(
-              text: 'Konfirmasi Selesai',
-              onPressed: () {
-                if (!_formKey.currentState!.validate()) return;
-                Navigator.pop(context, {
-                  'proofUrl': _proofUrl,
-                  'notes': _notesController.text,
-                });
-              },
-            ),
-          ],
+              // Message Box Catatan Penanganan
+              TextFormField(
+                key: const Key('admin_resolve_notes_field'),
+                controller: _notesController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Catatan Penanganan *',
+                  hintText: 'Uraikan hasil pekerjaan penyelesaian atau pilih template di atas...',
+                  alignLabelWithHint: true,
+                ),
+                validator: (v) =>
+                    AppValidators.validateRequired(v, 'Catatan penanganan'),
+              ),
+              const SizedBox(height: 24),
+
+              AppButton(
+                key: const Key('admin_confirm_resolve_button'),
+                text: 'Konfirmasi Selesai',
+                isLoading: _isUploading,
+                onPressed: _isUploading ? null : _submit,
+              ),
+            ],
+          ),
         ),
       ),
     );

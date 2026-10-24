@@ -83,6 +83,73 @@ void main() {
     },
   );
 
+  testWidgets(
+    'ReportDetailScreen displays completion notes and resolution card when report is completed',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final completedReport = ReportModel(
+        id: 'rep-completed-1',
+        reportNumber: 'LPR-2026-0888',
+        authorId: 'user-1',
+        authorName: 'Budi Santoso',
+        areaId: 'area-jateng',
+        areaName: 'Kota Semarang',
+        title: 'Perbaikan Saluran Air Pasar',
+        description: 'Saluran air meluap ke jalan.',
+        category: 'Infrastruktur',
+        latitude: -6.9924,
+        longitude: 110.4225,
+        locationAddress: 'Jl. Pemuda, Semarang',
+        handlingStatus: HandlingStatus.completed,
+        publicationState: PublicationState.published,
+        createdAt: DateTime(2026, 10, 22, 10, 0),
+        updatedAt: DateTime(2026, 10, 22, 14, 0),
+        completionNotes: 'Pekerjaan perbaikan telah selesai',
+        completionProofUrl: 'https://images.unsplash.com/completion_proof.jpg',
+      );
+
+      final authRepository = AuthRepository();
+      final reportRepository = ReportRepository();
+      final commentRepository = CommentRepository();
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            Provider.value(value: authRepository),
+            Provider.value(value: reportRepository),
+            Provider.value(value: commentRepository),
+            ChangeNotifierProvider(
+              create: (_) => AuthController(authRepository: authRepository),
+            ),
+          ],
+          child: MaterialApp(
+            home: ReportDetailScreen(
+              reportId: completedReport.id,
+              initialReport: completedReport,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify completion resolution card and notes are rendered
+      expect(
+        find.byKey(const Key('completion_resolution_card')),
+        findsOneWidget,
+      );
+      expect(find.text('Penyelesaian Pekerjaan'), findsOneWidget);
+      expect(find.text('Catatan Penyelesaian:'), findsOneWidget);
+      expect(find.text('Pekerjaan perbaikan telah selesai'), findsWidgets);
+    },
+  );
+
   group('CommentRepository & ReportDetailController Tests', () {
     test('CommentRepository adds and retrieves comments for report', () async {
       final repo = CommentRepository();

@@ -55,5 +55,86 @@ void main() {
       final weekAgo = now.subtract(const Duration(days: 10));
       expect(weekAgo.toRelativeTime(), contains('20'));
     });
+
+    test('toReportTimeLabel handles user < 1 hour as "Baru saja" and >= 1 hour as relative time', () {
+      final now = DateTime.now();
+
+      final twentySecsAgo = now.subtract(const Duration(seconds: 20));
+      expect(
+        twentySecsAgo.toReportTimeLabel(isAdmin: false),
+        equals('Baru saja'),
+      );
+
+      final thirtyMinsAgo = now.subtract(const Duration(minutes: 30));
+      expect(
+        thirtyMinsAgo.toReportTimeLabel(isAdmin: false),
+        equals('Baru saja'),
+      );
+
+      final twoHoursAgo = now.subtract(const Duration(hours: 2));
+      expect(
+        twoHoursAgo.toReportTimeLabel(isAdmin: false),
+        equals('2 jam lalu'),
+      );
+
+      final threeDaysAgo = now.subtract(const Duration(days: 3));
+      expect(
+        threeDaysAgo.toReportTimeLabel(isAdmin: false),
+        equals('3 hari lalu'),
+      );
+    });
+
+    test(
+      'toReportTimeLabel handles admin as "Baru" until detail is opened',
+      () {
+        final now = DateTime.now();
+
+        final tenMinsAgo = now.subtract(const Duration(minutes: 10));
+
+        // Admin has not viewed detail yet -> shows 'Baru'
+        expect(
+          tenMinsAgo.toReportTimeLabel(isAdmin: true, isViewedByAdmin: false),
+          equals('Baru'),
+        );
+
+        // Admin opens detail -> 'Baru' disappears, shows relative time
+        expect(
+          tenMinsAgo.toReportTimeLabel(isAdmin: true, isViewedByAdmin: true),
+          equals('10 menit lalu'),
+        );
+
+        final twentySecsAgo = now.subtract(const Duration(seconds: 20));
+        // Admin opens detail for a fresh report -> shows 'Baru saja' instead of stuck '1 menit lalu'
+        expect(
+          twentySecsAgo.toReportTimeLabel(isAdmin: true, isViewedByAdmin: true),
+          equals('Baru saja'),
+        );
+
+        // Future dates (due to server clock drift / timezone mismatch) are safely clamped to 'Baru saja'
+        final futureDate = now.add(const Duration(minutes: 5));
+        expect(
+          futureDate.toReportTimeLabel(isAdmin: true, isViewedByAdmin: true),
+          equals('Baru saja'),
+        );
+        expect(
+          futureDate.toReportTimeLabel(isAdmin: true, isViewedByAdmin: false),
+          equals('Baru'),
+        );
+        expect(
+          futureDate.toReportTimeLabel(isAdmin: false),
+          equals('Baru saja'),
+        );
+
+        final threeHoursAgo = now.subtract(const Duration(hours: 3));
+        // For >= 1 hour, 'Baru' is not shown even if not viewed
+        expect(
+          threeHoursAgo.toReportTimeLabel(
+            isAdmin: true,
+            isViewedByAdmin: false,
+          ),
+          equals('3 jam lalu'),
+        );
+      },
+    );
   });
 }

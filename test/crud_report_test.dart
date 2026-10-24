@@ -74,7 +74,7 @@ void main() {
       expect(parsed.deletedAt, equals(now));
 
       final serialized = parsed.toJson();
-      expect(serialized['deleted_at'], equals(now.toIso8601String()));
+      expect(serialized['deleted_at'], equals(now.toUtc().toIso8601String()));
     });
   });
 

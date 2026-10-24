@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -8,6 +9,8 @@ import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/report_model.dart';
+import '../../../data/repositories/report_repository.dart';
+import '../../auth/controllers/auth_controller.dart';
 
 /// Reusable report card widget matching DESIGN.md Section 4.3
 class ReportCard extends StatelessWidget {
@@ -103,9 +106,48 @@ class ReportCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Text(
-                            report.createdAt.toRelativeTime(),
-                            style: AppTextStyles.caption,
+                          Builder(
+                            builder: (context) {
+                              final auth = context.watch<AuthController?>();
+                              final isAdmin = auth?.isAdmin ?? false;
+                              final repo = context.watch<ReportRepository?>();
+                              final isViewed =
+                                  repo?.isReportViewedByAdmin(report.id) ??
+                                  false;
+                              final timeLabel = report.createdAt
+                                  .toReportTimeLabel(
+                                    isAdmin: isAdmin,
+                                    isViewedByAdmin: isViewed,
+                                  );
+
+                              if (timeLabel == 'Baru') {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'Baru',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return Text(
+                                timeLabel,
+                                style: AppTextStyles.caption,
+                              );
+                            },
                           ),
                         ],
                       ),

@@ -72,6 +72,8 @@ class ReportModel {
     this.photoUrls = const [],
     this.completionProofUrl,
     this.completionProofType,
+    this.completionNotes,
+    this.isDiscussionActive = true,
   });
 
   final String id;
@@ -105,6 +107,8 @@ class ReportModel {
   final List<String> photoUrls;
   final String? completionProofUrl;
   final String? completionProofType;
+  final String? completionNotes;
+  final bool isDiscussionActive;
 
   /// Formatted username (e.g. '@budi_santoso') with fallback if username not set
   String get displayAuthorUsername {
@@ -138,6 +142,42 @@ class ReportModel {
       isDeleted ||
       handlingStatus == HandlingStatus.rejected ||
       handlingStatus == HandlingStatus.cancelled;
+
+  /// Aturan interaksi voting:
+  /// Upvote & downvote hanya aktif jika laporan publik, belum dihapus,
+  /// dan status BUKAN completed (selesai) atau rejected (ditolak).
+  bool get isVotingActive =>
+      isPubliclyVisible &&
+      !isDeleted &&
+      handlingStatus != HandlingStatus.completed &&
+      handlingStatus != HandlingStatus.rejected &&
+      handlingStatus != HandlingStatus.cancelled;
+
+  /// Aturan diskusi komentar:
+  /// Komentar baru hanya dapat dikirim jika laporan publik, belum dihapus,
+  /// status bukan rejected/cancelled, dan diskusi dalam keadaan aktif (isDiscussionActive).
+  bool get canAddComment =>
+      isPubliclyVisible &&
+      !isDeleted &&
+      handlingStatus != HandlingStatus.rejected &&
+      handlingStatus != HandlingStatus.cancelled &&
+      isDiscussionActive;
+
+  /// Aturan penghapusan laporan oleh pemilik (author):
+  /// - Status baru / pending review: BISA hapus dengan confirmation dialog.
+  /// - Status ditolak atau selesai: BISA hapus dengan confirmation dialog.
+  /// - Status diterima / dilihat (accepted) atau sedang diproses (in_progress): TIDAK DAPAT dihapus.
+  bool get canAuthorDelete {
+    if (isDeleted) return false;
+    if (handlingStatus == HandlingStatus.accepted ||
+        handlingStatus == HandlingStatus.inProgress) {
+      return false;
+    }
+    return handlingStatus == HandlingStatus.newReport ||
+        handlingStatus == HandlingStatus.rejected ||
+        handlingStatus == HandlingStatus.completed ||
+        publicationState == PublicationState.pendingReview;
+  }
 
   /// Persentase downvote aktif (PRD 4.4 & AGENTS.md 3.3)
   double get downvotePercentage {
@@ -241,6 +281,9 @@ class ReportModel {
     List<String>? photoUrls,
     String? completionProofUrl,
     String? completionProofType,
+    String? completionNotes,
+    bool clearCompletionNotes = false,
+    bool? isDiscussionActive,
   }) {
     return ReportModel(
       id: id ?? this.id,
@@ -276,6 +319,10 @@ class ReportModel {
       photoUrls: photoUrls ?? this.photoUrls,
       completionProofUrl: completionProofUrl ?? this.completionProofUrl,
       completionProofType: completionProofType ?? this.completionProofType,
+      completionNotes: clearCompletionNotes
+          ? null
+          : (completionNotes ?? this.completionNotes),
+      isDiscussionActive: isDiscussionActive ?? this.isDiscussionActive,
     );
   }
 
@@ -299,18 +346,20 @@ class ReportModel {
       'publication_state': publicationState.value,
       'rejection_reason': rejectionReason,
       'moderation_reason': moderationReason,
-      'published_at': publishedAt?.toIso8601String(),
-      'terminal_at': terminalAt?.toIso8601String(),
-      'archive_after': archiveAfter?.toIso8601String(),
-      'deleted_at': deletedAt?.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'published_at': publishedAt?.toUtc().toIso8601String(),
+      'terminal_at': terminalAt?.toUtc().toIso8601String(),
+      'archive_after': archiveAfter?.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'updated_at': updatedAt.toUtc().toIso8601String(),
       'upvotes_count': upvotesCount,
       'downvotes_count': downvotesCount,
       'comments_count': commentsCount,
       'photo_urls': photoUrls,
       'completion_proof_url': completionProofUrl,
       'completion_proof_type': completionProofType,
+      'completion_notes': completionNotes,
+      'is_discussion_active': isDiscussionActive,
     };
   }
 
@@ -335,6 +384,16 @@ class ReportModel {
       }
     }
 
+    final parsedHandlingStatus = HandlingStatus.fromString(
+      json['handling_status'] as String?,
+    );
+
+    final rawDiscussionActive = json['is_discussion_active'];
+    final bool parsedDiscussionActive = rawDiscussionActive != null
+        ? (rawDiscussionActive as bool)
+        : (parsedHandlingStatus != HandlingStatus.completed &&
+              parsedHandlingStatus != HandlingStatus.rejected);
+
     return ReportModel(
       id: json['id'] as String,
       reportNumber: json['report_number'] as String? ?? 'LPR-2026',
@@ -350,31 +409,31 @@ class ReportModel {
       latitude: (json['latitude'] as num?)?.toDouble() ?? -6.2088,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 106.8456,
       locationAddress: json['location_address'] as String? ?? 'Lokasi Terpilih',
-      handlingStatus: HandlingStatus.fromString(
-        json['handling_status'] as String?,
-      ),
+      handlingStatus: parsedHandlingStatus,
       publicationState: PublicationState.fromString(
         json['publication_state'] as String?,
       ),
       rejectionReason: json['rejection_reason'] as String?,
       moderationReason: json['moderation_reason'] as String?,
       publishedAt: json['published_at'] != null
-          ? DateTime.tryParse(json['published_at'])
+          ? DateTime.tryParse(json['published_at'].toString())?.toLocal()
           : null,
       terminalAt: json['terminal_at'] != null
-          ? DateTime.tryParse(json['terminal_at'])
+          ? DateTime.tryParse(json['terminal_at'].toString())?.toLocal()
           : null,
       archiveAfter: json['archive_after'] != null
-          ? DateTime.tryParse(json['archive_after'])
+          ? DateTime.tryParse(json['archive_after'].toString())?.toLocal()
           : null,
       deletedAt: json['deleted_at'] != null
-          ? DateTime.tryParse(json['deleted_at'])
+          ? DateTime.tryParse(json['deleted_at'].toString())?.toLocal()
           : null,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
+          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ??
+                DateTime.now()
           : DateTime.now(),
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at']) ?? DateTime.now()
+          ? DateTime.tryParse(json['updated_at'].toString())?.toLocal() ??
+                DateTime.now()
           : DateTime.now(),
       upvotesCount: (json['upvotes_count'] as num?)?.toInt() ?? 0,
       downvotesCount: (json['downvotes_count'] as num?)?.toInt() ?? 0,
@@ -387,6 +446,8 @@ class ReportModel {
           [],
       completionProofUrl: json['completion_proof_url'] as String?,
       completionProofType: json['completion_proof_type'] as String?,
+      completionNotes: json['completion_notes'] as String?,
+      isDiscussionActive: parsedDiscussionActive,
     );
   }
 }

@@ -22,6 +22,18 @@ class ReportRepository {
   final Set<String> _loadedVoteUserIds = {};
   bool _hasFetchedFromSupabase = false;
 
+  // In-memory record of reports whose details have been opened by an admin
+  final Set<String> _viewedByAdminReportIds = {};
+
+  /// Cek apakah laporan telah dibuka detailnya oleh admin
+  bool isReportViewedByAdmin(String reportId) =>
+      _viewedByAdminReportIds.contains(reportId);
+
+  /// Tandai laporan telah dibuka detailnya oleh admin (sehingga label 'Baru' hilang)
+  void markReportAsViewedByAdmin(String reportId) {
+    _viewedByAdminReportIds.add(reportId);
+  }
+
   Future<void> _fetchFromSupabaseIfAvailable({
     bool force = false,
     String? userId,
@@ -361,7 +373,7 @@ class ReportRepository {
     List<ReportModel> reports,
     String? filterStatus,
   ) {
-    var list = List<ReportModel>.from(reports);
+    var list = reports.where((r) => !r.isDeleted).toList();
 
     if (filterStatus == 'held') {
       list = list
@@ -489,7 +501,24 @@ class ReportRepository {
     required String locationAddress,
     String? areaName,
     List<String> photoUrls = const [],
+    bool isCallerAdmin = false,
   }) async {
+    // Invarian PRD: Admin tidak dapat membuat laporan baru
+    if (isCallerAdmin) {
+      throw Exception('Petugas / Admin tidak diizinkan membuat laporan baru.');
+    }
+
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      final metaRole = client.auth.currentUser!.userMetadata?['role']
+          ?.toString();
+      if (metaRole == 'admin') {
+        throw Exception(
+          'Petugas / Admin tidak diizinkan membuat laporan baru.',
+        );
+      }
+    }
+
     // Validasi aturan bisnis: lokasi wajib di dalam batas Provinsi Jawa Tengah
     if (!BoundaryService.instance.isInsideCentralJava(latitude, longitude)) {
       throw Exception(BoundaryService.outsideAreaErrorMessage);
@@ -499,7 +528,6 @@ class ReportRepository {
 
     // Pastikan nomor laporan unik dan sinkron dengan sequence laporan terakhir di server
     int nextNumber = _reports.length + 1;
-    final client = _service.client;
     if (client != null) {
       try {
         final res = await client
@@ -557,7 +585,9 @@ class ReportRepository {
       while (!inserted && attempts < 3) {
         attempts++;
         try {
-          await client.from('reports').insert(newReport.toJson());
+          final insertData = newReport.toJson()
+            ..removeWhere((key, value) => value == null);
+          await client.from('reports').insert(insertData);
           inserted = true;
         } catch (e) {
           final errorStr = e.toString().toLowerCase();
@@ -590,8 +620,8 @@ class ReportRepository {
 
     final current = _reports[index];
 
-    // Invarian: Vote tidak boleh dilakukan pada laporan non-publik atau terminal
-    if (!current.isPubliclyVisible || current.isTerminal) {
+    // Invarian: Vote hanya aktif jika isVotingActive (bukan completed, rejected, cancelled, atau deleted)
+    if (!current.isVotingActive) {
       throw Exception('Laporan tidak dapat menerima interaksi vote.');
     }
 
@@ -747,11 +777,25 @@ class ReportRepository {
     String? completionProofUrl,
     String? completionProofType,
   }) async {
-    final index = _reports.indexWhere((r) => r.id == reportId);
+    var index = _reports.indexWhere((r) => r.id == reportId);
+    if (index == -1) {
+      final fetched = await getReportById(reportId);
+      if (fetched != null) {
+        index = _reports.indexWhere((r) => r.id == reportId);
+      }
+    }
     if (index == -1) throw Exception('Laporan tidak ditemukan');
 
     final current = _reports[index];
     final now = DateTime.now();
+
+    // Invarian: Laporan yang sudah selesai atau ditolak tidak dapat diubah statusnya lagi
+    if (current.handlingStatus == HandlingStatus.completed ||
+        current.handlingStatus == HandlingStatus.rejected) {
+      throw Exception(
+        'Laporan yang sudah selesai atau ditolak tidak dapat diubah statusnya lagi.',
+      );
+    }
 
     // Invarian: Completed wajib memiliki bukti penyelesaian
     if (newStatus == HandlingStatus.completed &&
@@ -783,20 +827,61 @@ class ReportRepository {
       archiveAfter = now.add(const Duration(hours: 24));
     }
 
+    final autoDisableDiscussion =
+        newStatus == HandlingStatus.completed ||
+        newStatus == HandlingStatus.rejected;
+    final newDiscussionActive = autoDisableDiscussion
+        ? false
+        : current.isDiscussionActive;
+
     final updated = current.copyWith(
       handlingStatus: newStatus,
+      isDiscussionActive: newDiscussionActive,
       rejectionReason: newStatus == HandlingStatus.rejected
           ? reason
           : current.rejectionReason,
       moderationReason: newStatus == HandlingStatus.cancelled
           ? reason
           : current.moderationReason,
+      completionNotes: newStatus == HandlingStatus.completed
+          ? (reason ?? current.completionNotes)
+          : current.completionNotes,
       completionProofUrl: completionProofUrl ?? current.completionProofUrl,
       completionProofType: completionProofType ?? current.completionProofType,
       terminalAt: terminalAt,
       archiveAfter: archiveAfter,
       updatedAt: now,
     );
+
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        final res = await client
+            .from('reports')
+            .update({
+              'handling_status': updated.handlingStatus.value,
+              'is_discussion_active': updated.isDiscussionActive,
+              'rejection_reason': updated.rejectionReason,
+              'moderation_reason': updated.moderationReason,
+              'completion_notes': updated.completionNotes,
+              'completion_proof_url': updated.completionProofUrl,
+              'completion_proof_type': updated.completionProofType,
+              'terminal_at': updated.terminalAt?.toUtc().toIso8601String(),
+              'archive_after': updated.archiveAfter?.toUtc().toIso8601String(),
+              'updated_at': updated.updatedAt.toUtc().toIso8601String(),
+            })
+            .eq('id', reportId)
+            .select();
+        if ((res as List).isEmpty) {
+          throw Exception(
+            'Pembaruan status ditolak oleh server (periksa izin akses admin Anda).',
+          );
+        }
+      } catch (dbError) {
+        debugPrint('Catatan update handling status di Supabase: $dbError');
+        rethrow;
+      }
+    }
 
     _reports[index] = updated;
     return updated;
@@ -808,7 +893,13 @@ class ReportRepository {
     required PublicationState newState,
     required String reason,
   }) async {
-    final index = _reports.indexWhere((r) => r.id == reportId);
+    var index = _reports.indexWhere((r) => r.id == reportId);
+    if (index == -1) {
+      final fetched = await getReportById(reportId);
+      if (fetched != null) {
+        index = _reports.indexWhere((r) => r.id == reportId);
+      }
+    }
     if (index == -1) throw Exception('Laporan tidak ditemukan');
 
     final current = _reports[index];
@@ -822,6 +913,28 @@ class ReportRepository {
           : current.publishedAt,
       updatedAt: now,
     );
+
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        final res = await client
+            .from('reports')
+            .update({
+              'publication_state': updated.publicationState.value,
+              'moderation_reason': updated.moderationReason,
+              'published_at': updated.publishedAt?.toUtc().toIso8601String(),
+              'updated_at': updated.updatedAt.toUtc().toIso8601String(),
+            })
+            .eq('id', reportId)
+            .select();
+        if ((res as List).isEmpty) {
+          throw Exception('Pembaruan publikasi ditolak oleh server.');
+        }
+      } catch (dbError) {
+        debugPrint('Catatan update publication state di Supabase: $dbError');
+        rethrow;
+      }
+    }
 
     _reports[index] = updated;
     return updated;
@@ -914,11 +1027,12 @@ class ReportRepository {
     return updated;
   }
 
-  /// Menghapus laporan secara logis (Soft Delete) oleh pemiliknya (PRD Bagian 9 & Aturan CRUD).
+  /// Menghapus laporan secara logis (Soft Delete) oleh pemiliknya atau admin (PRD Bagian 9 & Aturan CRUD).
   /// Data utama tetap tersimpan untuk integritas data dan audit log, namun tidak lagi tampil di daftar aktif.
   Future<ReportModel> softDeleteReport({
     required String reportId,
     required String currentUserId,
+    bool isCallerAdmin = false,
   }) async {
     var index = _reports.indexWhere((r) => r.id == reportId);
     if (index == -1) {
@@ -931,9 +1045,19 @@ class ReportRepository {
 
     final current = _reports[index];
 
-    // Otorisasi: Hanya pemilik yang berhak menghapus
-    if (current.authorId != currentUserId) {
+    // Otorisasi: Pemilik atau Admin yang berhak menghapus
+    if (!isCallerAdmin && current.authorId != currentUserId) {
       throw Exception('Anda tidak memiliki izin untuk menghapus laporan ini.');
+    }
+
+    // Validasi skema penghapusan oleh pelapor (USER):
+    // - Jika laporan masih baru/pending: BISA hapus dengan confirmation dialog.
+    // - Jika laporan ditolak atau selesai: BISA hapus dengan confirmation dialog.
+    // - TAPI jika laporan berstatus dilihat (diterima) atau diproses: TIDAK DAPAT menghapus.
+    if (!isCallerAdmin && !current.canAuthorDelete) {
+      throw Exception(
+        'Laporan yang berstatus diterima atau sedang diproses tidak dapat dihapus.',
+      );
     }
 
     // Integritas: Mencegah penghapusan berulang
@@ -942,39 +1066,121 @@ class ReportRepository {
     }
 
     final now = DateTime.now();
+    final deleteReason = isCallerAdmin
+        ? 'Dihapus oleh petugas / admin'
+        : 'Dihapus oleh pelapor';
+
+    final finalHandlingStatus =
+        (current.handlingStatus == HandlingStatus.completed ||
+            current.handlingStatus == HandlingStatus.rejected)
+        ? current.handlingStatus
+        : HandlingStatus.cancelled;
+
     final updated = current.copyWith(
       deletedAt: now,
-      handlingStatus: HandlingStatus.cancelled,
-      terminalAt: now,
+      handlingStatus: finalHandlingStatus,
+      terminalAt: current.terminalAt ?? now,
       archiveAfter: now.add(const Duration(hours: 24)),
-      moderationReason: 'Dihapus oleh pelapor',
+      moderationReason: deleteReason,
       updatedAt: now,
     );
 
     final client = _service.client;
     if (client != null && client.auth.currentUser != null) {
       try {
-        await client
+        var query = client
             .from('reports')
             .update({
               'deleted_at': now.toUtc().toIso8601String(),
-              'handling_status': HandlingStatus.cancelled.value,
-              'moderation_reason': 'Dihapus oleh pelapor',
-              'terminal_at': now.toUtc().toIso8601String(),
+              'handling_status': finalHandlingStatus.value,
+              'moderation_reason': deleteReason,
+              'terminal_at': updated.terminalAt?.toUtc().toIso8601String(),
               'archive_after': now
                   .add(const Duration(hours: 24))
                   .toUtc()
                   .toIso8601String(),
               'updated_at': now.toUtc().toIso8601String(),
             })
-            .eq('id', reportId)
-            .eq('author_id', currentUserId);
+            .eq('id', reportId);
+
+        if (!isCallerAdmin) {
+          query = query.eq('author_id', currentUserId);
+        }
+
+        await query;
       } catch (e) {
         throw Exception('Gagal memproses penghapusan laporan di server: $e');
       }
     }
 
     _reports[index] = updated;
+    return updated;
+  }
+
+  /// Toggle status diskusi oleh pemilik laporan atau admin
+  Future<ReportModel> toggleDiscussionActive({
+    required String reportId,
+    required String currentUserId,
+    required bool isDiscussionActive,
+    bool isCallerAdmin = false,
+  }) async {
+    var index = _reports.indexWhere((r) => r.id == reportId);
+    if (index == -1) {
+      final fetched = await getReportById(reportId);
+      if (fetched != null) {
+        index = _reports.indexWhere((r) => r.id == reportId);
+      }
+    }
+    if (index == -1) throw Exception('Laporan tidak ditemukan');
+
+    final current = _reports[index];
+
+    // Otorisasi: Hanya pemilik atau admin yang berhak mengubah status diskusi
+    if (!isCallerAdmin && current.authorId != currentUserId) {
+      throw Exception(
+        'Anda tidak memiliki izin untuk mengubah status diskusi laporan ini.',
+      );
+    }
+
+    if (current.isDeleted) {
+      throw Exception(
+        'Laporan ini telah dihapus dan diskusinya tidak dapat diubah.',
+      );
+    }
+
+    if (current.handlingStatus == HandlingStatus.rejected) {
+      throw Exception('Laporan yang ditolak tidak dapat mengaktifkan diskusi.');
+    }
+
+    final now = DateTime.now();
+    final updated = current.copyWith(
+      isDiscussionActive: isDiscussionActive,
+      updatedAt: now,
+    );
+
+    _reports[index] = updated;
+
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        var query = client
+            .from('reports')
+            .update({
+              'is_discussion_active': isDiscussionActive,
+              'updated_at': now.toUtc().toIso8601String(),
+            })
+            .eq('id', reportId);
+
+        if (!isCallerAdmin) {
+          query = query.eq('author_id', currentUserId);
+        }
+
+        await query;
+      } catch (e) {
+        debugPrint('Warning: gagal menyimpan toggle diskusi ke Supabase: $e');
+      }
+    }
+
     return updated;
   }
 }

@@ -97,11 +97,19 @@ class CreateReportController extends ChangeNotifier {
     String? authorAvatarUrl,
     required String title,
     required String description,
+    bool isCallerAdmin = false,
   }) async {
     if (_isLoading) return null;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
+    if (isCallerAdmin) {
+      _isLoading = false;
+      _errorMessage = 'Petugas / Admin tidak dapat membuat laporan baru.';
+      notifyListeners();
+      return null;
+    }
 
     if (_locationAddress.trim().isEmpty) {
       _isLoading = false;

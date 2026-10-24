@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'core/config/app_config.dart';
 import 'core/theme/app_theme.dart';
+import 'data/repositories/announcement_repository.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/comment_repository.dart';
 import 'data/repositories/notification_repository.dart';
@@ -61,10 +62,16 @@ void main() async {
 }
 
 class LaporinApp extends StatelessWidget {
-  const LaporinApp({super.key, this.authRepository, this.reportRepository});
+  const LaporinApp({
+    super.key,
+    this.authRepository,
+    this.reportRepository,
+    this.announcementRepository,
+  });
 
   final AuthRepository? authRepository;
   final ReportRepository? reportRepository;
+  final AnnouncementRepository? announcementRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +89,9 @@ class LaporinApp extends StatelessWidget {
         Provider(create: (_) => reportRepository ?? ReportRepository()),
         Provider(create: (_) => CommentRepository()),
         Provider(create: (_) => NotificationRepository()),
+        Provider(
+          create: (_) => announcementRepository ?? AnnouncementRepository(),
+        ),
 
         // Global Controllers
         ChangeNotifierProvider(

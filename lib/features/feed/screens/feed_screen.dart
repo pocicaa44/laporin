@@ -223,6 +223,10 @@ class _FeedScreenState extends State<FeedScreen> {
                         return ReportCard(
                           report: report,
                           onTap: () async {
+                            final auth = context.read<AuthController>();
+                            if (auth.isAdmin) {
+                              controller.markReportAsViewedByAdmin(report.id);
+                            }
                             final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -232,6 +236,9 @@ class _FeedScreenState extends State<FeedScreen> {
                                 ),
                               ),
                             );
+                            if (auth.isAdmin) {
+                              controller.markReportAsViewedByAdmin(report.id);
+                            }
                             if (result is ReportModel) {
                               controller.syncReport(result);
                             } else if (result == true) {

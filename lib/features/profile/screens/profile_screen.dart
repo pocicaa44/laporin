@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/user_avatar.dart';
-import '../../admin/screens/admin_dashboard_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/screens/app_gate.dart';
 import '../../auth/screens/set_username_screen.dart';
@@ -201,30 +200,15 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Menu Options
-            _ProfileMenuItem(
-              icon: FontAwesomeIcons.clipboardList,
-              title: 'Laporan Saya',
-              subtitle: 'Pantau laporan yang pernah Anda buat',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MyReportsScreen()),
-                );
-              },
-            ),
-
-            if (auth.isAdmin)
+            if (!auth.isAdmin)
               _ProfileMenuItem(
-                icon: FontAwesomeIcons.userShield,
-                title: 'Panel Petugas / Admin',
-                subtitle: 'Kelola review, moderasi, dan status penanganan',
-                badge: 'Admin',
+                icon: FontAwesomeIcons.clipboardList,
+                title: 'Laporan Saya',
+                subtitle: 'Pantau laporan yang pernah Anda buat',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const AdminDashboardScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const MyReportsScreen()),
                   );
                 },
               ),
@@ -283,7 +267,6 @@ class _ProfileMenuItem extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
-    this.badge,
     this.iconColor = AppColors.primary,
     this.textColor = AppColors.textPrimary,
     required this.onTap,
@@ -292,7 +275,6 @@ class _ProfileMenuItem extends StatelessWidget {
   final FaIconData icon;
   final String title;
   final String? subtitle;
-  final String? badge;
   final Color iconColor;
   final Color textColor;
   final VoidCallback onTap;
@@ -312,34 +294,9 @@ class _ProfileMenuItem extends StatelessWidget {
         child: ListTile(
           onTap: onTap,
           leading: FaIcon(icon, color: iconColor, size: 18),
-          title: Row(
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.label.copyWith(color: textColor),
-              ),
-              if (badge != null) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    badge!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+          title: Text(
+            title,
+            style: AppTextStyles.label.copyWith(color: textColor),
           ),
           subtitle: subtitle != null
               ? Text(subtitle!, style: AppTextStyles.caption)

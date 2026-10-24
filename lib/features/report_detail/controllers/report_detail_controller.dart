@@ -38,6 +38,9 @@ class ReportDetailController extends ChangeNotifier {
   bool _isVoting = false;
   bool get isVoting => _isVoting;
 
+  bool _isTogglingDiscussion = false;
+  bool get isTogglingDiscussion => _isTogglingDiscussion;
+
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -99,8 +102,8 @@ class ReportDetailController extends ChangeNotifier {
     // 1. In-flight lock & validasi laporan
     if (currentReport == null || _isVoting) return;
 
-    // Invarian Produk: Laporan harus publik dan non-terminal
-    if (!currentReport.isPubliclyVisible || currentReport.isTerminal) return;
+    // Invarian Produk: Vote hanya diizinkan jika isVotingActive
+    if (!currentReport.isVotingActive) return;
 
     // 2. Optimistic UI Update: Update seketika tanpa menunggu respon jaringan
     final previousReport = currentReport;
@@ -141,6 +144,13 @@ class ReportDetailController extends ChangeNotifier {
   }) async {
     if (body.trim().isEmpty || _isSendingComment) return false;
 
+    // Invarian Produk: Komentar hanya jika canAddComment (diskusi aktif & non-terminal)
+    if (_report?.canAddComment != true) {
+      _errorMessage = 'Diskusi telah dinonaktifkan untuk laporan ini.';
+      notifyListeners();
+      return false;
+    }
+
     _isSendingComment = true;
     notifyListeners();
 
@@ -180,11 +190,15 @@ class ReportDetailController extends ChangeNotifier {
   }
 
   /// Menghapus laporan secara logis (Soft Delete)
-  Future<bool> softDeleteReport(String userId) async {
+  Future<bool> softDeleteReport(
+    String userId, {
+    bool isCallerAdmin = false,
+  }) async {
     try {
       final updated = await reportRepository.softDeleteReport(
         reportId: reportId,
         currentUserId: userId,
+        isCallerAdmin: isCallerAdmin,
       );
       _report = updated;
       notifyListeners();
@@ -193,6 +207,40 @@ class ReportDetailController extends ChangeNotifier {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       rethrow;
+    }
+  }
+
+  /// Toggle status diskusi (aktif / nonaktif) oleh pemilik laporan atau admin
+  Future<bool> toggleDiscussion({
+    required String userId,
+    bool isCallerAdmin = false,
+  }) async {
+    if (_report == null || _isTogglingDiscussion) return false;
+
+    final newStatus = !_report!.isDiscussionActive;
+    _isTogglingDiscussion = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updated = await reportRepository.toggleDiscussionActive(
+        reportId: reportId,
+        currentUserId: userId,
+        isDiscussionActive: newStatus,
+        isCallerAdmin: isCallerAdmin,
+      );
+      if (_isDisposed) return false;
+      _report = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if (_isDisposed) return false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isTogglingDiscussion = false;
+      notifyListeners();
     }
   }
 }

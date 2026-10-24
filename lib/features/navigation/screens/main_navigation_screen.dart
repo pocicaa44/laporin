@@ -3,6 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../admin/screens/admin_navigation_screen.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../../create_report/screens/create_report_screen.dart';
 import '../../feed/controllers/feed_controller.dart';
 import '../../feed/screens/feed_screen.dart';
@@ -54,6 +56,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthController>();
+    if (auth.isAdmin) {
+      return const AdminNavigationScreen();
+    }
+
     final unreadNotif = context.watch<NotificationController>().unreadCount;
 
     return Container(

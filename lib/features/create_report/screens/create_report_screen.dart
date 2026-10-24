@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_validators.dart';
+import '../../../core/widgets/access_denied_screen.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -18,6 +19,22 @@ class CreateReportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthController>();
+
+    // Route guard: Petugas / Admin tidak dapat membuat laporan
+    if (auth.isAdmin) {
+      return AccessDeniedScreen(
+        title: 'Akses Ditolak',
+        message: 'Petugas / Admin tidak dapat membuat laporan baru. Silakan gunakan Panel untuk memantau, memverifikasi, dan memperbarui status laporan masyarakat.',
+        buttonText: 'Kembali',
+        onButtonPressed: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        },
+      );
+    }
+
     return ChangeNotifierProvider(
       create: (context) => CreateReportController(
         reportRepository: context.read<ReportRepository>(),
@@ -104,6 +121,16 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       return;
     }
 
+    if (auth.isAdmin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Petugas / Admin tidak dapat membuat laporan baru.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
     final report = await controller.submitReport(
       authorId: user.id,
       authorName: user.fullName.isNotEmpty ? user.fullName : 'Warga Laporin',
@@ -111,6 +138,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       authorAvatarUrl: user.avatarUrl,
       title: _titleController.text,
       description: _descriptionController.text,
+      isCallerAdmin: auth.isAdmin,
     );
 
     if (!mounted) return;

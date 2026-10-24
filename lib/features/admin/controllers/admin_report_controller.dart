@@ -50,11 +50,22 @@ class AdminReportController extends ChangeNotifier {
       .where((r) => r.handlingStatus == HandlingStatus.completed)
       .length;
 
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
   final Set<String> _processingReportIds = <String>{};
   bool isProcessing(String reportId) => _processingReportIds.contains(reportId);
 
-  Future<void> fetchReports() async {
-    if (_allReports.isEmpty) {
+  bool isReportViewed(String reportId) =>
+      reportRepository.isReportViewedByAdmin(reportId);
+
+  void markReportAsViewed(String reportId) {
+    reportRepository.markReportAsViewedByAdmin(reportId);
+    notifyListeners();
+  }
+
+  Future<void> fetchReports({bool forceRefresh = false}) async {
+    if (_allReports.isEmpty || forceRefresh) {
       _isLoading = true;
     }
     notifyListeners();
@@ -62,10 +73,14 @@ class AdminReportController extends ChangeNotifier {
     try {
       final list = await reportRepository.getAdminReports(
         filterStatus: _filter == 'all' ? null : _filter,
+        forceRefresh: forceRefresh,
       );
       if (_isDisposed) return;
       _allReports = list;
-    } catch (_) {
+      _errorMessage = null;
+    } catch (e) {
+      if (_isDisposed) return;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       if (!_isDisposed) {
         _isLoading = false;
@@ -87,19 +102,26 @@ class AdminReportController extends ChangeNotifier {
   }) async {
     if (_processingReportIds.contains(reportId)) return false;
     _processingReportIds.add(reportId);
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      await reportRepository.updateHandlingStatus(
+      final updated = await reportRepository.updateHandlingStatus(
         reportId: reportId,
         newStatus: newStatus,
         reason: reason,
         completionProofUrl: proofUrl,
         completionProofType: proofUrl != null ? 'completion_photo' : null,
       );
-      await fetchReports();
+      final idx = _allReports.indexWhere((r) => r.id == reportId);
+      if (idx != -1) {
+        _allReports[idx] = updated;
+      }
+      await fetchReports(forceRefresh: true);
       return true;
-    } catch (_) {
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('AdminReportController updateStatus error: $_errorMessage');
       return false;
     } finally {
       _processingReportIds.remove(reportId);
@@ -110,17 +132,54 @@ class AdminReportController extends ChangeNotifier {
   Future<bool> restorePublication(String reportId, String reason) async {
     if (_processingReportIds.contains(reportId)) return false;
     _processingReportIds.add(reportId);
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      await reportRepository.updatePublicationState(
+      final updated = await reportRepository.updatePublicationState(
         reportId: reportId,
         newState: PublicationState.published,
         reason: reason,
       );
-      await fetchReports();
+      final idx = _allReports.indexWhere((r) => r.id == reportId);
+      if (idx != -1) {
+        _allReports[idx] = updated;
+      }
+      await fetchReports(forceRefresh: true);
       return true;
-    } catch (_) {
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint(
+        'AdminReportController restorePublication error: $_errorMessage',
+      );
+      return false;
+    } finally {
+      _processingReportIds.remove(reportId);
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteReport({
+    required String reportId,
+    required String adminId,
+  }) async {
+    if (_processingReportIds.contains(reportId)) return false;
+    _processingReportIds.add(reportId);
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await reportRepository.softDeleteReport(
+        reportId: reportId,
+        currentUserId: adminId,
+        isCallerAdmin: true,
+      );
+      _allReports.removeWhere((r) => r.id == reportId);
+      await fetchReports(forceRefresh: true);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('AdminReportController deleteReport error: $_errorMessage');
       return false;
     } finally {
       _processingReportIds.remove(reportId);
