@@ -1,12 +1,10 @@
-import 'dart:io' as io;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
@@ -94,6 +92,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
         .submitComment(
           authorId: user.id,
           authorName: authorDisplayName,
+          authorAvatarUrl: user.avatarUrl,
           authorRole: user.role,
           body: text,
         )
@@ -750,38 +749,11 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   }
 
   Widget _buildPhoto(String url) {
-    final isNetwork =
-        url.startsWith('http://') ||
-        url.startsWith('https://') ||
-        url.startsWith('blob:') ||
-        url.startsWith('data:');
-    if (isNetwork) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _brokenPlaceholder(),
-      );
-    }
-    if (!kIsWeb) {
-      return Image.file(
-        io.File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _brokenPlaceholder(),
-      );
-    }
-    return _brokenPlaceholder();
-  }
-
-  Widget _brokenPlaceholder() {
-    return Container(
-      color: AppColors.primarySoft,
-      child: const Center(
-        child: Icon(
-          Icons.broken_image_rounded,
-          size: 36,
-          color: AppColors.textSecondary,
-        ),
-      ),
+    return AppImage(
+      imageSource: url,
+      fit: BoxFit.cover,
+      memCacheWidth: 1200,
+      memCacheHeight: 675,
     );
   }
 }

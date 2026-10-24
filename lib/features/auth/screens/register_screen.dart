@@ -40,10 +40,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    final auth = context.read<AuthController>();
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     if (!_isUsernameAvailable || _isCheckingUsername) return;
 
-    final auth = context.read<AuthController>();
     final success = await auth.signUpWithEmail(
       username: _usernameController.text,
       email: _emailController.text,
@@ -69,6 +70,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _handleGoogleRegister() async {
     final auth = context.read<AuthController>();
+    if (auth.isLoading) return;
+
     final success = await auth.signInWithGoogle();
 
     if (success && mounted) {

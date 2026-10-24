@@ -7,8 +7,32 @@ import '../../../core/widgets/app_button.dart';
 import 'login_screen.dart';
 
 /// Splash / Intro screen matching DESIGN.md Section 5.1 and official logo specification
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  bool _isNavigating = false;
+
+  Future<void> _handleStart() async {
+    if (_isNavigating) return;
+    setState(() => _isNavigating = true);
+
+    try {
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isNavigating = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,20 +102,14 @@ class SplashScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 32),
-                      // Actions: Mulai & Masuk
+                      // Actions: Mulai & Masuk with immediate loading feedback & double-tap lock
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           AppButton(
                             text: 'Mulai Sekarang',
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
-                                ),
-                              );
-                            },
+                            isLoading: _isNavigating,
+                            onPressed: _handleStart,
                           ),
                         ],
                       ),

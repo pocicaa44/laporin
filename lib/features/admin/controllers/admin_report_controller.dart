@@ -50,8 +50,13 @@ class AdminReportController extends ChangeNotifier {
       .where((r) => r.handlingStatus == HandlingStatus.completed)
       .length;
 
+  final Set<String> _processingReportIds = <String>{};
+  bool isProcessing(String reportId) => _processingReportIds.contains(reportId);
+
   Future<void> fetchReports() async {
-    _isLoading = true;
+    if (_allReports.isEmpty) {
+      _isLoading = true;
+    }
     notifyListeners();
 
     try {
@@ -80,6 +85,10 @@ class AdminReportController extends ChangeNotifier {
     String? reason,
     String? proofUrl,
   }) async {
+    if (_processingReportIds.contains(reportId)) return false;
+    _processingReportIds.add(reportId);
+    notifyListeners();
+
     try {
       await reportRepository.updateHandlingStatus(
         reportId: reportId,
@@ -92,10 +101,17 @@ class AdminReportController extends ChangeNotifier {
       return true;
     } catch (_) {
       return false;
+    } finally {
+      _processingReportIds.remove(reportId);
+      notifyListeners();
     }
   }
 
   Future<bool> restorePublication(String reportId, String reason) async {
+    if (_processingReportIds.contains(reportId)) return false;
+    _processingReportIds.add(reportId);
+    notifyListeners();
+
     try {
       await reportRepository.updatePublicationState(
         reportId: reportId,
@@ -106,6 +122,9 @@ class AdminReportController extends ChangeNotifier {
       return true;
     } catch (_) {
       return false;
+    } finally {
+      _processingReportIds.remove(reportId);
+      notifyListeners();
     }
   }
 }

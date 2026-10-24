@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/comment_model.dart';
 
 /// Individual comment tile widget matching DESIGN.md Section 4.5 & 5.11
@@ -29,23 +30,16 @@ class CommentTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
+              UserAvatar(
+                name: comment.authorName,
+                avatarUrl: comment.authorAvatarUrl,
                 radius: 16,
                 backgroundColor: comment.isStaff
                     ? AppColors.primary
                     : AppColors.primarySoft,
-                child: Text(
-                  comment.authorName.isNotEmpty
-                      ? comment.authorName[0].toUpperCase()
-                      : 'W',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: comment.isStaff
-                        ? Colors.white
-                        : AppColors.primaryStrong,
-                  ),
-                ),
+                foregroundColor: comment.isStaff
+                    ? Colors.white
+                    : AppColors.primaryStrong,
               ),
               const SizedBox(width: 10),
               Expanded(

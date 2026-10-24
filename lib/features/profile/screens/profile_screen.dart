@@ -19,6 +19,7 @@ class ProfileScreen extends StatelessWidget {
     BuildContext context,
     AuthController auth,
   ) async {
+    if (auth.isUploadingAvatar) return;
     final success = await auth.pickAndUploadAvatar();
     if (!context.mounted) return;
 
@@ -257,16 +258,18 @@ class ProfileScreen extends StatelessWidget {
               title: 'Keluar',
               iconColor: AppColors.danger,
               textColor: AppColors.danger,
-              onTap: () async {
-                await auth.signOut();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AppGate()),
-                    (route) => false,
-                  );
-                }
-              },
+              onTap: auth.isLoading
+                  ? () {}
+                  : () async {
+                      await auth.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AppGate()),
+                          (route) => false,
+                        );
+                      }
+                    },
             ),
           ],
         ),

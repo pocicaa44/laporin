@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,17 +15,34 @@ class MediaService {
 
   final ImagePicker _picker = ImagePicker();
 
+  /// Flag to prevent concurrent image picker invocations that cause PlatformException(already_active)
+  bool _isPicking = false;
+  bool get isPicking => _isPicking;
+
   /// Maximum photo size in bytes (10 MB per PRD specification)
   static const int maxFileSizeBytes = 10 * 1024 * 1024;
 
-  /// Picks an image from Camera or Gallery with downscaling & compression
-  Future<XFile?> pickImage(ImageSource source) async {
+  /// Picks an image from Camera or Gallery with downscaling & compression for reports
+  Future<XFile?> pickImage(
+    ImageSource source, {
+    double? maxWidth = 1920,
+    double? maxHeight = 1080,
+    int imageQuality = 85,
+  }) async {
+    if (_isPicking) {
+      debugPrint(
+        'MediaService: Image picker already active, ignoring request.',
+      );
+      return null;
+    }
+    _isPicking = true;
+
     try {
       final file = await _picker.pickImage(
         source: source,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+        imageQuality: imageQuality,
       );
 
       if (file == null) return null;
@@ -38,8 +56,30 @@ class MediaService {
       }
 
       return file;
+    } on PlatformException catch (e) {
+      if (e.code == 'already_active') {
+        debugPrint('MediaService: Handled PlatformException already_active.');
+        return null;
+      }
+      final msg = e.message?.toLowerCase() ?? '';
+      if (e.code == 'camera_access_denied' ||
+          msg.contains('camera permission')) {
+        throw Exception(
+          'Izin akses kamera ditolak. Harap izinkan akses kamera di Pengaturan aplikasi.',
+        );
+      }
+      if (e.code == 'photo_access_denied' ||
+          msg.contains('storage permission')) {
+        throw Exception(
+          'Izin akses galeri ditolak. Harap izinkan akses foto di Pengaturan aplikasi.',
+        );
+      }
+      throw Exception('Gagal mengambil foto: ${e.message ?? e.code}');
     } catch (e) {
       final msg = e.toString().toLowerCase();
+      if (msg.contains('already_active') || msg.contains('already active')) {
+        return null;
+      }
       if (msg.contains('camera_access_denied') ||
           msg.contains('camera permission')) {
         throw Exception(
@@ -54,7 +94,15 @@ class MediaService {
       }
       if (e is Exception) rethrow;
       throw Exception('Gagal mengambil foto: $e');
+    } finally {
+      _isPicking = false;
     }
+  }
+
+  /// Picks an avatar image preserving original scale and orientation,
+  /// applying JPEG compression (imageQuality: 80) to reduce server load without distortion.
+  Future<XFile?> pickAvatarImage(ImageSource source) async {
+    return pickImage(source, maxWidth: null, maxHeight: null, imageQuality: 80);
   }
 
   /// Recovers lost photo data when Android kills MainActivity during camera capture.
@@ -117,19 +165,30 @@ class MediaService {
     }
   }
 
-  /// Batch uploads all selected photos concurrently in parallel.
+  /// Uploads all selected photos with bounded concurrency (batches of 2)
+  /// to protect cellular socket and network memory on low-end devices.
   Future<List<String>> uploadAllPhotos({
     required String authorId,
     required List<XFile> files,
   }) async {
     if (files.isEmpty) return const [];
-    // Concurrently upload photos in parallel using Future.wait
-    return await Future.wait(
-      List.generate(
-        files.length,
-        (i) => uploadPhoto(authorId: authorId, file: files[i], index: i),
-      ),
-    );
+    final results = List<String>.filled(files.length, '');
+    for (int i = 0; i < files.length; i += 2) {
+      final end = (i + 2 < files.length) ? i + 2 : files.length;
+      final chunkFutures = <Future<void>>[];
+      for (int j = i; j < end; j++) {
+        final index = j;
+        chunkFutures.add(
+          uploadPhoto(
+            authorId: authorId,
+            file: files[index],
+            index: index,
+          ).then((url) => results[index] = url),
+        );
+      }
+      await Future.wait(chunkFutures);
+    }
+    return results;
   }
 
   /// Uploads an avatar image to Supabase Storage bucket 'avatars' (fallback 'profiles').

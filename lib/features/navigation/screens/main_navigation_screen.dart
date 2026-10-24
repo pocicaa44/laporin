@@ -30,13 +30,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ProfileScreen(),
   ];
 
+  bool _isOpeningCreate = false;
+
   void _onTabTapped(int index) {
     if (index == 2) {
+      if (_isOpeningCreate) return;
+      _isOpeningCreate = true;
       // Floating "+" Action: Open Create Report
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const CreateReportScreen()),
       ).then((_) {
+        _isOpeningCreate = false;
         // Refresh feed upon return
         if (mounted) {
           context.read<FeedController>().fetchFeed();

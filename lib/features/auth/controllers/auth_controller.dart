@@ -63,6 +63,7 @@ class AuthController extends ChangeNotifier {
   bool get isAdmin => currentUser?.isAdmin ?? false;
 
   Future<bool> signInWithEmail(String email, String password) async {
+    if (_isLoading) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -81,6 +82,7 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<bool> signInWithGoogle() async {
+    if (_isLoading) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -108,6 +110,7 @@ class AuthController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    if (_isLoading) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -130,6 +133,7 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<bool> updateUsername(String newUsername) async {
+    if (_isLoading) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -174,15 +178,30 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  /// Membuka galeri perangkat via image_picker dan mengunggah foto profil ke Supabase
+  /// Membuka galeri perangkat via image_picker dan mengunggah foto profil teroptimasi ke Supabase
   Future<bool> pickAndUploadAvatar() async {
+    if (_isUploadingAvatar) return false;
+    _isUploadingAvatar = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      final file = await MediaService.instance.pickImage(ImageSource.gallery);
+      final file = await MediaService.instance.pickAvatarImage(
+        ImageSource.gallery,
+      );
       if (file == null) {
+        _isUploadingAvatar = false;
+        notifyListeners();
         return false;
       }
       return await updateAvatar(file);
     } catch (e) {
+      _isUploadingAvatar = false;
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('already_active') || msg.contains('already active')) {
+        notifyListeners();
+        return false;
+      }
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       return false;
@@ -191,6 +210,7 @@ class AuthController extends ChangeNotifier {
 
   /// Memperbarui ulang profil aktif dari Supabase
   Future<void> refreshProfile() async {
+    if (_isLoading) return;
     _isLoading = true;
     notifyListeners();
     try {
@@ -204,7 +224,14 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await authRepository.signOut();
+    if (_isLoading) return;
+    _isLoading = true;
     notifyListeners();
+    try {
+      await authRepository.signOut();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

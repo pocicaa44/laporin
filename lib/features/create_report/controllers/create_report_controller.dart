@@ -98,6 +98,7 @@ class CreateReportController extends ChangeNotifier {
     required String title,
     required String description,
   }) async {
+    if (_isLoading) return null;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();

@@ -176,3 +176,114 @@ lib/features/report/
   └── controllers/
       └── create_report_controller.dart   (< 150 baris: state & business logic)
 ```
+
+---
+
+## 5. Performance Optimization & Async UI Standards
+
+Standar ini wajib diterapkan pada seluruh fitur asinkron, interaksi UI, operasi media, dan pemrosesan data di aplikasi Laporin untuk menjamin kelancaran pada perangkat Android kelas bawah (*low-end devices*, RAM 1–2 GB).
+
+### 5.1. Prinsip Utama (Low-End Devices First)
+1. **Performance-First & Resource-Constrained Mindset:** Anggap aplikasi berjalan pada perangkat dengan prosesor hemat daya, RAM terbatas, dan jaringan seluler yang berfluktuasi.
+2. **Immediate Interaction Feedback:** Setiap interaksi pengguna (ketukan tombol, swipe refresh, form submit) harus segera memberikan respons visual tanpa menunggu selesainya I/O jaringan.
+3. **Bounded Resource Consumption:** Batasi konsumsi memori dan bandwidth secara tegas (cache memori gambar terbatas, decoding terukur, upload dengan konkurensi terkontrol).
+4. **No UI Tearing / Screen Wipe:** Dilarang menghapus konten lama saat melakukan refresh atau pembaruan sebagian data.
+5. **Data Correctness & Security First:** Jangan pernah melonggarkan validasi, otorisasi Supabase RLS, atau aturan bisnis produk (misal visibilitas publik atau soft-delete) demi optimasi performa semu.
+
+### 5.2. Standar Loading & Feedback Interaksi Asinkron
+1. **Pola Tombol & Anti-Double-Submission:**
+   - Semua tombol aksi I/O (login, register, submit laporan, edit, vote, komentar, upload avatar) wajib memiliki feedback loading lokal (misal spinner kecil di dalam tombol).
+   - Controller wajib memiliki guard in-flight:
+     ```dart
+     if (_isLoading) return false;
+     _isLoading = true;
+     notifyListeners();
+     try {
+       // async operation...
+     } finally {
+       _isLoading = false;
+       notifyListeners();
+     }
+     ```
+   - Tombol "Mulai Sekarang" pada alur onboarding/splash screen wajib mengunci interaksi dengan status `_isNavigating` dan menampilkan spinner saat inisialisasi sesi atau navigasi berlangsung.
+2. **Pola Loading Berdasarkan Konteks:**
+   - **Initial Page Load:** Tampilkan indikator tengah atau skeleton **hanya jika data kosong** (`controller.isLoading && controller.reports.isEmpty`).
+   - **Pull-to-Refresh:** Pertahankan daftar lama tetap terlihat saat `RefreshIndicator` aktif; hindari me-replace seluruh `ListView` dengan `Center(CircularProgressIndicator())`.
+   - **Pagination (Load More):** Tampilkan compact loader di bagian bawah daftar (`index == reports.length`).
+   - **Upload Media:** Tampilkan progress bar atau overlay loading transparan dengan indikator jelas.
+3. **Pengamanan Lifecycle Widget:**
+   - Selalu periksa `if (_isDisposed) return;` sebelum memanggil `notifyListeners()`.
+   - Di layer widget State, selalu periksa `if (!mounted) return;` sebelum menampilkan `SnackBar`, dialog, atau melakukan `Navigator.push/pop`.
+   - Wajib melakukan `dispose()` pada semua `TextEditingController`, `ScrollController`, `AnimationController`, dan `Timer`.
+
+### 5.3. Standar Fetching, Pagination & Rendering Data
+1. **Lazy Rendering:**
+   - Wajib menggunakan `ListView.builder` atau `SliverList` untuk daftar data dinamis.
+   - Dilarang membungkus `Column` dengan `SingleChildScrollView` untuk menampilkan daftar laporan yang dapat bertambah.
+2. **Pagination di Tingkat Repository & Controller:**
+   - Gunakan ukuran halaman standar: `static const int pageSize = 10;`.
+   - Controller menyediakan `hasMore`, `isLoadingMore`, dan method `loadMore()`.
+   - Pasang `ScrollController` listener dengan ambang batas (threshold):
+     ```dart
+     void _onScroll() {
+       if (_scrollController.hasClients &&
+           _scrollController.position.pixels >=
+               _scrollController.position.maxScrollExtent - 250) {
+         context.read<FeedController>().loadMore();
+       }
+     }
+     ```
+3. **Pencegahan Race Condition & Request Duplikat:**
+   - Terapkan in-flight lock pada request pagination (`if (_isLoading || _isRefreshing || _isLoadingMore || !_hasMore) return;`).
+   - Terapkan debouncing (300 ms) pada kolom pencarian input teks sebelum memicu query data.
+4. **Konsistensi Cache & Invalidation:**
+   - Simpan entitas laporan terbaru di repository cache saat di-fetch.
+   - Sinkronkan kembali laporan yang diperbarui di detail screen (`syncReport`) tanpa harus mengunduh ulang seluruh feed.
+
+### 5.4. Standar Optimasi Gambar (Image Optimization)
+1. **Global Image Cache Bounds:**
+   - Di `main.dart`, konfigurasikan `PaintingBinding.instance.imageCache` agar aman dari Low Memory Killer (LMK) Android:
+     ```dart
+     PaintingBinding.instance.imageCache.maximumSizeBytes = 35 * 1024 * 1024; // 35 MB
+     PaintingBinding.instance.imageCache.maximumSize = 100; // Maksimum 100 objek gambar
+     ```
+2. **Memory-Bounded Image Decoding:**
+   - Gunakan komponen `AppImage` (`lib/core/widgets/app_image.dart`) untuk seluruh media laporan agar terhindar dari lonjakan RAM:
+     - **Thumbnail Feed:** `memCacheWidth: 800` (tinggi diskalakan proporsional oleh Flutter agar tidak gepeng).
+     - **Detail Screen Preview:** `memCacheWidth: 1200`.
+     - **Full Resolution Viewer:** Khusus dialog penampil resolusi penuh (`PhotoViewerDialog`) untuk inspeksi bukti zoom-in.
+   - **Foto Profil (Avatar):** Orientasi dan skala dipertahankan original dengan `BoxFit.cover` (tidak memaksakan decode `cacheWidth`/`cacheHeight` bujur sangkar yang mendistorsi foto non-1:1 menjadi gepeng atau stretch).
+3. **Kompresi saat Pengambilan Foto:**
+   - Foto bukti laporan: gunakan `MediaService.pickPhoto` dengan `maxWidth: 1920`, `maxHeight: 1080`, `imageQuality: 80`.
+   - Foto profil avatar: gunakan `MediaService.pickAvatarImage` dengan mempertahankan orientasi dan resolusi original (`maxWidth: null, maxHeight: null`), hanya menerapkan kompresi kualitas JPEG (`imageQuality: 80`) agar hemat bandwidth dan tidak membebani server/storage.
+   - Proteksi `ImagePicker`: Gunakan flag `_isPicking` dan tangani `PlatformException(already_active)` agar ketukan ganda tidak memunculkan error dialog/snackbar.
+4. **Bounded Concurrency Upload:**
+   - Saat mengunggah beberapa foto bukti, batasi upload paralel maksimal 2 file bersamaan untuk menghindari saturasi socket HTTP pada koneksi seluler lemah.
+5. **Progressive Display & Graceful Fallback:**
+   - Gunakan `frameBuilder` untuk transisi halus dari placeholder saat frame pertama siap dirender.
+   - Selalu sediakan `errorBuilder` dengan widget fallback yang informatif saat file gagal dimuat.
+
+### 5.5. Standar Pengujian & Quality Gates
+Setiap optimasi wajib diverifikasi melalui pengujian nyata:
+1. `dart format --output=none --set-exit-if-changed .`
+2. `flutter analyze` (harus 0 errors dan 0 warnings baru).
+3. `flutter test` (seluruh unit test dan widget test wajib hijau).
+4. Verifikasi manual/automated terhadap kasus:
+   - Double-tap cepat pada tombol aksi.
+   - Pull-to-refresh saat daftar terisi (tidak ada flickering/screen tearing).
+   - Pengguliran cepat daftar panjang untuk memantau konsumsi RAM.
+   - Penggantian foto profil dan cache refresh.
+
+### 5.6. Checklist Wajib Sebelum Perubahan Dianggap Selesai
+AI Agent **wajib** memeriksa dan mematuhi checklist berikut sebelum menyatakan pekerjaan selesai:
+
+- [ ] Apakah seluruh operasi asinkron/I/O memiliki indikator loading yang proporsional?
+- [ ] Apakah seluruh aksi tombol dan form submit memiliki proteksi in-flight anti-double-submission?
+- [ ] Apakah alur onboarding / splash screen ("Mulai Sekarang") mencegah aksi berulang saat bernavigasi?
+- [ ] Apakah daftar laporan menerapkan lazy rendering (`ListView.builder`) dan pagination bertahap?
+- [ ] Apakah pull-to-refresh mempertahankan data lama tanpa mengosongkan layar (*no screen wipe*)?
+- [ ] Apakah seluruh gambar pada daftar, thumbnail, dan avatar menggunakan decode memory bounds (`AppImage`)?
+- [ ] Apakah foto dikompresi dan di-resize sebelum diunggah ke storage backend?
+- [ ] Apakah controller dan widget membersihkan resource (`dispose()`) dan memeriksa `mounted`/`_isDisposed`?
+- [ ] Apakah aturan otorisasi, moderasi, status invariant, dan soft-delete tetap terjaga?
+- [ ] Apakah `flutter analyze` dan `flutter test` dijalankan serta lulus tanpa error?

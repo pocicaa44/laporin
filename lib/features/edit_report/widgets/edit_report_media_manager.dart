@@ -1,6 +1,3 @@
-import 'dart:io' as io;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_image.dart';
 
 /// Modular widget for managing existing and new photo attachments during report edit (< 200 lines)
 class EditReportMediaManager extends StatelessWidget {
@@ -197,15 +195,14 @@ class EditReportMediaManager extends StatelessWidget {
       margin: const EdgeInsets.only(right: 10),
       child: Stack(
         children: [
-          ClipRRect(
+          AppImage(
+            imageSource: file.path,
+            width: 90,
+            height: 90,
+            fit: BoxFit.cover,
+            memCacheWidth: 180,
+            memCacheHeight: 180,
             borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: 90,
-              height: 90,
-              child: kIsWeb
-                  ? Image.network(file.path, fit: BoxFit.cover)
-                  : Image.file(io.File(file.path), fit: BoxFit.cover),
-            ),
           ),
           Positioned(
             bottom: 4,
@@ -249,33 +246,14 @@ class EditReportMediaManager extends StatelessWidget {
   }
 
   Widget _buildImageFromUrl(String url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.broken_image, color: Colors.grey),
-        ),
-      );
-    }
-    if (kIsWeb) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.image, color: Colors.grey),
-        ),
-      );
-    }
-    return Image.file(
-      io.File(url),
+    return AppImage(
+      imageSource: url,
+      width: 90,
+      height: 90,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        color: Colors.grey.shade200,
-        child: const Icon(Icons.image, color: Colors.grey),
-      ),
+      memCacheWidth: 180,
+      memCacheHeight: 180,
+      borderRadius: BorderRadius.circular(12),
     );
   }
 

@@ -8,7 +8,7 @@ Bertindak sebagai engineer yang memahami produk, menjaga keamanan dan konsistens
 
 Untuk setiap task:
 1. Pahami permintaan dan acceptance criteria.
-2. Inspeksi struktur repository, kode, konfigurasi, migration, test, `pubspec.yaml`, dan lockfile sebelum mengubah kode.
+2. Inspeksi struktur repository, kode, konfigurasi, migration, test, `pubspec.yaml`, lockfile, serta pelajari dan patuhi pedoman koding & standar performa pada `skills.md` sebelum mengubah kode.
 3. Cari dokumentasi Context7 untuk API package yang relevan dan cocokkan dengan versi yang dipakai.
 4. Buat perubahan sekecil mungkin yang menyelesaikan kebutuhan secara utuh.
 5. Jalankan formatter, analyzer/linter, test, dan build yang relevan.

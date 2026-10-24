@@ -41,8 +41,37 @@ class MyReportsScreen extends StatelessWidget {
   }
 }
 
-class _MyReportsView extends StatelessWidget {
+class _MyReportsView extends StatefulWidget {
   const _MyReportsView();
+
+  @override
+  State<_MyReportsView> createState() => _MyReportsViewState();
+}
+
+class _MyReportsViewState extends State<_MyReportsView> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
+      context.read<MyReportsController>().loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +87,7 @@ class _MyReportsView extends StatelessWidget {
           ),
         ],
       ),
-      body: controller.isLoading
+      body: controller.isLoading && controller.reports.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : controller.reports.isEmpty
           ? const EmptyState(
@@ -68,12 +97,27 @@ class _MyReportsView extends StatelessWidget {
           : RefreshIndicator(
               onRefresh: () => controller.fetchMyReports(),
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
-                itemCount: controller.reports.length,
+                itemCount:
+                    controller.reports.length +
+                    (controller.isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index == controller.reports.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                        ),
+                      ),
+                    );
+                  }
                   final report = controller.reports[index];
                   return _MyReportItem(
                     report: report,

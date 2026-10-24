@@ -30,10 +30,11 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    final auth = context.read<AuthController>();
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     if (!_isUsernameAvailable || _isCheckingUsername) return;
 
-    final auth = context.read<AuthController>();
     final success = await auth.updateUsername(_usernameController.text);
 
     if (success && mounted) {

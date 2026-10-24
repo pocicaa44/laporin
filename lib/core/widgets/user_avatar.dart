@@ -1,10 +1,8 @@
-import 'dart:io' as io;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../theme/app_colors.dart';
+import 'app_image.dart';
 
 /// Reusable avatar widget supporting image network/file loading, initials fallback,
 /// loading progress overlay, and an optional camera badge for photo editing.
@@ -18,6 +16,8 @@ class UserAvatar extends StatelessWidget {
     this.showEditBadge = false,
     this.isLoading = false,
     this.onTap,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   final String name;
@@ -27,6 +27,8 @@ class UserAvatar extends StatelessWidget {
   final bool showEditBadge;
   final bool isLoading;
   final VoidCallback? onTap;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   String get _initials {
     if (username != null && username!.trim().isNotEmpty) {
@@ -34,7 +36,8 @@ class UserAvatar extends StatelessWidget {
       if (clean.isNotEmpty) return clean[0].toUpperCase();
     }
     if (name.trim().isNotEmpty) {
-      return name.trim()[0].toUpperCase();
+      final clean = name.trim().replaceFirst('@', '');
+      if (clean.isNotEmpty) return clean[0].toUpperCase();
     }
     return 'W';
   }
@@ -47,7 +50,7 @@ class UserAvatar extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: radius,
-          backgroundColor: AppColors.primarySoft,
+          backgroundColor: backgroundColor ?? AppColors.primarySoft,
           child: _buildAvatarContent(),
         ),
         if (isLoading)
@@ -111,40 +114,16 @@ class UserAvatar extends StatelessWidget {
   Widget _buildAvatarContent() {
     final url = avatarUrl?.trim();
     if (url != null && url.isNotEmpty) {
-      final isNetwork =
-          url.startsWith('http://') ||
-          url.startsWith('https://') ||
-          url.startsWith('blob:') ||
-          url.startsWith('data:');
-
-      if (isNetwork) {
-        return ClipOval(
-          child: Image.network(
-            url,
-            width: radius * 2,
-            height: radius * 2,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _fallbackText(),
-          ),
-        );
-      }
-
-      if (!kIsWeb) {
-        try {
-          final file = io.File(url);
-          if (file.existsSync()) {
-            return ClipOval(
-              child: Image.file(
-                file,
-                width: radius * 2,
-                height: radius * 2,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _fallbackText(),
-              ),
-            );
-          }
-        } catch (_) {}
-      }
+      return ClipOval(
+        child: AppImage(
+          imageSource: url,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          placeholder: _fallbackText(),
+          errorWidget: _fallbackText(),
+        ),
+      );
     }
 
     return _fallbackText();
@@ -157,7 +136,7 @@ class UserAvatar extends StatelessWidget {
         style: TextStyle(
           fontSize: radius * 0.8,
           fontWeight: FontWeight.bold,
-          color: AppColors.primaryStrong,
+          color: foregroundColor ?? AppColors.primaryStrong,
         ),
       ),
     );

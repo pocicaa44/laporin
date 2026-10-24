@@ -17,8 +17,19 @@ class FeedController extends ChangeNotifier {
   List<ReportModel> _reports = [];
   List<ReportModel> get reports => _reports;
 
+  static const int pageSize = 10;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  bool _isRefreshing = false;
+  bool get isRefreshing => _isRefreshing;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
 
   String _selectedCategory = 'Semua';
   String get selectedCategory => _selectedCategory;
@@ -55,7 +66,11 @@ class FeedController extends ChangeNotifier {
 
   Future<void> fetchFeed([String? userId, bool forceRefresh = true]) async {
     if (userId != null) currentUserId = userId;
-    _isLoading = true;
+    if (_reports.isEmpty) {
+      _isLoading = true;
+    } else {
+      _isRefreshing = true;
+    }
     notifyListeners();
 
     try {
@@ -65,13 +80,54 @@ class FeedController extends ChangeNotifier {
         sortBy: _sortBy,
         userId: currentUserId,
         forceRefresh: forceRefresh,
+        limit: pageSize,
+        offset: 0,
       );
       if (_isDisposed) return;
       _reports = result;
+      _hasMore = result.length >= pageSize;
     } catch (_) {
     } finally {
       if (!_isDisposed) {
         _isLoading = false;
+        _isRefreshing = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoading || _isRefreshing || _isLoadingMore || !_hasMore) return;
+
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final result = await reportRepository.getPublicFeed(
+        category: _selectedCategory,
+        searchQuery: _searchQuery,
+        sortBy: _sortBy,
+        userId: currentUserId,
+        forceRefresh: false,
+        limit: pageSize,
+        offset: _reports.length,
+      );
+      if (_isDisposed) return;
+
+      if (result.isEmpty) {
+        _hasMore = false;
+      } else {
+        final existingIds = _reports.map((r) => r.id).toSet();
+        final newItems = result
+            .where((r) => !existingIds.contains(r.id))
+            .toList();
+        _reports.addAll(newItems);
+        _hasMore = result.length >= pageSize;
+      }
+    } catch (_) {
+    } finally {
+      if (!_isDisposed) {
+        _isLoadingMore = false;
         notifyListeners();
       }
     }

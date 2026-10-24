@@ -48,6 +48,7 @@ class CommentRepository {
     required String reportId,
     required String authorId,
     required String authorName,
+    String? authorAvatarUrl,
     required UserRole authorRole,
     required String body,
     String? parentCommentId,
@@ -59,6 +60,7 @@ class CommentRepository {
           'report_id': reportId,
           'author_id': authorId,
           'author_name': authorName,
+          'author_avatar_url': ?authorAvatarUrl,
           'author_role': authorRole.value,
           'body': body.trim(),
         };
@@ -90,6 +92,7 @@ class CommentRepository {
       reportId: reportId,
       authorId: authorId,
       authorName: authorName,
+      authorAvatarUrl: authorAvatarUrl,
       authorRole: authorRole,
       body: body.trim(),
       createdAt: DateTime.now(),

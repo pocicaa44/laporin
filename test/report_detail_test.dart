@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:laporin/core/widgets/user_avatar.dart';
+import 'package:laporin/data/models/comment_model.dart';
 import 'package:laporin/data/models/report_model.dart';
 import 'package:laporin/data/models/user_profile_model.dart';
 import 'package:laporin/data/repositories/auth_repository.dart';
@@ -9,6 +11,7 @@ import 'package:laporin/features/auth/controllers/auth_controller.dart';
 import 'package:laporin/features/feed/widgets/report_card.dart';
 import 'package:laporin/features/report_detail/controllers/report_detail_controller.dart';
 import 'package:laporin/features/report_detail/screens/report_detail_screen.dart';
+import 'package:laporin/features/report_detail/widgets/comment_tile.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -166,6 +169,7 @@ void main() {
         final success = await controller.submitComment(
           authorId: 'user-1',
           authorName: 'Dewanto',
+          authorAvatarUrl: 'https://example.com/dewanto.png',
           authorRole: UserRole.user,
           body: 'Semoga segera diperbaiki ya pak',
         );
@@ -175,6 +179,10 @@ void main() {
         expect(
           controller.comments.first.body,
           equals('Semoga segera diperbaiki ya pak'),
+        );
+        expect(
+          controller.comments.first.authorAvatarUrl,
+          equals('https://example.com/dewanto.png'),
         );
         expect(controller.report!.commentsCount, equals(1));
 
@@ -232,6 +240,64 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('3 komentar'), findsOneWidget);
+    });
+
+    testWidgets(
+      'CommentTile renders UserAvatar with avatarUrl and authorName',
+      (tester) async {
+        final commentWithAvatar = CommentModel(
+          id: 'com-1',
+          reportId: 'rep-1',
+          authorId: 'user-1',
+          authorName: 'Siti Rahma',
+          authorAvatarUrl: 'https://example.com/avatar.jpg',
+          authorRole: UserRole.user,
+          body: 'Terima kasih atas laporannya!',
+          createdAt: DateTime.now(),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: CommentTile(comment: commentWithAvatar)),
+          ),
+        );
+
+        expect(find.byType(UserAvatar), findsOneWidget);
+        final userAvatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+        expect(userAvatar.name, equals('Siti Rahma'));
+        expect(userAvatar.avatarUrl, equals('https://example.com/avatar.jpg'));
+        expect(find.text('Siti Rahma'), findsOneWidget);
+        expect(find.text('Terima kasih atas laporannya!'), findsOneWidget);
+        expect(find.text('Petugas'), findsNothing);
+      },
+    );
+
+    testWidgets('CommentTile renders Petugas badge for staff comment', (
+      tester,
+    ) async {
+      final staffComment = CommentModel(
+        id: 'com-2',
+        reportId: 'rep-1',
+        authorId: 'admin-1',
+        authorName: 'Petugas PUPR',
+        authorRole: UserRole.admin,
+        body: 'Laporan sedang dalam penanganan tim teknis.',
+        createdAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: CommentTile(comment: staffComment)),
+        ),
+      );
+
+      expect(find.byType(UserAvatar), findsOneWidget);
+      expect(find.text('Petugas PUPR'), findsOneWidget);
+      expect(find.text('Petugas'), findsOneWidget);
+      expect(
+        find.text('Laporan sedang dalam penanganan tim teknis.'),
+        findsOneWidget,
+      );
     });
   });
 }

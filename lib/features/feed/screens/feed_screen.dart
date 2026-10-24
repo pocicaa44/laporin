@@ -12,8 +12,37 @@ import '../widgets/category_filter_bar.dart';
 import '../widgets/report_card.dart';
 
 /// Main public community feed matching DESIGN.md Section 5.3
-class FeedScreen extends StatelessWidget {
+class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
+
+  @override
+  State<FeedScreen> createState() => _FeedScreenState();
+}
+
+class _FeedScreenState extends State<FeedScreen> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 250) {
+      context.read<FeedController>().loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _handleVote(BuildContext context, ReportModel report, String voteType) {
     final auth = context.read<AuthController>();
@@ -147,7 +176,7 @@ class FeedScreen extends StatelessWidget {
 
           // List or Loading / Empty States
           Expanded(
-            child: controller.isLoading
+            child: controller.isLoading && controller.reports.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : controller.reports.isEmpty
                 ? EmptyState(
@@ -170,9 +199,26 @@ class FeedScreen extends StatelessWidget {
                 : RefreshIndicator(
                     onRefresh: () => controller.fetchFeed(),
                     child: ListView.builder(
+                      controller: _scrollController,
                       padding: const EdgeInsets.only(bottom: 24, top: 4),
-                      itemCount: controller.reports.length,
+                      itemCount:
+                          controller.reports.length +
+                          (controller.isLoadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
+                        if (index == controller.reports.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
                         final report = controller.reports[index];
                         return ReportCard(
                           report: report,

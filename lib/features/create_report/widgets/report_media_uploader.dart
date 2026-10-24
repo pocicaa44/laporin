@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_image.dart';
 
 /// Modular widget for picking, previewing, and removing photo attachments (< 150 lines)
 class ReportMediaUploader extends StatefulWidget {
@@ -167,21 +165,14 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
   Widget _buildPhotoThumbnail(XFile photo, int index) {
     return Stack(
       children: [
-        ClipRRect(
+        AppImage(
+          imageSource: photo.path,
+          width: 90,
+          height: 90,
+          fit: BoxFit.cover,
+          memCacheWidth: 180,
+          memCacheHeight: 180,
           borderRadius: BorderRadius.circular(12),
-          child: kIsWeb
-              ? Image.network(
-                  photo.path,
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                )
-              : Image.file(
-                  File(photo.path),
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                ),
         ),
         Positioned(
           top: 4,

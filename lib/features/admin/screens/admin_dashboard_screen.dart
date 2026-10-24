@@ -62,7 +62,7 @@ class _AdminDashboardView extends StatelessWidget {
                 ),
               ],
             ),
-            body: controller.isLoading
+            body: controller.isLoading && controller.reports.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : RefreshIndicator(
                     onRefresh: () => controller.fetchReports(),

@@ -1,12 +1,10 @@
-import 'dart:io' as io;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/report_model.dart';
@@ -237,36 +235,11 @@ class ReportCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail(String url) {
-    final isNetwork =
-        url.startsWith('http://') ||
-        url.startsWith('https://') ||
-        url.startsWith('blob:') ||
-        url.startsWith('data:');
-    if (isNetwork) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        cacheWidth: kIsWeb ? null : 800,
-        errorBuilder: (_, _, _) => _brokenPlaceholder(),
-      );
-    }
-    if (!kIsWeb) {
-      return Image.file(
-        io.File(url),
-        fit: BoxFit.cover,
-        cacheWidth: 800,
-        errorBuilder: (_, _, _) => _brokenPlaceholder(),
-      );
-    }
-    return _brokenPlaceholder();
-  }
-
-  Widget _brokenPlaceholder() {
-    return Container(
-      color: AppColors.primarySoft,
-      child: const Center(
-        child: Icon(Icons.broken_image_rounded, color: AppColors.textSecondary),
-      ),
+    return AppImage(
+      imageSource: url,
+      fit: BoxFit.cover,
+      memCacheWidth: 800,
+      memCacheHeight: 450,
     );
   }
 }

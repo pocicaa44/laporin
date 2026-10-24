@@ -135,10 +135,11 @@ class ReportDetailController extends ChangeNotifier {
   Future<bool> submitComment({
     required String authorId,
     required String authorName,
+    String? authorAvatarUrl,
     required UserRole authorRole,
     required String body,
   }) async {
-    if (body.trim().isEmpty) return false;
+    if (body.trim().isEmpty || _isSendingComment) return false;
 
     _isSendingComment = true;
     notifyListeners();
@@ -148,6 +149,7 @@ class ReportDetailController extends ChangeNotifier {
         reportId: reportId,
         authorId: authorId,
         authorName: authorName,
+        authorAvatarUrl: authorAvatarUrl,
         authorRole: authorRole,
         body: body,
       );

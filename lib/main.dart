@@ -27,6 +27,10 @@ void main() async {
     debugPrint('DateFormat locale initialization: $e');
   }
 
+  // Tune Flutter image cache for low-end device memory safety (35 MB max memory, 100 items)
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 35 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 100;
+
   // Safely load .env and initialize Supabase client
   await AppConfig.initialize();
   await SupabaseService.instance.initialize();

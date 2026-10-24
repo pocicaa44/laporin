@@ -32,9 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleEmailLogin() async {
+    final auth = context.read<AuthController>();
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
-    final auth = context.read<AuthController>();
     final success = await auth.signInWithEmail(
       _emailController.text,
       _passwordController.text,
@@ -51,6 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleGoogleLogin() async {
     final auth = context.read<AuthController>();
+    if (auth.isLoading) return;
+
     final success = await auth.signInWithGoogle();
 
     if (success && mounted) {
@@ -234,18 +237,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: AppTextStyles.bodySecondary,
                           ),
                           GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const RegisterScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text(
+                            onTap: auth.isLoading
+                                ? null
+                                : () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const RegisterScreen(),
+                                      ),
+                                    );
+                                  },
+                            child: Text(
                               'Daftar Sekarang',
                               style: TextStyle(
-                                color: AppColors.primary,
+                                color: auth.isLoading
+                                    ? AppColors.textSecondary
+                                    : AppColors.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

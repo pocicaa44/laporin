@@ -196,6 +196,8 @@ class ReportRepository {
     String? sortBy, // 'newest', 'popular'
     String? userId,
     bool forceRefresh = false,
+    int? limit,
+    int? offset,
   }) async {
     await _fetchFromSupabaseIfAvailable(force: forceRefresh, userId: userId);
 
@@ -220,24 +222,37 @@ class ReportRepository {
       }).toList();
     }
 
+    List<ReportModel> filtered;
     if (kIsWeb || reportsSnapshot.length < 25) {
-      return _filterAndSortFeed(
+      filtered = _filterAndSortFeed(
         reports: reportsSnapshot,
         category: category,
         searchQuery: searchQuery,
         sortBy: sortBy,
       );
+    } else {
+      // Heavy string searching, category filtering, and sorting offloaded to background isolate
+      filtered = await Isolate.run<List<ReportModel>>(() {
+        return _filterAndSortFeed(
+          reports: reportsSnapshot,
+          category: category,
+          searchQuery: searchQuery,
+          sortBy: sortBy,
+        );
+      });
     }
 
-    // Heavy string searching, category filtering, and sorting offloaded to background isolate
-    return await Isolate.run<List<ReportModel>>(() {
-      return _filterAndSortFeed(
-        reports: reportsSnapshot,
-        category: category,
-        searchQuery: searchQuery,
-        sortBy: sortBy,
-      );
-    });
+    // Apply pagination window if requested
+    if (limit != null && limit > 0) {
+      final start = offset ?? 0;
+      if (start >= filtered.length) return const [];
+      final end = (start + limit < filtered.length)
+          ? start + limit
+          : filtered.length;
+      return filtered.sublist(start, end);
+    }
+
+    return filtered;
   }
 
   static List<ReportModel> _filterAndSortFeed({
@@ -285,27 +300,44 @@ class ReportRepository {
     String userId, {
     bool forceRefresh = false,
     bool includeDeleted = false,
+    int? limit,
+    int? offset,
   }) async {
     await _fetchFromSupabaseIfAvailable(force: forceRefresh);
     final reportsSnapshot = List<ReportModel>.from(_reports);
 
+    List<ReportModel> list;
     if (kIsWeb || reportsSnapshot.length < 25) {
-      var list = reportsSnapshot.where((r) => r.authorId == userId).toList();
+      var filtered = reportsSnapshot
+          .where((r) => r.authorId == userId)
+          .toList();
       if (!includeDeleted) {
-        list = list.where((r) => !r.isDeleted).toList();
+        filtered = filtered.where((r) => !r.isDeleted).toList();
       }
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
+      filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      list = filtered;
+    } else {
+      list = await Isolate.run<List<ReportModel>>(() {
+        var filtered = reportsSnapshot
+            .where((r) => r.authorId == userId)
+            .toList();
+        if (!includeDeleted) {
+          filtered = filtered.where((r) => !r.isDeleted).toList();
+        }
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return filtered;
+      });
     }
 
-    return await Isolate.run<List<ReportModel>>(() {
-      var list = reportsSnapshot.where((r) => r.authorId == userId).toList();
-      if (!includeDeleted) {
-        list = list.where((r) => !r.isDeleted).toList();
-      }
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
-    });
+    // Apply pagination window if requested
+    if (limit != null && limit > 0) {
+      final start = offset ?? 0;
+      if (start >= list.length) return const [];
+      final end = (start + limit < list.length) ? start + limit : list.length;
+      return list.sublist(start, end);
+    }
+
+    return list;
   }
 
   /// Mengambil semua laporan untuk portal Admin (termasuk yang 'held', 'pending_review', 'rejected')
