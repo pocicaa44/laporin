@@ -42,17 +42,17 @@ class CommentModel {
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
     return CommentModel(
-      id: json['id'] as String,
-      reportId: json['report_id'] as String,
-      authorId: json['author_id'] as String? ?? '',
-      authorName: json['author_name'] as String? ?? 'Warga',
-      authorAvatarUrl: json['author_avatar_url'] as String?,
-      authorRole: UserRole.fromString(json['author_role'] as String?),
-      body: json['body'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      reportId: json['report_id']?.toString() ?? '',
+      authorId: json['author_id']?.toString() ?? '',
+      authorName: json['author_name']?.toString() ?? 'Warga',
+      authorAvatarUrl: json['author_avatar_url']?.toString(),
+      authorRole: UserRole.fromString(json['author_role']?.toString()),
+      body: json['body']?.toString() ?? '',
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      parentCommentId: json['parent_comment_id'] as String?,
+      parentCommentId: json['parent_comment_id']?.toString(),
     );
   }
 }

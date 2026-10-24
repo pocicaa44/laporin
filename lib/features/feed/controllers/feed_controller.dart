@@ -53,7 +53,7 @@ class FeedController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchFeed([String? userId]) async {
+  Future<void> fetchFeed([String? userId, bool forceRefresh = true]) async {
     if (userId != null) currentUserId = userId;
     _isLoading = true;
     notifyListeners();
@@ -64,6 +64,7 @@ class FeedController extends ChangeNotifier {
         searchQuery: _searchQuery,
         sortBy: _sortBy,
         userId: currentUserId,
+        forceRefresh: forceRefresh,
       );
       if (_isDisposed) return;
       _reports = result;
@@ -95,6 +96,19 @@ class FeedController extends ChangeNotifier {
     _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
       fetchFeed();
     });
+  }
+
+  /// Sinkronisasi laporan secara instan dari halaman detail / event eksternal
+  void syncReport(ReportModel updatedReport) {
+    final idx = _reports.indexWhere((r) => r.id == updatedReport.id);
+    if (idx != -1) {
+      if (!updatedReport.isPubliclyVisible) {
+        _reports.removeAt(idx);
+      } else {
+        _reports[idx] = updatedReport;
+      }
+      notifyListeners();
+    }
   }
 
   Future<void> vote(String reportId, String userId, String voteType) async {

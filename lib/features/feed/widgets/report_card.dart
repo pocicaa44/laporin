@@ -71,19 +71,38 @@ class ReportCard extends StatelessWidget {
                             name: report.authorName,
                             username: report.authorUsername,
                             avatarUrl: report.authorAvatarUrl,
-                            radius: 12,
+                            radius: 16,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: Text(
-                              report.displayAuthorUsername,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  report.displayAuthorUsername,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (report.authorName.isNotEmpty &&
+                                    report.authorName != 'Warga Laporin' &&
+                                    report.authorUsername != null &&
+                                    report.authorName.toLowerCase() !=
+                                        report.authorUsername!.toLowerCase())
+                                  Text(
+                                    report.authorName,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
                             ),
                           ),
                           Text(
@@ -273,9 +292,23 @@ class _VoteButton extends StatelessWidget {
       onTap: onTap,
       mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isActive
+              ? activeColor.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive
+                ? activeColor.withValues(alpha: 0.28)
+                : Colors.transparent,
+            width: 1,
+          ),
+        ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             FaIcon(
               icon,

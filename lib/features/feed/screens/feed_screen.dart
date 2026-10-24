@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/services/boundary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../data/models/report_model.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/feed_controller.dart';
@@ -14,11 +15,35 @@ import '../widgets/report_card.dart';
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
 
+  void _handleVote(BuildContext context, ReportModel report, String voteType) {
+    final auth = context.read<AuthController>();
+    final user = auth.currentUser;
+    if (!auth.isAuthenticated || user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Silakan masuk terlebih dahulu untuk memberikan dukungan atau tanggapan.',
+          ),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+      return;
+    }
+    context.read<FeedController>().vote(report.id, user.id, voteType);
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<FeedController>();
     final auth = context.watch<AuthController>();
-    final currentUserId = auth.currentUser?.id ?? 'guest-usr';
+    final currentUserId = auth.currentUser?.id;
+
+    if (auth.currentUser?.id != null &&
+        controller.currentUserId != auth.currentUser?.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.fetchFeed(auth.currentUser!.id, false);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +78,7 @@ class FeedScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Segarkan Laporan',
-            onPressed: () => controller.fetchFeed(),
+            onPressed: () => controller.fetchFeed(currentUserId),
           ),
         ],
       ),
@@ -151,8 +176,8 @@ class FeedScreen extends StatelessWidget {
                         final report = controller.reports[index];
                         return ReportCard(
                           report: report,
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ReportDetailScreen(
@@ -160,12 +185,25 @@ class FeedScreen extends StatelessWidget {
                                   initialReport: report,
                                 ),
                               ),
-                            ).then((_) => controller.fetchFeed());
+                            );
+                            if (result is ReportModel) {
+                              controller.syncReport(result);
+                            } else if (result == true) {
+                              controller.fetchFeed(currentUserId, false);
+                            } else {
+                              final cached = controller.reportRepository
+                                  .getCachedReport(
+                                    report.id,
+                                    userId: currentUserId,
+                                  );
+                              if (cached != null) {
+                                controller.syncReport(cached);
+                              }
+                            }
                           },
-                          onUpvote: () =>
-                              controller.vote(report.id, currentUserId, 'up'),
+                          onUpvote: () => _handleVote(context, report, 'up'),
                           onDownvote: () =>
-                              controller.vote(report.id, currentUserId, 'down'),
+                              _handleVote(context, report, 'down'),
                         );
                       },
                     ),

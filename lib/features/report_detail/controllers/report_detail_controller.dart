@@ -13,6 +13,7 @@ class ReportDetailController extends ChangeNotifier {
     required this.reportRepository,
     required this.commentRepository,
     ReportModel? initialReport,
+    this.currentUserId,
   }) : _report = initialReport {
     loadData();
   }
@@ -20,6 +21,7 @@ class ReportDetailController extends ChangeNotifier {
   final String reportId;
   final ReportRepository reportRepository;
   final CommentRepository commentRepository;
+  final String? currentUserId;
 
   ReportModel? _report;
   ReportModel? get report => _report;
@@ -61,7 +63,10 @@ class ReportDetailController extends ChangeNotifier {
     }
 
     try {
-      final fetched = await reportRepository.getReportById(reportId);
+      final fetched = await reportRepository.getReportById(
+        reportId,
+        userId: currentUserId,
+      );
       if (_isDisposed) return;
       if (fetched != null) {
         _report = fetched;
@@ -72,6 +77,15 @@ class ReportDetailController extends ChangeNotifier {
       final fetchedComments = await commentRepository.getComments(reportId);
       if (_isDisposed) return;
       _comments = fetchedComments;
+      if (_report != null) {
+        _report = _report!.copyWith(commentsCount: fetchedComments.length);
+        reportRepository.updateReport(_report!);
+      } else {
+        reportRepository.updateReportCommentsCount(
+          reportId,
+          fetchedComments.length,
+        );
+      }
     } catch (_) {}
 
     if (!_isDisposed) {
@@ -141,14 +155,42 @@ class ReportDetailController extends ChangeNotifier {
       _comments.add(comment);
       if (_report != null) {
         _report = _report!.copyWith(commentsCount: _report!.commentsCount + 1);
+        reportRepository.updateReport(_report!);
+      } else {
+        reportRepository.updateReportCommentsCount(reportId, _comments.length);
       }
       _isSendingComment = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (e) {
       _isSendingComment = false;
+      _errorMessage = 'Gagal mengirim komentar: ${e.toString()}';
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Memperbarui laporan secara langsung dari hasil Edit
+  void setReport(ReportModel updatedReport) {
+    _report = updatedReport;
+    reportRepository.updateReport(updatedReport);
+    notifyListeners();
+  }
+
+  /// Menghapus laporan secara logis (Soft Delete)
+  Future<bool> softDeleteReport(String userId) async {
+    try {
+      final updated = await reportRepository.softDeleteReport(
+        reportId: reportId,
+        currentUserId: userId,
+      );
+      _report = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      rethrow;
     }
   }
 }

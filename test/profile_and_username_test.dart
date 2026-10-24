@@ -366,5 +366,34 @@ void main() {
       expect(find.text('@belum_diset'), findsOneWidget);
       expect(find.text('Setel Sekarang'), findsOneWidget);
     });
+
+    test(
+      'AuthController updateAvatar updates user avatarUrl successfully',
+      () async {
+        final authRepo = AuthRepository();
+        authRepo.setCurrentUserProfileForTesting(
+          const UserProfileModel(
+            id: 'user-prof-3',
+            email: 'avatar@laporin.id',
+            fullName: 'Avatar User',
+            username: 'avatar_user',
+            role: UserRole.user,
+          ),
+        );
+
+        final controller = AuthController(authRepository: authRepo);
+        expect(controller.currentUser?.avatarUrl, isNull);
+
+        final dummyFile = XFile('test/resources/avatar.jpg');
+        final success = await controller.updateAvatar(dummyFile);
+
+        expect(success, isTrue);
+        expect(
+          controller.currentUser?.avatarUrl,
+          equals('test/resources/avatar.jpg'),
+        );
+        expect(controller.isUploadingAvatar, isFalse);
+      },
+    );
   });
 }

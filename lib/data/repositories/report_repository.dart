@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
@@ -18,64 +19,157 @@ class ReportRepository {
   final List<ReportModel> _reports = [];
   // In-memory votes per report and user: reportId -> { userId: voteType }
   final Map<String, Map<String, String>> _reportUserVotes = {};
+  final Set<String> _loadedVoteUserIds = {};
   bool _hasFetchedFromSupabase = false;
 
-  Future<void> _fetchFromSupabaseIfAvailable() async {
-    if (_hasFetchedFromSupabase) return;
+  Future<void> _fetchFromSupabaseIfAvailable({
+    bool force = false,
+    String? userId,
+  }) async {
     final client = _service.client;
+    final effectiveUserId = userId ?? client?.auth.currentUser?.id;
+
+    if (_hasFetchedFromSupabase && !force) {
+      if (effectiveUserId != null &&
+          !_loadedVoteUserIds.contains(effectiveUserId) &&
+          client != null &&
+          _reports.isNotEmpty) {
+        await _fetchUserVotes(client, effectiveUserId);
+      }
+      return;
+    }
+
     if (client != null) {
       try {
-        // Query reports with author profiles relation to fetch author username and avatar
-        final response = await client
-            .from('reports')
-            .select('*, profiles(username, full_name, avatar_url)');
+        final response = await client.from('reports').select();
         final rawList = response as List;
 
         // Deserializing report records offloaded to background isolate
         final list = await _parseReportsInIsolate(rawList);
 
-        // Jika user aktif terautentikasi, sinkronkan status vote aktif dari tabel votes
-        final currentUserId = client.auth.currentUser?.id;
-        if (currentUserId != null && list.isNotEmpty) {
-          try {
-            final userVotes = await client
-                .from('votes')
-                .select('report_id, vote_type')
-                .eq('user_id', currentUserId);
-            final voteMap = <String, String>{};
-            for (final v in (userVotes as List)) {
-              final rId = v['report_id']?.toString();
-              final vType = v['vote_type']?.toString();
-              if (rId != null && vType != null) {
-                voteMap[rId] = vType;
+        // Batch enrich reports with latest author profile (avatar, username, full_name)
+        try {
+          final authorIds = list
+              .map((r) => r.authorId)
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList();
+          if (authorIds.isNotEmpty) {
+            final profilesData = await client
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .inFilter('id', authorIds);
+            final profileMap = <String, Map<String, dynamic>>{};
+            for (final p in (profilesData as List)) {
+              final pid = p['id']?.toString();
+              if (pid != null) {
+                profileMap[pid] = p as Map<String, dynamic>;
               }
             }
             for (var i = 0; i < list.length; i++) {
-              if (voteMap.containsKey(list[i].id)) {
+              final prof = profileMap[list[i].authorId];
+              if (prof != null) {
+                final av = prof['avatar_url'] as String?;
+                final un = prof['username'] as String?;
+                final fn = prof['full_name'] as String?;
                 list[i] = list[i].copyWith(
-                  currentUserVote: voteMap[list[i].id],
+                  authorAvatarUrl: av ?? list[i].authorAvatarUrl,
+                  authorUsername: un ?? list[i].authorUsername,
+                  authorName: (fn != null && fn.isNotEmpty)
+                      ? fn
+                      : list[i].authorName,
                 );
               }
             }
-          } catch (_) {}
-        }
+          }
+        } catch (_) {}
 
         _reports.clear();
         _reports.addAll(list);
         _hasFetchedFromSupabase = true;
-      } catch (_) {
-        try {
-          final fallbackResponse = await client.from('reports').select();
-          final rawList = fallbackResponse as List;
-          final list = await _parseReportsInIsolate(rawList);
-          _reports.clear();
-          _reports.addAll(list);
-          _hasFetchedFromSupabase = true;
-        } catch (_) {
-          // Table does not exist in Supabase yet, keep _reports empty
+
+        if (effectiveUserId != null) {
+          await _fetchUserVotes(client, effectiveUserId);
         }
+      } catch (_) {
+        // Table does not exist in Supabase yet or network error, keep _reports
       }
     }
+  }
+
+  Future<void> _fetchUserVotes(dynamic client, String userId) async {
+    try {
+      final userVotes = await client
+          .from('votes')
+          .select('report_id, vote_type')
+          .eq('user_id', userId);
+      final voteMap = <String, String>{};
+      for (final v in (userVotes as List)) {
+        final rId = v['report_id']?.toString();
+        final vType = v['vote_type']?.toString();
+        if (rId != null && vType != null) {
+          voteMap[rId] = vType;
+          _reportUserVotes.putIfAbsent(rId, () => {})[userId] = vType;
+        }
+      }
+      for (var i = 0; i < _reports.length; i++) {
+        final rId = _reports[i].id;
+        final v = voteMap[rId];
+        _reports[i] = _reports[i].copyWith(
+          currentUserVote: v,
+          clearCurrentUserVote: v == null,
+        );
+      }
+      _loadedVoteUserIds.add(userId);
+    } catch (_) {}
+  }
+
+  /// Mengambil laporan dari memori cache lokal jika tersedia
+  ReportModel? getCachedReport(String id, {String? userId}) {
+    try {
+      final cached = _reports.firstWhere((r) => r.id == id);
+      final effectiveUserId = userId ?? _service.client?.auth.currentUser?.id;
+      if (effectiveUserId != null && _reportUserVotes.containsKey(id)) {
+        final vote = _reportUserVotes[id]?[effectiveUserId];
+        return cached.copyWith(
+          currentUserVote: vote,
+          clearCurrentUserVote: vote == null,
+        );
+      }
+      return cached;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Memperbarui laporan di memori cache lokal
+  void updateReport(ReportModel updatedReport) {
+    final idx = _reports.indexWhere((r) => r.id == updatedReport.id);
+    if (idx != -1) {
+      _reports[idx] = updatedReport;
+    } else {
+      _reports.insert(0, updatedReport);
+    }
+    final client = _service.client;
+    final currentUserId = client?.auth.currentUser?.id;
+    if (currentUserId != null && updatedReport.currentUserVote != null) {
+      _reportUserVotes.putIfAbsent(updatedReport.id, () => {})[currentUserId] =
+          updatedReport.currentUserVote!;
+    }
+  }
+
+  /// Memperbarui jumlah komentar laporan di memori cache lokal
+  void updateReportCommentsCount(String reportId, int count) {
+    final idx = _reports.indexWhere((r) => r.id == reportId);
+    if (idx != -1) {
+      _reports[idx] = _reports[idx].copyWith(commentsCount: count);
+    }
+  }
+
+  /// Invalidate cache Supabase
+  void invalidateCache() {
+    _hasFetchedFromSupabase = false;
+    _loadedVoteUserIds.clear();
   }
 
   /// Deserializes JSON report maps into ReportModel objects on a dedicated Isolate.
@@ -101,31 +195,29 @@ class ReportRepository {
     String? searchQuery,
     String? sortBy, // 'newest', 'popular'
     String? userId,
+    bool forceRefresh = false,
   }) async {
-    await _fetchFromSupabaseIfAvailable();
+    await _fetchFromSupabaseIfAvailable(force: forceRefresh, userId: userId);
 
     if (_reports.isEmpty) return const [];
 
     final effectiveUserId = userId ?? _service.client?.auth.currentUser?.id;
     final List<ReportModel> reportsSnapshot;
-    if (effectiveUserId != null && _reportUserVotes.isNotEmpty) {
+    if (effectiveUserId != null) {
       reportsSnapshot = _reports.map((r) {
-        final hasVote =
-            _reportUserVotes[r.id]?.containsKey(effectiveUserId) ?? false;
-        if (hasVote) {
-          final userVote = _reportUserVotes[r.id]![effectiveUserId];
-          return r.copyWith(
-            currentUserVote: userVote,
-            clearCurrentUserVote: userVote == null,
-          );
-        } else if (_reportUserVotes.containsKey(r.id)) {
-          // Laporan memiliki vote dari user lain, maka untuk user ini adalah null
-          return r.copyWith(clearCurrentUserVote: true);
-        }
-        return r;
+        final cachedUserVote = _reportUserVotes[r.id]?[effectiveUserId];
+        final vote = _loadedVoteUserIds.contains(effectiveUserId)
+            ? cachedUserVote
+            : (cachedUserVote ?? r.currentUserVote);
+        return r.copyWith(
+          currentUserVote: vote,
+          clearCurrentUserVote: vote == null,
+        );
       }).toList();
     } else {
-      reportsSnapshot = List<ReportModel>.from(_reports);
+      reportsSnapshot = _reports.map((r) {
+        return r.copyWith(currentUserVote: null, clearCurrentUserVote: true);
+      }).toList();
     }
 
     if (kIsWeb || reportsSnapshot.length < 25) {
@@ -188,27 +280,40 @@ class ReportRepository {
     return list;
   }
 
-  /// Mengambil laporan milik pengguna tertentu
-  Future<List<ReportModel>> getMyReports(String userId) async {
-    await _fetchFromSupabaseIfAvailable();
+  /// Mengambil laporan milik pengguna tertentu (hanya yang aktif / belum di-soft-delete)
+  Future<List<ReportModel>> getMyReports(
+    String userId, {
+    bool forceRefresh = false,
+    bool includeDeleted = false,
+  }) async {
+    await _fetchFromSupabaseIfAvailable(force: forceRefresh);
     final reportsSnapshot = List<ReportModel>.from(_reports);
 
     if (kIsWeb || reportsSnapshot.length < 25) {
-      final list = reportsSnapshot.where((r) => r.authorId == userId).toList();
+      var list = reportsSnapshot.where((r) => r.authorId == userId).toList();
+      if (!includeDeleted) {
+        list = list.where((r) => !r.isDeleted).toList();
+      }
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     }
 
     return await Isolate.run<List<ReportModel>>(() {
-      final list = reportsSnapshot.where((r) => r.authorId == userId).toList();
+      var list = reportsSnapshot.where((r) => r.authorId == userId).toList();
+      if (!includeDeleted) {
+        list = list.where((r) => !r.isDeleted).toList();
+      }
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     });
   }
 
   /// Mengambil semua laporan untuk portal Admin (termasuk yang 'held', 'pending_review', 'rejected')
-  Future<List<ReportModel>> getAdminReports({String? filterStatus}) async {
-    await _fetchFromSupabaseIfAvailable();
+  Future<List<ReportModel>> getAdminReports({
+    String? filterStatus,
+    bool forceRefresh = false,
+  }) async {
+    await _fetchFromSupabaseIfAvailable(force: forceRefresh);
     final reportsSnapshot = List<ReportModel>.from(_reports);
 
     if (kIsWeb || reportsSnapshot.length < 25) {
@@ -253,65 +358,89 @@ class ReportRepository {
   }
 
   /// Mendapatkan detail satu laporan berdasarkan ID
-  Future<ReportModel?> getReportById(String id) async {
-    // 1. Cek cache in-memory terlebih dahulu
-    try {
-      return _reports.firstWhere((r) => r.id == id);
-    } catch (_) {}
-
-    // 2. Muat data dari Supabase jika belum pernah dimuat
-    await _fetchFromSupabaseIfAvailable();
-    try {
-      return _reports.firstWhere((r) => r.id == id);
-    } catch (_) {}
-
-    // 3. Query spesifik ID ke Supabase jika tetap tidak ditemukan di list
+  Future<ReportModel?> getReportById(String id, {String? userId}) async {
     final client = _service.client;
+    final effectiveUserId = userId ?? client?.auth.currentUser?.id;
+
     if (client != null) {
       try {
         final response = await client
             .from('reports')
-            .select('*, profiles(username, full_name, avatar_url)')
+            .select()
             .eq('id', id)
             .maybeSingle();
         if (response != null) {
           var fetched = ReportModel.fromJson(response);
-          final currentUserId = client.auth.currentUser?.id;
-          if (currentUserId != null) {
+
+          // Enrich with latest author profile (avatar, username, full_name)
+          if (fetched.authorId.isNotEmpty) {
+            try {
+              final prof = await client
+                  .from('profiles')
+                  .select('username, full_name, avatar_url')
+                  .eq('id', fetched.authorId)
+                  .maybeSingle();
+              if (prof != null) {
+                final av = prof['avatar_url'] as String?;
+                final un = prof['username'] as String?;
+                final fn = prof['full_name'] as String?;
+                fetched = fetched.copyWith(
+                  authorAvatarUrl: av ?? fetched.authorAvatarUrl,
+                  authorUsername: un ?? fetched.authorUsername,
+                  authorName: (fn != null && fn.isNotEmpty)
+                      ? fn
+                      : fetched.authorName,
+                );
+              }
+            } catch (_) {}
+          }
+
+          if (effectiveUserId != null) {
             try {
               final userVote = await client
                   .from('votes')
                   .select('vote_type')
                   .eq('report_id', id)
-                  .eq('user_id', currentUserId)
+                  .eq('user_id', effectiveUserId)
                   .maybeSingle();
-              if (userVote != null) {
-                fetched = fetched.copyWith(
-                  currentUserVote: userVote['vote_type'] as String?,
-                );
+              final vType = userVote?['vote_type'] as String?;
+              fetched = fetched.copyWith(
+                currentUserVote: vType,
+                clearCurrentUserVote: vType == null,
+              );
+              if (vType != null) {
+                _reportUserVotes.putIfAbsent(id, () => {})[effectiveUserId] =
+                    vType;
+              } else {
+                _reportUserVotes[id]?.remove(effectiveUserId);
               }
-            } catch (_) {}
+            } catch (_) {
+              final cachedVote = _reportUserVotes[id]?[effectiveUserId];
+              if (cachedVote != null) {
+                fetched = fetched.copyWith(currentUserVote: cachedVote);
+              }
+            }
           }
-          _reports.add(fetched);
+          updateReport(fetched);
           return fetched;
         }
-      } catch (_) {
-        try {
-          final response = await client
-              .from('reports')
-              .select()
-              .eq('id', id)
-              .maybeSingle();
-          if (response != null) {
-            final fetched = ReportModel.fromJson(response);
-            _reports.add(fetched);
-            return fetched;
-          }
-        } catch (_) {}
-      }
+      } catch (_) {}
     }
 
-    return null;
+    // In-memory fallback
+    try {
+      final cached = _reports.firstWhere((r) => r.id == id);
+      if (effectiveUserId != null && _reportUserVotes.containsKey(id)) {
+        final cachedVote = _reportUserVotes[id]?[effectiveUserId];
+        return cached.copyWith(
+          currentUserVote: cachedVote,
+          clearCurrentUserVote: cachedVote == null,
+        );
+      }
+      return cached;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Membuat laporan baru dan menyimpannya ke Supabase
@@ -335,10 +464,42 @@ class ReportRepository {
     }
 
     final now = DateTime.now();
-    final newReport = ReportModel(
+
+    // Pastikan nomor laporan unik dan sinkron dengan sequence laporan terakhir di server
+    int nextNumber = _reports.length + 1;
+    final client = _service.client;
+    if (client != null) {
+      try {
+        final res = await client
+            .from('reports')
+            .select('report_number')
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+        if (res != null && res['report_number'] != null) {
+          final str = res['report_number'].toString();
+          final parts = str.split('-');
+          if (parts.length >= 3) {
+            final lastNum = int.tryParse(parts.last);
+            if (lastNum != null && lastNum >= nextNumber) {
+              nextNumber = lastNum + 1;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    while (_reports.any(
+      (r) =>
+          r.reportNumber ==
+          'LPR-${now.year}-${nextNumber.toString().padLeft(4, '0')}',
+    )) {
+      nextNumber++;
+    }
+
+    var newReport = ReportModel(
       id: 'rep-${DateTime.now().millisecondsSinceEpoch}',
-      reportNumber:
-          'LPR-${now.year}-${(_reports.length + 1).toString().padLeft(4, '0')}',
+      reportNumber: 'LPR-${now.year}-${nextNumber.toString().padLeft(4, '0')}',
       authorId: authorId,
       authorName: authorName,
       authorUsername: authorUsername,
@@ -358,18 +519,26 @@ class ReportRepository {
       photoUrls: photoUrls,
     );
 
-    final client = _service.client;
     if (client != null && client.auth.currentUser != null) {
-      try {
-        await client.from('reports').insert(newReport.toJson());
-      } catch (e) {
+      bool inserted = false;
+      int attempts = 0;
+      while (!inserted && attempts < 3) {
+        attempts++;
         try {
-          final fallbackMap = newReport.toJson();
-          fallbackMap.remove('author_username');
-          fallbackMap.remove('author_avatar_url');
-          await client.from('reports').insert(fallbackMap);
-        } catch (_) {
-          throw Exception('Gagal menyimpan laporan ke server: $e');
+          await client.from('reports').insert(newReport.toJson());
+          inserted = true;
+        } catch (e) {
+          final errorStr = e.toString().toLowerCase();
+          if (errorStr.contains('reports_report_number_key') ||
+              errorStr.contains('duplicate key')) {
+            nextNumber++;
+            newReport = newReport.copyWith(
+              reportNumber:
+                  'LPR-${now.year}-${nextNumber.toString().padLeft(4, '0')}',
+            );
+          } else {
+            throw Exception('Gagal menyimpan laporan ke server: $e');
+          }
         }
       }
     }
@@ -395,7 +564,9 @@ class ReportRepository {
     }
 
     final userVotesForReport = _reportUserVotes.putIfAbsent(reportId, () => {});
-    final existingUserVote = userVotesForReport[userId];
+    final existingUserVote =
+        userVotesForReport[userId] ??
+        (userVotesForReport.isEmpty ? current.currentUserVote : null);
 
     int up = current.upvotesCount;
     int down = current.downvotesCount;
@@ -436,7 +607,7 @@ class ReportRepository {
           'Ambang batas downvote tercapai (${downPercentage.toStringAsFixed(1)}%). Ditahan untuk review moderasi.';
     }
 
-    final updated = current.copyWith(
+    var updated = current.copyWith(
       upvotesCount: up,
       downvotesCount: down,
       currentUserVote: newVote,
@@ -453,11 +624,48 @@ class ReportRepository {
       final effectiveUserId = userId.isNotEmpty ? userId : currentAuthUser.id;
 
       try {
-        // Coba panggil RPC atomik vote_report terlebih dahulu jika tersedia di database
-        await client.rpc(
+        // Panggil RPC atomik vote_report di database dan ambil hasil authoritative dari server
+        final rpcResult = await client.rpc(
           'vote_report',
           params: {'p_report_id': reportId, 'p_vote_type': voteType},
         );
+
+        dynamic data = rpcResult;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (_) {}
+        }
+
+        if (data is Map) {
+          final serverVote = data['current_user_vote'] as String?;
+          final serverUp =
+              (data['upvotes_count'] as num?)?.toInt() ?? updated.upvotesCount;
+          final serverDown =
+              (data['downvotes_count'] as num?)?.toInt() ??
+              updated.downvotesCount;
+          final pubStateStr = data['publication_state'] as String?;
+          final serverPubState = pubStateStr != null
+              ? PublicationState.fromString(pubStateStr)
+              : updated.publicationState;
+          final serverModReason =
+              data['moderation_reason'] as String? ?? updated.moderationReason;
+
+          if (serverVote != null) {
+            userVotesForReport[effectiveUserId] = serverVote;
+          } else {
+            userVotesForReport.remove(effectiveUserId);
+          }
+
+          updated = updated.copyWith(
+            upvotesCount: serverUp,
+            downvotesCount: serverDown,
+            currentUserVote: serverVote,
+            clearCurrentUserVote: serverVote == null,
+            publicationState: serverPubState,
+            moderationReason: serverModReason,
+          );
+        }
       } catch (_) {
         // Fallback: Query tabel votes dan update reports secara langsung
         try {
@@ -582,6 +790,157 @@ class ReportRepository {
           : current.publishedAt,
       updatedAt: now,
     );
+
+    _reports[index] = updated;
+    return updated;
+  }
+
+  /// Mengedit detail laporan oleh pemiliknya (PRD FR-03 & Aturan CRUD).
+  /// Hanya field yang diizinkan yang dapat diperbarui (judul, deskripsi, kategori, lokasi, foto).
+  Future<ReportModel> updateReportDetails({
+    required String reportId,
+    required String currentUserId,
+    required String title,
+    required String description,
+    required String category,
+    required double latitude,
+    required double longitude,
+    required String locationAddress,
+    String? areaName,
+    required List<String> photoUrls,
+  }) async {
+    var index = _reports.indexWhere((r) => r.id == reportId);
+    if (index == -1) {
+      final fetched = await getReportById(reportId);
+      if (fetched != null) {
+        index = _reports.indexWhere((r) => r.id == reportId);
+      }
+    }
+    if (index == -1) throw Exception('Laporan tidak ditemukan');
+
+    final current = _reports[index];
+
+    // Otorisasi: Hanya pemilik yang berhak mengedit
+    if (current.authorId != currentUserId) {
+      throw Exception('Anda tidak memiliki izin untuk mengedit laporan ini.');
+    }
+
+    // Integritas: Laporan yang sudah di-soft-delete tidak boleh diedit
+    if (current.isDeleted) {
+      throw Exception('Laporan yang sudah dihapus tidak dapat diedit.');
+    }
+
+    // Integritas: Laporan yang berstatus terminal tidak boleh diedit
+    if (current.isTerminal) {
+      throw Exception(
+        'Laporan dengan status final/terminal tidak dapat diedit.',
+      );
+    }
+
+    // Validasi aturan bisnis: Lokasi wajib berada di Provinsi Jawa Tengah
+    if (!BoundaryService.instance.isInsideCentralJava(latitude, longitude)) {
+      throw Exception(BoundaryService.outsideAreaErrorMessage);
+    }
+
+    final now = DateTime.now();
+    final updated = current.copyWith(
+      title: title.trim(),
+      description: description.trim(),
+      category: category,
+      latitude: latitude,
+      longitude: longitude,
+      locationAddress: locationAddress,
+      areaName: areaName ?? current.areaName,
+      photoUrls: photoUrls,
+      updatedAt: now,
+    );
+
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        await client
+            .from('reports')
+            .update({
+              'title': updated.title,
+              'description': updated.description,
+              'category': updated.category,
+              'latitude': updated.latitude,
+              'longitude': updated.longitude,
+              'location_address': updated.locationAddress,
+              'area_name': updated.areaName,
+              'photo_urls': updated.photoUrls,
+              'updated_at': updated.updatedAt.toUtc().toIso8601String(),
+            })
+            .eq('id', reportId)
+            .eq('author_id', currentUserId);
+      } catch (e) {
+        throw Exception('Gagal menyimpan perubahan ke server: $e');
+      }
+    }
+
+    _reports[index] = updated;
+    return updated;
+  }
+
+  /// Menghapus laporan secara logis (Soft Delete) oleh pemiliknya (PRD Bagian 9 & Aturan CRUD).
+  /// Data utama tetap tersimpan untuk integritas data dan audit log, namun tidak lagi tampil di daftar aktif.
+  Future<ReportModel> softDeleteReport({
+    required String reportId,
+    required String currentUserId,
+  }) async {
+    var index = _reports.indexWhere((r) => r.id == reportId);
+    if (index == -1) {
+      final fetched = await getReportById(reportId);
+      if (fetched != null) {
+        index = _reports.indexWhere((r) => r.id == reportId);
+      }
+    }
+    if (index == -1) throw Exception('Laporan tidak ditemukan');
+
+    final current = _reports[index];
+
+    // Otorisasi: Hanya pemilik yang berhak menghapus
+    if (current.authorId != currentUserId) {
+      throw Exception('Anda tidak memiliki izin untuk menghapus laporan ini.');
+    }
+
+    // Integritas: Mencegah penghapusan berulang
+    if (current.isDeleted) {
+      throw Exception('Laporan ini sudah dihapus sebelumnya.');
+    }
+
+    final now = DateTime.now();
+    final updated = current.copyWith(
+      deletedAt: now,
+      handlingStatus: HandlingStatus.cancelled,
+      terminalAt: now,
+      archiveAfter: now.add(const Duration(hours: 24)),
+      moderationReason: 'Dihapus oleh pelapor',
+      updatedAt: now,
+    );
+
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        await client
+            .from('reports')
+            .update({
+              'deleted_at': now.toUtc().toIso8601String(),
+              'handling_status': HandlingStatus.cancelled.value,
+              'moderation_reason': 'Dihapus oleh pelapor',
+              'terminal_at': now.toUtc().toIso8601String(),
+              'archive_after': now
+                  .add(const Duration(hours: 24))
+                  .toUtc()
+                  .toIso8601String(),
+              'updated_at': now.toUtc().toIso8601String(),
+            })
+            .eq('id', reportId)
+            .eq('author_id', currentUserId);
+      } catch (e) {
+        throw Exception('Gagal memproses penghapusan laporan di server: $e');
+      }
+    }
 
     _reports[index] = updated;
     return updated;

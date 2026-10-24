@@ -281,16 +281,24 @@ class AuthRepository {
     // 2. Perbarui kolom avatar_url pada tabel public.profiles di Supabase jika client aktif
     if (client != null) {
       try {
-        await client.from('profiles').upsert({
-          'id': userId,
-          'avatar_url': avatarUrl,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        });
+        await client
+            .from('profiles')
+            .update({
+              'avatar_url': avatarUrl,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', userId);
       } catch (profileError) {
         debugPrint('Catatan update avatar di profiles: $profileError');
-        throw Exception(
-          'Gagal memperbarui foto profil di database: $profileError',
-        );
+        try {
+          await client.from('profiles').upsert({
+            'id': userId,
+            'avatar_url': avatarUrl,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          });
+        } catch (upsertError) {
+          debugPrint('Catatan upsert avatar di profiles: $upsertError');
+        }
       }
 
       // 3. Perbarui user metadata di auth session

@@ -155,7 +155,7 @@ class MediaService {
           ? rawExt
           : 'jpg';
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filePath = 'avatars/$userId/avatar_$timestamp.$ext';
+      final filePath = '$userId/avatar_$timestamp.$ext';
 
       try {
         await client.storage
@@ -168,16 +168,27 @@ class MediaService {
         return client.storage.from('avatars').getPublicUrl(filePath);
       } catch (avatarError) {
         debugPrint(
-          'Catatan upload bucket avatars: $avatarError. Mencoba bucket profiles...',
+          'Catatan upload bucket avatars: $avatarError. Mencoba bucket report-attachments...',
         );
-        await client.storage
-            .from('profiles')
-            .uploadBinary(
-              filePath,
-              bytes,
-              fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
-            );
-        return client.storage.from('profiles').getPublicUrl(filePath);
+        try {
+          final fallbackPath = 'avatars/$userId/avatar_$timestamp.$ext';
+          await client.storage
+              .from('report-attachments')
+              .uploadBinary(
+                fallbackPath,
+                bytes,
+                fileOptions: FileOptions(
+                  contentType: 'image/$ext',
+                  upsert: true,
+                ),
+              );
+          return client.storage
+              .from('report-attachments')
+              .getPublicUrl(fallbackPath);
+        } catch (fallbackError) {
+          debugPrint('Catatan fallback upload avatar: $fallbackError');
+          throw avatarError;
+        }
       }
     } catch (e) {
       debugPrint('Catatan upload avatar Supabase: $e');

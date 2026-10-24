@@ -62,6 +62,7 @@ class ReportModel {
     this.publishedAt,
     this.terminalAt,
     this.archiveAfter,
+    this.deletedAt,
     required this.createdAt,
     required this.updatedAt,
     this.upvotesCount = 0,
@@ -94,6 +95,7 @@ class ReportModel {
   final DateTime? publishedAt;
   final DateTime? terminalAt;
   final DateTime? archiveAfter;
+  final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int upvotesCount;
@@ -120,15 +122,20 @@ class ReportModel {
     return '@warga_laporin';
   }
 
+  /// Apakah laporan telah di-soft-delete oleh pemiliknya
+  bool get isDeleted => deletedAt != null;
+
   /// Aturan visibilitas publik mutlak (PRD 5.4 & AGENTS.md 3.2):
-  /// publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
+  /// !isDeleted AND publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
   bool get isPubliclyVisible =>
+      !isDeleted &&
       publicationState == PublicationState.published &&
       handlingStatus != HandlingStatus.rejected &&
       handlingStatus != HandlingStatus.cancelled;
 
   /// Apakah laporan telah mencapai status terminal
   bool get isTerminal =>
+      isDeleted ||
       handlingStatus == HandlingStatus.rejected ||
       handlingStatus == HandlingStatus.cancelled;
 
@@ -222,6 +229,8 @@ class ReportModel {
     DateTime? publishedAt,
     DateTime? terminalAt,
     DateTime? archiveAfter,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
     DateTime? createdAt,
     DateTime? updatedAt,
     int? upvotesCount,
@@ -255,6 +264,7 @@ class ReportModel {
       publishedAt: publishedAt ?? this.publishedAt,
       terminalAt: terminalAt ?? this.terminalAt,
       archiveAfter: archiveAfter ?? this.archiveAfter,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       upvotesCount: upvotesCount ?? this.upvotesCount,
@@ -292,6 +302,7 @@ class ReportModel {
       'published_at': publishedAt?.toIso8601String(),
       'terminal_at': terminalAt?.toIso8601String(),
       'archive_after': archiveAfter?.toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'upvotes_count': upvotesCount,
@@ -355,6 +366,9 @@ class ReportModel {
           : null,
       archiveAfter: json['archive_after'] != null
           ? DateTime.tryParse(json['archive_after'])
+          : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.tryParse(json['deleted_at'])
           : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
