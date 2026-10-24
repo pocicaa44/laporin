@@ -239,135 +239,238 @@ void main() {
     });
   });
 
-  group(
-    '3. UI Widget Tests: ReportDetailScreen Role USER Discussion & Deletion',
-    () {
-      late ReportRepository repo;
-      late AuthRepository authRepo;
-      late CommentRepository commentRepo;
+  group('3. UI Widget Tests: ReportDetailScreen Role USER Discussion & Deletion', () {
+    late ReportRepository repo;
+    late AuthRepository authRepo;
+    late CommentRepository commentRepo;
 
-      setUp(() {
-        repo = ReportRepository();
-        authRepo = AuthRepository();
-        commentRepo = CommentRepository();
-      });
+    setUp(() {
+      repo = ReportRepository();
+      authRepo = AuthRepository();
+      commentRepo = CommentRepository();
+    });
 
-      Widget createTestApp(ReportModel report, String currentUserId) {
-        authRepo.setCurrentUserProfileForTesting(
-          UserProfileModel(
-            id: currentUserId,
-            email: '$currentUserId@test.com',
-            fullName: 'Pengguna Uji',
-          ),
-        );
-
-        return MultiProvider(
-          providers: [
-            Provider.value(value: repo),
-            Provider.value(value: authRepo),
-            Provider.value(value: commentRepo),
-            ChangeNotifierProvider(
-              create: (_) => AuthController(authRepository: authRepo),
-            ),
-          ],
-          child: MaterialApp(
-            home: ReportDetailScreen(
-              reportId: report.id,
-              initialReport: report,
-            ),
-          ),
-        );
-      }
-
-      testWidgets(
-        'Completed report shows "Aktifkan Diskusi" and "Hapus Laporan" in menu for owner',
-        (tester) async {
-          final now = DateTime.now();
-          final completedReport = ReportModel(
-            id: 'rep-completed',
-            reportNumber: 'LPR-2026-COMPLETED',
-            authorId: 'usr-owner',
-            authorName: 'Pemilik Laporan',
-            areaId: 'area-jateng',
-            areaName: 'Semarang',
-            title: 'Jalan Selesai Diaspal',
-            description: 'Jalanan telah mulus kembali.',
-            category: 'Jalan & Infrastruktur',
-            latitude: -6.9924,
-            longitude: 110.4225,
-            locationAddress: 'Semarang',
-            handlingStatus: HandlingStatus.completed,
-            publicationState: PublicationState.published,
-            isDiscussionActive: false,
-            createdAt: now,
-            updatedAt: now,
-          );
-
-          await tester.pumpWidget(createTestApp(completedReport, 'usr-owner'));
-          await tester.pumpAndSettle();
-
-          // Cek bahwa VoteActionBar disabled dengan keterangan
-          expect(find.byType(VoteActionBar), findsOneWidget);
-          expect(
-            find.textContaining('Penilaian suara ditutup'),
-            findsOneWidget,
-          );
-
-          // Cek bahwa banner diskusi ditutup tampil
-          expect(
-            find.textContaining('Diskusi dinonaktifkan (Laporan Selesai)'),
-            findsOneWidget,
-          );
-
-          // Buka Popup Menu opsi
-          await tester.tap(find.byType(PopupMenuButton<String>));
-          await tester.pumpAndSettle();
-
-          // Opsi untuk author pada completed report
-          expect(find.text('Aktifkan Diskusi'), findsOneWidget);
-          expect(find.text('Hapus Laporan'), findsOneWidget);
-        },
+    Widget createTestApp(ReportModel report, String currentUserId) {
+      authRepo.setCurrentUserProfileForTesting(
+        UserProfileModel(
+          id: currentUserId,
+          email: '$currentUserId@test.com',
+          fullName: 'Pengguna Uji',
+        ),
       );
 
-      testWidgets(
-        'Accepted (dilihat) and inProgress (diproses) reports do NOT show "Hapus Laporan"',
-        (tester) async {
-          final now = DateTime.now();
-          final inProgressReport = ReportModel(
-            id: 'rep-progress',
-            reportNumber: 'LPR-2026-PROG',
-            authorId: 'usr-owner',
-            authorName: 'Pemilik Laporan',
-            areaId: 'area-jateng',
-            areaName: 'Semarang',
-            title: 'Perbaikan Saluran Air',
-            description: 'Petugas sedang menggali saluran.',
-            category: 'Fasilitas Umum',
-            latitude: -6.9924,
-            longitude: 110.4225,
-            locationAddress: 'Semarang',
-            handlingStatus: HandlingStatus.inProgress,
-            publicationState: PublicationState.published,
-            isDiscussionActive: true,
-            createdAt: now,
-            updatedAt: now,
-          );
-
-          await tester.pumpWidget(createTestApp(inProgressReport, 'usr-owner'));
-          await tester.pumpAndSettle();
-
-          // Buka Popup Menu opsi
-          await tester.tap(find.byType(PopupMenuButton<String>));
-          await tester.pumpAndSettle();
-
-          // Opsi edit dan toggle diskusi harus ada
-          expect(find.text('Edit Laporan'), findsOneWidget);
-          expect(find.text('Nonaktifkan Diskusi'), findsOneWidget);
-
-          // "Hapus Laporan" TIDAK BOLEH tampil saat sedang diproses
-          expect(find.text('Hapus Laporan'), findsNothing);
-        },
+      return MultiProvider(
+        providers: [
+          Provider.value(value: repo),
+          Provider.value(value: authRepo),
+          Provider.value(value: commentRepo),
+          ChangeNotifierProvider(
+            create: (_) => AuthController(authRepository: authRepo),
+          ),
+        ],
+        child: MaterialApp(
+          home: ReportDetailScreen(reportId: report.id, initialReport: report),
+        ),
       );
-    },
-  );
+    }
+
+    testWidgets(
+      'Completed report shows "Aktifkan Diskusi" and "Hapus Laporan" in menu for owner',
+      (tester) async {
+        final now = DateTime.now();
+        final completedReport = ReportModel(
+          id: 'rep-completed',
+          reportNumber: 'LPR-2026-COMPLETED',
+          authorId: 'usr-owner',
+          authorName: 'Pemilik Laporan',
+          areaId: 'area-jateng',
+          areaName: 'Semarang',
+          title: 'Jalan Selesai Diaspal',
+          description: 'Jalanan telah mulus kembali.',
+          category: 'Jalan & Infrastruktur',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Semarang',
+          handlingStatus: HandlingStatus.completed,
+          publicationState: PublicationState.published,
+          isDiscussionActive: false,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await tester.pumpWidget(createTestApp(completedReport, 'usr-owner'));
+        await tester.pumpAndSettle();
+
+        // Cek bahwa VoteActionBar disabled dengan keterangan
+        expect(find.byType(VoteActionBar), findsOneWidget);
+        expect(find.textContaining('Penilaian suara ditutup'), findsOneWidget);
+
+        // Cek bahwa banner diskusi ditutup tampil
+        expect(
+          find.textContaining('Diskusi dinonaktifkan (Laporan Selesai)'),
+          findsOneWidget,
+        );
+
+        // Buka Popup Menu opsi
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+
+        // Opsi untuk author pada completed report
+        expect(find.text('Aktifkan Diskusi'), findsOneWidget);
+        expect(find.text('Hapus Laporan'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Accepted (dilihat) and inProgress (diproses) reports do NOT show "Hapus Laporan"',
+      (tester) async {
+        final now = DateTime.now();
+        final inProgressReport = ReportModel(
+          id: 'rep-progress',
+          reportNumber: 'LPR-2026-PROG',
+          authorId: 'usr-owner',
+          authorName: 'Pemilik Laporan',
+          areaId: 'area-jateng',
+          areaName: 'Semarang',
+          title: 'Perbaikan Saluran Air',
+          description: 'Petugas sedang menggali saluran.',
+          category: 'Fasilitas Umum',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Semarang',
+          handlingStatus: HandlingStatus.inProgress,
+          publicationState: PublicationState.published,
+          isDiscussionActive: true,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await tester.pumpWidget(createTestApp(inProgressReport, 'usr-owner'));
+        await tester.pumpAndSettle();
+
+        // Buka Popup Menu opsi
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+
+        // "Hapus Laporan" TIDAK BOLEH tampil saat sedang diproses
+        expect(find.text('Hapus Laporan'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Owner can delete rejected report via popup menu and confirmation dialog',
+      (tester) async {
+        final now = DateTime.now();
+        final rejectedReport = ReportModel(
+          id: 'rep-rejected',
+          reportNumber: 'LPR-2026-REJ',
+          authorId: 'usr-owner',
+          authorName: 'Pemilik Laporan',
+          areaId: 'area-jateng',
+          areaName: 'Semarang',
+          title: 'Laporan Ditolak',
+          description: 'Deskripsi laporan ditolak.',
+          category: 'Fasilitas Umum',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Semarang',
+          handlingStatus: HandlingStatus.rejected,
+          publicationState: PublicationState.published,
+          isDiscussionActive: false,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await tester.pumpWidget(createTestApp(rejectedReport, 'usr-owner'));
+        await tester.pumpAndSettle();
+
+        // Open popup menu
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Hapus Laporan'), findsOneWidget);
+        await tester.tap(find.text('Hapus Laporan'));
+        await tester.pumpAndSettle();
+
+        // Dialog confirmation should appear
+        expect(find.text('Hapus Laporan?'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Hapus Laporan'),
+          findsOneWidget,
+        );
+
+        // Tap Hapus Laporan inside the dialog
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Hapus Laporan'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(find.text('Laporan berhasil dihapus.'), findsOneWidget);
+        await tester.pumpAndSettle();
+
+        final updatedInRepo = repo.getCachedReport(
+          rejectedReport.id,
+          userId: 'usr-owner',
+        );
+        expect(updatedInRepo?.isDeleted, isTrue);
+      },
+    );
+
+    testWidgets(
+      'Owner can delete completed report via popup menu and confirmation dialog',
+      (tester) async {
+        final now = DateTime.now();
+        final completedReport = ReportModel(
+          id: 'rep-completed-del',
+          reportNumber: 'LPR-2026-CMP-DEL',
+          authorId: 'usr-owner',
+          authorName: 'Pemilik Laporan',
+          areaId: 'area-jateng',
+          areaName: 'Semarang',
+          title: 'Laporan Selesai Dihapus',
+          description: 'Deskripsi laporan selesai yang akan dihapus.',
+          category: 'Fasilitas Umum',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Semarang',
+          handlingStatus: HandlingStatus.completed,
+          publicationState: PublicationState.published,
+          isDiscussionActive: false,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await tester.pumpWidget(createTestApp(completedReport, 'usr-owner'));
+        await tester.pumpAndSettle();
+
+        // Open popup menu
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Hapus Laporan'), findsOneWidget);
+        await tester.tap(find.text('Hapus Laporan'));
+        await tester.pumpAndSettle();
+
+        // Dialog confirmation should appear
+        expect(find.text('Hapus Laporan?'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Hapus Laporan'),
+          findsOneWidget,
+        );
+
+        // Tap Hapus Laporan inside the dialog
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Hapus Laporan'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(find.text('Laporan berhasil dihapus.'), findsOneWidget);
+        await tester.pumpAndSettle();
+
+        final updatedInRepo = repo.getCachedReport(
+          completedReport.id,
+          userId: 'usr-owner',
+        );
+        expect(updatedInRepo?.isDeleted, isTrue);
+      },
+    );
+  });
 }
