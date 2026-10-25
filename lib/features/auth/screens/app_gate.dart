@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../admin/screens/admin_navigation_screen.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/screens/main_navigation_screen.dart';
 import '../controllers/auth_controller.dart';
 import 'set_username_screen.dart';
@@ -14,14 +15,34 @@ import 'splash_screen.dart';
 /// - Authenticated citizen with username: renders [MainNavigationScreen].
 /// - Authenticated user without a username (e.g., initial Google sign-in): renders [SetUsernameScreen].
 /// - Unauthenticated user: renders [SplashScreen] (Overview screen with 'Mulai Sekarang').
-class AppGate extends StatelessWidget {
+class AppGate extends StatefulWidget {
   const AppGate({super.key});
+
+  @override
+  State<AppGate> createState() => _AppGateState();
+}
+
+class _AppGateState extends State<AppGate> {
+  bool? _wasAuthenticated;
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isAuthenticated = auth.isAuthenticated;
 
-    if (auth.isAuthenticated) {
+    // Reset ke Beranda/Feed jika ada transisi dari belum login ke sudah login
+    if (_wasAuthenticated == false && isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          try {
+            context.read<NavigationController>().resetToHome();
+          } catch (_) {}
+        }
+      });
+    }
+    _wasAuthenticated = isAuthenticated;
+
+    if (isAuthenticated) {
       final user = auth.currentUser;
       final hasUsername = user?.username.trim().isNotEmpty ?? false;
       if (!hasUsername) {

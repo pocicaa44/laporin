@@ -118,7 +118,6 @@ Pods/
 *.ipa
 *.mobileprovision
 **/DerivedData/
-profile
 xcuserdata/
 **/ios/Runner/GeneratedPluginRegistrant.*
 

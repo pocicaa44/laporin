@@ -63,10 +63,7 @@ class AppDrawer extends StatelessWidget {
 
     return Drawer(
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(color: AppColors.border, width: 1),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: SafeArea(
         top: false,
         child: Column(

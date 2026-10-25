@@ -47,8 +47,8 @@ class AppValidators {
     if (value == null || value.isEmpty) {
       return 'Kata sandi wajib diisi.';
     }
-    if (value.length < 6) {
-      return 'Kata sandi minimal 6 karakter.';
+    if (value.length < 8) {
+      return 'Kata sandi minimal 8 karakter.';
     }
     return null;
   }

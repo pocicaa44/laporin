@@ -43,6 +43,27 @@ extension DateTimeFormatX on DateTime {
     }
   }
 
+  /// Format relatif ringkas untuk komentar dan balasan sesuai format lokal Indonesia:
+  /// d = detik, m = menit, j = jam, h = hari
+  String toShortRelativeTime() {
+    final now = DateTime.now();
+    final effectiveDate = isAfter(now) ? now : this;
+    final difference = now.difference(effectiveDate);
+
+    if (difference.inSeconds < 60) {
+      final secs = difference.inSeconds <= 0 ? 1 : difference.inSeconds;
+      return '${secs}d';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}j';
+    } else if (difference.inDays < 30) {
+      return '${difference.inDays}h';
+    } else {
+      return toDisplayDate();
+    }
+  }
+
   /// Human-friendly relative time: "2 jam lalu", "3 hari lalu", etc.
   String toRelativeTime() {
     final now = DateTime.now();

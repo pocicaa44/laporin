@@ -56,6 +56,34 @@ void main() {
       expect(weekAgo.toRelativeTime(), contains('20'));
     });
 
+    test(
+      'toShortRelativeTime formats timestamp with Indonesian units: d, m, j, h',
+      () {
+        final now = DateTime.now();
+
+        final secondsAgo = now.subtract(const Duration(seconds: 25));
+        expect(secondsAgo.toShortRelativeTime(), equals('25d'));
+
+        final justNow = now.subtract(const Duration(seconds: 0));
+        expect(justNow.toShortRelativeTime(), equals('1d'));
+
+        final minutesAgo = now.subtract(const Duration(minutes: 7));
+        expect(minutesAgo.toShortRelativeTime(), equals('7m'));
+
+        final hoursAgo = now.subtract(const Duration(hours: 4));
+        expect(hoursAgo.toShortRelativeTime(), equals('4j'));
+
+        final daysAgo = now.subtract(const Duration(days: 3));
+        expect(daysAgo.toShortRelativeTime(), equals('3h'));
+
+        final twentyDaysAgo = now.subtract(const Duration(days: 20));
+        expect(twentyDaysAgo.toShortRelativeTime(), equals('20h'));
+
+        final oldDate = DateTime(2026, 1, 15);
+        expect(oldDate.toShortRelativeTime(), contains('2026'));
+      },
+    );
+
     test('toReportTimeLabel handles user < 1 hour as "Baru saja" and >= 1 hour as relative time', () {
       final now = DateTime.now();
 

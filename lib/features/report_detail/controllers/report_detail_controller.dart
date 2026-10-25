@@ -15,6 +15,7 @@ class ReportDetailController extends ChangeNotifier {
     ReportModel? initialReport,
     this.currentUserId,
   }) : _report = initialReport {
+    _isLoadingComments = true;
     loadData();
   }
 
@@ -31,6 +32,9 @@ class ReportDetailController extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading && _report == null;
+
+  bool _isLoadingComments = false;
+  bool get isLoadingComments => _isLoadingComments;
 
   bool _isSendingComment = false;
   bool get isSendingComment => _isSendingComment;
@@ -62,8 +66,9 @@ class ReportDetailController extends ChangeNotifier {
   Future<void> loadData() async {
     if (_report == null) {
       _isLoading = true;
-      notifyListeners();
     }
+    _isLoadingComments = true;
+    notifyListeners();
 
     try {
       final fetched = await reportRepository.getReportById(
@@ -89,11 +94,40 @@ class ReportDetailController extends ChangeNotifier {
           fetchedComments.length,
         );
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      if (!_isDisposed) {
+        _isLoading = false;
+        _isLoadingComments = false;
+        notifyListeners();
+      }
+    }
+  }
 
-    if (!_isDisposed) {
-      _isLoading = false;
-      notifyListeners();
+  /// Memuat ulang komentar saja secara asinkron tanpa memuat ulang seluruh detail laporan
+  Future<void> refreshComments() async {
+    _isLoadingComments = true;
+    notifyListeners();
+
+    try {
+      final fetchedComments = await commentRepository.getComments(reportId);
+      if (_isDisposed) return;
+      _comments = fetchedComments;
+      if (_report != null) {
+        _report = _report!.copyWith(commentsCount: fetchedComments.length);
+        reportRepository.updateReport(_report!);
+      } else {
+        reportRepository.updateReportCommentsCount(
+          reportId,
+          fetchedComments.length,
+        );
+      }
+    } catch (_) {
+    } finally {
+      if (!_isDisposed) {
+        _isLoadingComments = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -141,6 +175,7 @@ class ReportDetailController extends ChangeNotifier {
     String? authorAvatarUrl,
     required UserRole authorRole,
     required String body,
+    String? parentCommentId,
   }) async {
     if (body.trim().isEmpty || _isSendingComment) return false;
 
@@ -162,6 +197,7 @@ class ReportDetailController extends ChangeNotifier {
         authorAvatarUrl: authorAvatarUrl,
         authorRole: authorRole,
         body: body,
+        parentCommentId: parentCommentId,
       );
 
       _comments.add(comment);

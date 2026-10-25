@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 
 import '../../core/services/boundary_service.dart';
+import '../../core/services/media_service.dart';
 import '../models/report_model.dart';
 import '../services/supabase_service.dart';
 
@@ -78,20 +79,34 @@ class ReportRepository {
                 profileMap[pid] = p as Map<String, dynamic>;
               }
             }
+            final currentAuthUser = client.auth.currentUser;
             for (var i = 0; i < list.length; i++) {
               final prof = profileMap[list[i].authorId];
-              if (prof != null) {
-                final av = prof['avatar_url'] as String?;
-                final un = prof['username'] as String?;
-                final fn = prof['full_name'] as String?;
-                list[i] = list[i].copyWith(
-                  authorAvatarUrl: av ?? list[i].authorAvatarUrl,
-                  authorUsername: un ?? list[i].authorUsername,
-                  authorName: (fn != null && fn.isNotEmpty)
-                      ? fn
-                      : list[i].authorName,
-                );
+              String? av = prof?['avatar_url'] as String?;
+              final un = prof?['username'] as String?;
+              final fn = prof?['full_name'] as String?;
+
+              // Fallback jika profiles belum terisi avatar_url tapi ini adalah user yang sedang login
+              if ((av == null || av.trim().isEmpty) &&
+                  currentAuthUser != null &&
+                  list[i].authorId == currentAuthUser.id) {
+                av =
+                    currentAuthUser.userMetadata?['avatar_url'] as String? ??
+                    currentAuthUser.userMetadata?['picture'] as String? ??
+                    currentAuthUser.userMetadata?['photo_url'] as String?;
               }
+
+              final finalAvatar = (av != null && av.trim().isNotEmpty)
+                  ? av
+                  : list[i].authorAvatarUrl;
+
+              list[i] = list[i].copyWith(
+                authorAvatarUrl: finalAvatar,
+                authorUsername: un ?? list[i].authorUsername,
+                authorName: (fn != null && fn.isNotEmpty)
+                    ? fn
+                    : list[i].authorName,
+              );
             }
           }
         } catch (_) {}
@@ -324,7 +339,7 @@ class ReportRepository {
           .where((r) => r.authorId == userId)
           .toList();
       if (!includeDeleted) {
-        filtered = filtered.where((r) => !r.isDeleted).toList();
+        filtered = filtered.where((r) => !r.deletedByUser).toList();
       }
       filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       list = filtered;
@@ -334,7 +349,7 @@ class ReportRepository {
             .where((r) => r.authorId == userId)
             .toList();
         if (!includeDeleted) {
-          filtered = filtered.where((r) => !r.isDeleted).toList();
+          filtered = filtered.where((r) => !r.deletedByUser).toList();
         }
         filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return filtered;
@@ -373,9 +388,11 @@ class ReportRepository {
     List<ReportModel> reports,
     String? filterStatus,
   ) {
-    var list = reports.where((r) => !r.isDeleted && !r.isDraft).toList();
+    var list = reports.where((r) => !r.deletedByAdmin && !r.isDraft).toList();
 
-    if (filterStatus == 'held') {
+    if (filterStatus == 'deleted_by_user') {
+      list = list.where((r) => r.deletedByUser).toList();
+    } else if (filterStatus == 'held') {
       list = list
           .where((r) => r.publicationState == PublicationState.held)
           .toList();
@@ -425,11 +442,26 @@ class ReportRepository {
                   .eq('id', fetched.authorId)
                   .maybeSingle();
               if (prof != null) {
-                final av = prof['avatar_url'] as String?;
+                String? av = prof['avatar_url'] as String?;
                 final un = prof['username'] as String?;
                 final fn = prof['full_name'] as String?;
+
+                if ((av == null || av.trim().isEmpty) &&
+                    effectiveUserId != null &&
+                    fetched.authorId == effectiveUserId) {
+                  final cur = client.auth.currentUser;
+                  av =
+                      cur?.userMetadata?['avatar_url'] as String? ??
+                      cur?.userMetadata?['picture'] as String? ??
+                      cur?.userMetadata?['photo_url'] as String?;
+                }
+
+                final finalAvatar = (av != null && av.trim().isNotEmpty)
+                    ? av
+                    : fetched.authorAvatarUrl;
+
                 fetched = fetched.copyWith(
-                  authorAvatarUrl: av ?? fetched.authorAvatarUrl,
+                  authorAvatarUrl: finalAvatar,
                   authorUsername: un ?? fetched.authorUsername,
                   authorName: (fn != null && fn.isNotEmpty)
                       ? fn
@@ -558,13 +590,24 @@ class ReportRepository {
       nextNumber++;
     }
 
+    String? resolvedAuthorAvatar = authorAvatarUrl;
+    if (resolvedAuthorAvatar == null || resolvedAuthorAvatar.trim().isEmpty) {
+      final curUser = client?.auth.currentUser;
+      if (curUser != null && curUser.id == authorId) {
+        resolvedAuthorAvatar =
+            curUser.userMetadata?['avatar_url'] as String? ??
+            curUser.userMetadata?['picture'] as String? ??
+            curUser.userMetadata?['photo_url'] as String?;
+      }
+    }
+
     var newReport = ReportModel(
       id: 'rep-${DateTime.now().millisecondsSinceEpoch}',
       reportNumber: 'LPR-${now.year}-${nextNumber.toString().padLeft(4, '0')}',
       authorId: authorId,
       authorName: authorName,
       authorUsername: authorUsername,
-      authorAvatarUrl: authorAvatarUrl,
+      authorAvatarUrl: resolvedAuthorAvatar,
       areaId: 'area-jateng',
       areaName: areaName ?? BoundaryService.defaultAreaName,
       title: title.trim(),
@@ -1071,8 +1114,10 @@ class ReportRepository {
     return updated;
   }
 
-  /// Menghapus laporan secara logis (Soft Delete) oleh pemiliknya atau admin (PRD Bagian 9 & Aturan CRUD).
-  /// Data utama tetap tersimpan untuk integritas data dan audit log, namun tidak lagi tampil di daftar aktif.
+  /// Menghapus laporan per-pihak (Soft Delete) atau permanen (Hard Delete) jika kedua belah pihak sudah menghapus.
+  /// Syarat menghapus permanen: Admin DAN User (Pelapor) harus sudah menghapus laporannya.
+  /// Jika kedua belah pihak sudah menghapus, seluruh media lampiran dibersihkan dari Storage
+  /// dan record laporan dihapus secara fisik dari database.
   Future<ReportModel> softDeleteReport({
     required String reportId,
     required String currentUserId,
@@ -1094,71 +1139,165 @@ class ReportRepository {
       throw Exception('Anda tidak memiliki izin untuk menghapus laporan ini.');
     }
 
-    // Validasi skema penghapusan oleh pelapor (USER):
-    // - Jika laporan masih baru/pending: BISA hapus dengan confirmation dialog.
-    // - Jika laporan ditolak atau selesai: BISA hapus dengan confirmation dialog.
-    // - TAPI jika laporan berstatus dilihat (diterima) atau diproses: TIDAK DAPAT menghapus.
-    if (!isCallerAdmin && !current.canAuthorDelete) {
-      throw Exception(
-        'Laporan yang berstatus diterima atau sedang diproses tidak dapat dihapus.',
-      );
-    }
-
-    // Integritas: Mencegah penghapusan berulang
-    if (current.isDeleted) {
-      throw Exception('Laporan ini sudah dihapus sebelumnya.');
-    }
-
-    final now = DateTime.now();
-    final deleteReason = isCallerAdmin
-        ? 'Dihapus oleh petugas / admin'
-        : 'Dihapus oleh pelapor';
-
-    final finalHandlingStatus =
-        (current.handlingStatus == HandlingStatus.completed ||
-            current.handlingStatus == HandlingStatus.rejected)
-        ? current.handlingStatus
-        : HandlingStatus.cancelled;
-
-    final updated = current.copyWith(
-      deletedAt: now,
-      handlingStatus: finalHandlingStatus,
-      terminalAt: current.terminalAt ?? now,
-      archiveAfter: now.add(const Duration(hours: 24)),
-      moderationReason: deleteReason,
-      updatedAt: now,
-    );
-
-    final client = _service.client;
-    if (client != null && client.auth.currentUser != null) {
-      try {
-        var query = client
-            .from('reports')
-            .update({
-              'deleted_at': now.toUtc().toIso8601String(),
-              'handling_status': finalHandlingStatus.value,
-              'moderation_reason': deleteReason,
-              'terminal_at': updated.terminalAt?.toUtc().toIso8601String(),
-              'archive_after': now
-                  .add(const Duration(hours: 24))
-                  .toUtc()
-                  .toIso8601String(),
-              'updated_at': now.toUtc().toIso8601String(),
-            })
-            .eq('id', reportId);
-
-        if (!isCallerAdmin) {
-          query = query.eq('author_id', currentUserId);
-        }
-
-        await query;
-      } catch (e) {
-        throw Exception('Gagal memproses penghapusan laporan di server: $e');
+    // Validasi aturan penghapusan:
+    // Selain laporan yang dihapus oleh user, yang sudah selesai atau ditolak,
+    // dan laporan yang batal, baik admin ataupun user TIDAK BISA menghapus laporan.
+    if (!isCallerAdmin) {
+      if (current.deletedByUser) {
+        throw Exception('Laporan ini sudah dihapus oleh Anda sebelumnya.');
+      }
+      if (!current.canAuthorDelete) {
+        throw Exception(
+          'Hanya laporan yang sudah selesai, ditolak, atau dibatalkan yang dapat dihapus oleh pelapor.',
+        );
+      }
+    } else {
+      if (current.deletedByAdmin) {
+        throw Exception('Laporan ini sudah dihapus oleh admin sebelumnya.');
+      }
+      if (!current.canAdminDelete) {
+        throw Exception(
+          'Admin hanya dapat menghapus laporan yang sudah dihapus oleh pelapor, atau berstatus selesai, ditolak, dan dibatalkan.',
+        );
       }
     }
 
-    _reports[index] = updated;
-    return updated;
+    final now = DateTime.now();
+    final bool newDeletedByUser = isCallerAdmin ? current.deletedByUser : true;
+    final DateTime? newDeletedByUserAt = isCallerAdmin
+        ? current.deletedByUserAt
+        : now;
+    final bool newDeletedByAdmin = isCallerAdmin
+        ? true
+        : current.deletedByAdmin;
+    final DateTime? newDeletedByAdminAt = isCallerAdmin
+        ? now
+        : current.deletedByAdminAt;
+
+    // Evaluasi syarat penghapusan permanen: DUAL PARTY (User AND Admin)
+    final bool willPermanentlyDelete = newDeletedByUser && newDeletedByAdmin;
+
+    final client = _service.client;
+
+    if (willPermanentlyDelete) {
+      // 1. Bersihkan semua file media (lampiran foto & bukti penanganan) dari Supabase Storage
+      try {
+        await MediaService.instance.deleteReportMedia(
+          photoUrls: current.photoUrls,
+          completionProofUrl: current.completionProofUrl,
+        );
+      } catch (mediaError) {
+        debugPrint(
+          'Catatan pembersihan media storage saat hard delete: $mediaError',
+        );
+      }
+
+      // 2. Hapus secara fisik dari database Supabase
+      if (client != null && client.auth.currentUser != null) {
+        try {
+          try {
+            await client.rpc(
+              'execute_dual_party_deletion',
+              params: {'p_report_id': reportId, 'p_is_admin': isCallerAdmin},
+            );
+          } catch (rpcError) {
+            debugPrint(
+              'Catatan RPC execute_dual_party_deletion: $rpcError, fallback ke DELETE query',
+            );
+            await client.from('reports').delete().eq('id', reportId);
+          }
+        } catch (dbError) {
+          throw Exception(
+            'Gagal menghapus laporan secara permanen di server: $dbError',
+          );
+        }
+      }
+
+      // 3. Hapus dari memori lokal repository
+      _reports.removeAt(index);
+      _reportUserVotes.remove(reportId);
+
+      return current.copyWith(
+        deletedByUser: true,
+        deletedByUserAt: newDeletedByUserAt,
+        deletedByAdmin: true,
+        deletedByAdminAt: newDeletedByAdminAt,
+        deletedAt: current.deletedAt ?? now,
+        updatedAt: now,
+      );
+    } else {
+      // Baru salah satu pihak yang menghapus: lakukan soft-delete untuk pihak terkait
+      final deleteReason = isCallerAdmin
+          ? 'Dihapus oleh petugas / admin'
+          : 'Dihapus oleh pelapor';
+
+      final finalHandlingStatus =
+          (current.handlingStatus == HandlingStatus.completed ||
+              current.handlingStatus == HandlingStatus.rejected)
+          ? current.handlingStatus
+          : HandlingStatus.cancelled;
+
+      final updated = current.copyWith(
+        deletedByUser: newDeletedByUser,
+        deletedByUserAt: newDeletedByUserAt,
+        deletedByAdmin: newDeletedByAdmin,
+        deletedByAdminAt: newDeletedByAdminAt,
+        deletedAt: current.deletedAt ?? now,
+        handlingStatus: finalHandlingStatus,
+        terminalAt: current.terminalAt ?? now,
+        archiveAfter: now.add(const Duration(hours: 24)),
+        moderationReason: deleteReason,
+        updatedAt: now,
+      );
+
+      if (client != null && client.auth.currentUser != null) {
+        try {
+          try {
+            await client.rpc(
+              'execute_dual_party_deletion',
+              params: {'p_report_id': reportId, 'p_is_admin': isCallerAdmin},
+            );
+          } catch (rpcError) {
+            debugPrint(
+              'Catatan RPC execute_dual_party_deletion: $rpcError, fallback ke UPDATE',
+            );
+            var query = client
+                .from('reports')
+                .update({
+                  'deleted_by_user': newDeletedByUser,
+                  'deleted_by_user_at': newDeletedByUserAt
+                      ?.toUtc()
+                      .toIso8601String(),
+                  'deleted_by_admin': newDeletedByAdmin,
+                  'deleted_by_admin_at': newDeletedByAdminAt
+                      ?.toUtc()
+                      .toIso8601String(),
+                  'deleted_at': updated.deletedAt?.toUtc().toIso8601String(),
+                  'handling_status': finalHandlingStatus.value,
+                  'moderation_reason': deleteReason,
+                  'terminal_at': updated.terminalAt?.toUtc().toIso8601String(),
+                  'archive_after': now
+                      .add(const Duration(hours: 24))
+                      .toUtc()
+                      .toIso8601String(),
+                  'updated_at': now.toUtc().toIso8601String(),
+                })
+                .eq('id', reportId);
+
+            if (!isCallerAdmin) {
+              query = query.eq('author_id', currentUserId);
+            }
+
+            await query;
+          }
+        } catch (e) {
+          throw Exception('Gagal memproses penghapusan laporan di server: $e');
+        }
+      }
+
+      _reports[index] = updated;
+      return updated;
+    }
   }
 
   /// Toggle status diskusi oleh pemilik laporan atau admin

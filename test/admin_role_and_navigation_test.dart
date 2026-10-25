@@ -20,9 +20,12 @@ import 'package:laporin/features/admin/screens/admin_resolve_sheet.dart';
 import 'package:laporin/features/admin/screens/admin_status_update_sheet.dart';
 import 'package:laporin/features/admin/widgets/admin_delete_announcement_dialog.dart';
 import 'package:laporin/features/auth/controllers/auth_controller.dart';
+import 'package:laporin/features/auth/screens/app_gate.dart';
+import 'package:laporin/features/auth/screens/splash_screen.dart';
 import 'package:laporin/features/create_report/controllers/create_report_controller.dart';
 import 'package:laporin/features/create_report/screens/create_report_screen.dart';
 import 'package:laporin/features/feed/controllers/feed_controller.dart';
+import 'package:laporin/features/feed/screens/feed_screen.dart';
 import 'package:laporin/features/feed/widgets/report_card.dart';
 import 'package:laporin/features/announcements/controllers/announcement_controller.dart';
 import 'package:laporin/features/navigation/controllers/navigation_controller.dart';
@@ -259,6 +262,57 @@ void main() {
         expect(find.text('Notifikasi'), findsOneWidget);
       },
     );
+
+    testWidgets('Login flow resets navigation and opens Beranda/Feed', (
+      WidgetTester tester,
+    ) async {
+      final authController = AuthController(authRepository: authRepo);
+      final navController = NavigationController(initialIndex: 3);
+      authRepo.setCurrentUserProfileForTesting(null);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            Provider<AuthRepository>.value(value: authRepo),
+            Provider<ReportRepository>.value(value: reportRepo),
+            Provider<CommentRepository>(create: (_) => CommentRepository()),
+            Provider<NotificationRepository>(
+              create: (_) => NotificationRepository(),
+            ),
+            Provider<AnnouncementRepository>.value(value: announcementRepo),
+            ChangeNotifierProvider<AuthController>.value(value: authController),
+            ChangeNotifierProvider(
+              create: (_) => FeedController(reportRepository: reportRepo),
+            ),
+            ChangeNotifierProvider(
+              create: (_) =>
+                  NotificationController(repository: NotificationRepository()),
+            ),
+            ChangeNotifierProvider<NavigationController>.value(
+              value: navController,
+            ),
+            ChangeNotifierProvider(
+              create: (_) =>
+                  AnnouncementController(repository: announcementRepo),
+            ),
+          ],
+          child: const MaterialApp(home: AppGate()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(navController.currentIndex, equals(3));
+
+      // Simulate user successfully logging in
+      authRepo.setCurrentUserProfileForTesting(testUser);
+      authController.notifyListeners();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MainNavigationScreen), findsOneWidget);
+      expect(navController.currentIndex, equals(0));
+      expect(find.byType(FeedScreen), findsOneWidget);
+    });
 
     testWidgets(
       'CreateReportScreen shows AccessDeniedScreen when accessed by admin',

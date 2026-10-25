@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -8,6 +9,7 @@ import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
+import '../../../data/models/comment_model.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/comment_repository.dart';
 import '../../../data/repositories/report_repository.dart';
@@ -59,6 +61,9 @@ class _ReportDetailView extends StatefulWidget {
 
 class _ReportDetailViewState extends State<_ReportDetailView> {
   final _commentController = TextEditingController();
+  final _commentFocusNode = FocusNode();
+  CommentModel? _replyingToComment;
+  final Set<String> _expandedThreadIds = {};
 
   @override
   void initState() {
@@ -79,7 +84,34 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   @override
   void dispose() {
     _commentController.dispose();
+    _commentFocusNode.dispose();
     super.dispose();
+  }
+
+  void _startReply(CommentModel targetComment) {
+    setState(() {
+      _replyingToComment = targetComment;
+      final rootId = CommentThreadItem.findRootId(
+        targetComment,
+        context.read<ReportDetailController>().comments,
+      );
+      _expandedThreadIds.add(rootId);
+    });
+    _commentFocusNode.requestFocus();
+  }
+
+  void _cancelReply() {
+    setState(() {
+      _replyingToComment = null;
+    });
+  }
+
+  String _formatCommentCount(int count) {
+    try {
+      return NumberFormat('#,###', 'id_ID').format(count).replaceAll(',', '.');
+    } catch (_) {
+      return count.toString();
+    }
   }
 
   void _sendComment() {
@@ -106,19 +138,37 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
         ? '@${user.username.trim().replaceFirst('@', '')}'
         : user.fullName;
 
+    final authorAvatar =
+        (user.avatarUrl != null && user.avatarUrl!.trim().isNotEmpty)
+        ? user.avatarUrl
+        : context.read<AuthController>().currentUser?.avatarUrl;
+
+    final targetReply = _replyingToComment;
+
     controller
         .submitComment(
           authorId: user.id,
           authorName: authorDisplayName,
-          authorAvatarUrl: user.avatarUrl,
+          authorAvatarUrl: authorAvatar,
           authorRole: user.role,
           body: text,
+          parentCommentId: targetReply?.id,
         )
         .then((success) {
           if (!mounted) return;
           if (success) {
             _commentController.clear();
             focusScope.unfocus();
+            setState(() {
+              if (targetReply != null) {
+                final rootId = CommentThreadItem.findRootId(
+                  targetReply,
+                  controller.comments,
+                );
+                _expandedThreadIds.add(rootId);
+              }
+              _replyingToComment = null;
+            });
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -177,10 +227,15 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     String userId, {
     bool isAdmin = false,
   }) async {
+    final isOtherPartyDeleted = isAdmin
+        ? currentReport.deletedByUser
+        : currentReport.deletedByAdmin;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => DeleteReportDialog(
         reportNumber: currentReport.reportNumber,
+        isOtherPartyDeleted: isOtherPartyDeleted,
         onConfirmDelete: () => context
             .read<ReportDetailController>()
             .softDeleteReport(userId, isCallerAdmin: isAdmin),
@@ -373,12 +428,17 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final report = controller.report;
     final currentUserId = auth.currentUser?.id ?? 'guest';
 
-    if (controller.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final isAdmin = auth.isAdmin;
+    final isOwner = report?.authorId == currentUserId;
+    final isDeletedForViewer =
+        (isOwner && report?.deletedByUser == true) ||
+        (isAdmin && report?.deletedByAdmin == true) ||
+        (!isOwner && !isAdmin && report?.isDeleted == true);
 
-    if (report == null || report.isDeleted) {
-      final isDeleted = report?.isDeleted == true;
+    if (report == null || isDeletedForViewer) {
+      final isDeleted =
+          report != null &&
+          (report.deletedByUser || report.deletedByAdmin || report.isDeleted);
       return Scaffold(
         appBar: AppBar(title: const Text('Detail Laporan')),
         body: Center(
@@ -392,7 +452,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                       ? 'Laporan Telah Dihapus'
                       : 'Laporan Tidak Ditemukan',
                   message: isDeleted
-                      ? 'Laporan ini telah dihapus oleh pemiliknya dan tidak lagi aktif.'
+                      ? 'Laporan ini telah dihapus dan tidak lagi aktif.'
                       : 'Laporan ini mungkin sedang diproses, telah dihapus, atau berada di luar batas akses.',
                 ),
                 const SizedBox(height: 16),
@@ -415,8 +475,6 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
       );
     }
 
-    final isOwner = auth.currentUser?.id == report.authorId;
-    final isAdmin = auth.isAdmin;
     final isFinalized =
         report.handlingStatus == HandlingStatus.completed ||
         report.handlingStatus == HandlingStatus.rejected;
@@ -502,18 +560,24 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     ],
                   ),
                 ],
-                if (isAdmin && !isOwner && !report.isDeleted) ...[
+                if (isAdmin &&
+                    !report.deletedByAdmin &&
+                    report.canAdminDelete) ...[
                   IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
+                    icon: Icon(
+                      report.deletedByUser
+                          ? Icons.delete_forever_rounded
+                          : Icons.delete_outline_rounded,
                       color: AppColors.danger,
                     ),
-                    tooltip: 'Hapus Laporan',
+                    tooltip: report.deletedByUser
+                        ? 'Hapus Permanen Laporan'
+                        : 'Hapus Laporan',
                     onPressed: () =>
                         _showDeleteDialog(report, currentUserId, isAdmin: true),
                   ),
                 ],
-                if (isOwner && !report.isDeleted) ...[
+                if (isOwner && !report.deletedByUser) ...[
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert_rounded),
                     tooltip: 'Opsi Laporan',
@@ -694,6 +758,81 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           ),
                         ],
 
+                        // Banner pemberitahuan jika laporan sudah dihapus oleh pelapor
+                        if (isAdmin && report.deletedByUser) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFCA5A5),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person_off_outlined,
+                                      color: AppColors.danger,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Laporan Telah Dihapus Oleh Pelapor',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Pelapor telah menghapus laporan ini dari akunnya. Tekan tombol di bawah untuk menghapus permanen dari database dan membersihkan media di server.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF991B1B),
+                                    height: 1.35,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(38),
+                                    backgroundColor: AppColors.danger,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.delete_forever_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'Hapus Permanen Laporan',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  onPressed: () => _showDeleteDialog(
+                                    report,
+                                    currentUserId,
+                                    isAdmin: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         // Author Header & Category
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -843,14 +982,26 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                   const SizedBox(width: 8),
                                   OutlinedButton.icon(
                                     icon: const Icon(
-                                      Icons.delete_outline,
+                                      Icons.delete_outline_rounded,
                                       size: 16,
+                                      color: AppColors.danger,
                                     ),
                                     label: const Text('Hapus'),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppColors.danger,
                                       side: const BorderSide(
-                                        color: AppColors.danger,
+                                        color: Color(0xFFFCA5A5),
+                                        width: 1,
+                                      ),
+                                      shape: const StadiumBorder(),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 0,
+                                      ),
+                                      minimumSize: const Size(0, 34),
+                                      textStyle: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     onPressed: () => _showDeleteDialog(
@@ -899,27 +1050,61 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       Expanded(
                                         child: OutlinedButton.icon(
                                           icon: const Icon(
-                                            Icons.edit_note,
-                                            size: 16,
+                                            Icons.edit_note_rounded,
+                                            size: 17,
+                                            color: AppColors.primary,
                                           ),
                                           label: const Text('Ubah Status'),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: AppColors.primary,
+                                            side: const BorderSide(
+                                              color: Color(0xFF9CA3AF),
+                                              width: 1,
+                                            ),
+                                            shape: const StadiumBorder(),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 0,
+                                            ),
+                                            minimumSize: const Size(0, 38),
+                                            textStyle: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                           onPressed: () =>
                                               _openAdminStatusSheet(report),
                                         ),
                                       ),
                                       if (report.handlingStatus !=
                                           HandlingStatus.completed) ...[
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 10),
                                         Expanded(
                                           child: ElevatedButton.icon(
                                             icon: const Icon(
-                                              Icons.task_alt,
-                                              size: 16,
+                                              Icons
+                                                  .check_circle_outline_rounded,
+                                              size: 17,
+                                              color: Colors.white,
                                             ),
                                             label: const Text('Selesaikan'),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  AppColors.success,
+                                              backgroundColor: const Color(
+                                                0xFF10B981,
+                                              ),
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              shape: const StadiumBorder(),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 0,
+                                                  ),
+                                              minimumSize: const Size(0, 38),
+                                              textStyle: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                             onPressed: () =>
                                                 _openAdminResolveSheet(report),
@@ -1136,36 +1321,130 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           ),
                         const SizedBox(height: 24),
 
-                        // Comments header
+                        // Comments header: Komentar & Diskusi (2.586)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Tanggapan & Diskusi (${controller.comments.length})',
-                              style: AppTextStyles.sectionTitle,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Comments list
-                        if (controller.comments.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
-                              child: Text(
-                                'Belum ada komentar. Jadilah yang pertama menanggapi.',
-                                style: AppTextStyles.caption,
+                              'Komentar & Diskusi (${_formatCommentCount(controller.comments.length)})',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
                               ),
                             ),
-                          )
-                        else
-                          ...controller.comments.map(
-                            (c) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: CommentTile(comment: c),
-                            ),
-                          ),
+                            if (controller.isLoadingComments &&
+                                controller.comments.isNotEmpty)
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Comments list
+                        Builder(
+                          builder: (context) {
+                            if (controller.isLoadingComments &&
+                                controller.comments.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 36,
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primarySoft
+                                              .withValues(alpha: 0.5),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.8,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  AppColors.primary,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'Memuat komentar & diskusi...',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (controller.comments.isEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: Text(
+                                    'Belum ada komentar. Jadilah yang pertama menanggapi.',
+                                    style: AppTextStyles.caption,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final threads = CommentThreadItem.buildThreads(
+                              controller.comments,
+                            );
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (int i = 0; i < threads.length; i++) ...[
+                                  if (i > 0) const SizedBox(height: 18),
+                                  CommentThreadTile(
+                                    thread: threads[i],
+                                    reportAuthorId: report.authorId,
+                                    isExpanded: _expandedThreadIds.contains(
+                                      threads[i].root.id,
+                                    ),
+                                    onToggleExpanded: () {
+                                      setState(() {
+                                        if (_expandedThreadIds.contains(
+                                          threads[i].root.id,
+                                        )) {
+                                          _expandedThreadIds.remove(
+                                            threads[i].root.id,
+                                          );
+                                        } else {
+                                          _expandedThreadIds.add(
+                                            threads[i].root.id,
+                                          );
+                                        }
+                                      });
+                                    },
+                                    onReply: _startReply,
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -1175,10 +1454,6 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                 if (report.isPubliclyVisible && !report.isTerminal)
                   report.canAddComment
                       ? Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
                           decoration: const BoxDecoration(
                             color: AppColors.surface,
                             border: Border(
@@ -1187,48 +1462,152 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           ),
                           child: SafeArea(
                             top: false,
-                            child: Row(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _commentController,
-                                    textInputAction: TextInputAction.send,
-                                    onSubmitted: (_) => _sendComment(),
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          'Tulis komentar atau tanggapan...',
-                                      hintStyle: AppTextStyles.caption,
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 10,
-                                          ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(24),
-                                        borderSide: const BorderSide(
-                                          color: AppColors.border,
-                                        ),
-                                      ),
+                                // Reply Header Banner (Membalas @username)
+                                if (_replyingToComment != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  icon: controller.isSendingComment
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.send_rounded,
+                                    color: const Color(0xFFF3F4F6),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.reply_rounded,
+                                          size: 16,
                                           color: AppColors.primary,
                                         ),
-                                  onPressed: controller.isSendingComment
-                                      ? null
-                                      : _sendComment,
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text.rich(
+                                            TextSpan(
+                                              children: [
+                                                const TextSpan(
+                                                  text: 'Membalas ',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Color(0xFF4B5563),
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text:
+                                                      _replyingToComment!
+                                                          .authorName
+                                                          .trim()
+                                                          .startsWith('@')
+                                                      ? _replyingToComment!
+                                                            .authorName
+                                                            .trim()
+                                                      : '@${_replyingToComment!.authorName.trim()}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: _cancelReply,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4),
+                                            child: Icon(
+                                              Icons.close_rounded,
+                                              size: 16,
+                                              color: Color(0xFF6B7280),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: AppColors.border,
+                                  ),
+                                ],
+
+                                // Input Row
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _commentController,
+                                          focusNode: _commentFocusNode,
+                                          textInputAction: TextInputAction.send,
+                                          onSubmitted: (_) => _sendComment(),
+                                          decoration: InputDecoration(
+                                            hintText: _replyingToComment != null
+                                                ? 'Tulis balasan untuk ${_replyingToComment!.authorName.trim().startsWith('@') ? _replyingToComment!.authorName.trim() : '@${_replyingToComment!.authorName.trim()}'}...'
+                                                : 'Tulis komentar atau tanggapan...',
+                                            hintStyle: AppTextStyles.caption,
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 10,
+                                                ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                              borderSide: const BorderSide(
+                                                color: AppColors.border,
+                                              ),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                              borderSide: const BorderSide(
+                                                color: AppColors.border,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                              borderSide: const BorderSide(
+                                                color: AppColors.primary,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: controller.isSendingComment
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : const Icon(
+                                                Icons.send_rounded,
+                                                color: AppColors.primary,
+                                              ),
+                                        onPressed: controller.isSendingComment
+                                            ? null
+                                            : _sendComment,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),

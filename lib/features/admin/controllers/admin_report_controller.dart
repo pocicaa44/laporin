@@ -49,6 +49,8 @@ class AdminReportController extends ChangeNotifier {
   int get completedCount => _allReports
       .where((r) => r.handlingStatus == HandlingStatus.completed)
       .length;
+  int get deletedByUserCount =>
+      _allReports.where((r) => r.deletedByUser && !r.deletedByAdmin).length;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;

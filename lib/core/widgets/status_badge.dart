@@ -123,14 +123,40 @@ class PublicationStateBadge extends StatelessWidget {
     super.key,
     required this.state,
     this.isDraft = false,
+    this.iconOnly = false,
   });
 
   final PublicationState state;
   final bool isDraft;
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context) {
     if (isDraft) {
+      if (iconOnly) {
+        return Tooltip(
+          message: 'Draft',
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF8E7),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: const Color(0xFFD98205).withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.edit_note_rounded,
+                size: 14,
+                color: Color(0xFFD98205),
+              ),
+            ),
+          ),
+        );
+      }
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
@@ -185,6 +211,22 @@ class PublicationStateBadge extends StatelessWidget {
         fg = AppColors.textSecondary;
         icon = Icons.archive_outlined;
         break;
+    }
+
+    if (iconOnly) {
+      return Tooltip(
+        message: label,
+        child: Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: fg.withValues(alpha: 0.3), width: 1),
+          ),
+          child: Center(child: Icon(icon, size: 14, color: fg)),
+        ),
+      );
     }
 
     return Container(

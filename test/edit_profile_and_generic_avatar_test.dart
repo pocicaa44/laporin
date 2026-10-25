@@ -251,22 +251,29 @@ void main() {
 
       expect(find.text('Edit Profil'), findsOneWidget);
       expect(find.text('Ubah Foto Profil'), findsOneWidget);
+      expect(find.text('Nama Pengguna'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Ratna Sari'), findsOneWidget);
+      expect(find.text('Nama Akun (@)'), findsOneWidget);
       expect(find.widgetWithText(TextFormField, 'ratnasari'), findsOneWidget);
-      expect(find.text('Ratna Sari'), findsOneWidget);
       expect(find.text('ratna@laporin.id'), findsOneWidget);
       expect(find.text('Warga Masyarakat'), findsOneWidget);
       expect(find.byType(AppButton), findsOneWidget);
     });
 
     testWidgets(
-      'Updating username in EditProfileScreen updates AuthController and pops screen',
+      'Updating Nama Pengguna and Nama Akun in EditProfileScreen updates AuthController and repository',
       (tester) async {
         await tester.pumpWidget(createTestApp());
         await tester.pumpAndSettle();
 
-        // Enter new username
+        // Enter new Nama Pengguna
+        final nameField = find.widgetWithText(TextFormField, 'Ratna Sari');
+        await tester.enterText(nameField, 'Ratna Sari Dewi');
+        await tester.pumpAndSettle();
+
+        // Enter new Nama Akun
         final usernameField = find.widgetWithText(TextFormField, 'ratnasari');
-        await tester.enterText(usernameField, 'ratna_baru');
+        await tester.enterText(usernameField, 'ratna_dewi');
         await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
         // Click Simpan Perubahan
@@ -275,8 +282,12 @@ void main() {
         await tester.tap(saveBtn);
         await tester.pumpAndSettle();
 
-        // Verify username updated in repository
-        expect(authRepo.currentUserProfile?.username, equals('ratna_baru'));
+        // Verify fullName and username updated in repository
+        expect(
+          authRepo.currentUserProfile?.fullName,
+          equals('Ratna Sari Dewi'),
+        );
+        expect(authRepo.currentUserProfile?.username, equals('ratna_dewi'));
       },
     );
 

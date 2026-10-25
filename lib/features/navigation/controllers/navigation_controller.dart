@@ -14,4 +14,9 @@ class NavigationController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Mereset navigasi kembali ke Beranda/Feed (index 0)
+  void resetToHome() {
+    setIndex(0);
+  }
 }

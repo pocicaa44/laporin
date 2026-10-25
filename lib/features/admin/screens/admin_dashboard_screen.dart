@@ -163,6 +163,17 @@ class _AdminDashboardView extends StatelessWidget {
                                 isSelected: controller.filter == 'completed',
                                 onTap: () => controller.setFilter('completed'),
                               ),
+                              if (controller.deletedByUserCount > 0) ...[
+                                const SizedBox(width: 8),
+                                _FilterChip(
+                                  label:
+                                      'Dihapus Pelapor (${controller.deletedByUserCount})',
+                                  isSelected:
+                                      controller.filter == 'deleted_by_user',
+                                  onTap: () =>
+                                      controller.setFilter('deleted_by_user'),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -186,6 +197,7 @@ class _AdminDashboardView extends StatelessWidget {
                                   context: context,
                                   builder: (ctx) => DeleteReportDialog(
                                     reportNumber: report.reportNumber,
+                                    isOtherPartyDeleted: report.deletedByUser,
                                     onConfirmDelete: () =>
                                         controller.deleteReport(
                                           reportId: report.id,
@@ -418,6 +430,11 @@ class _AdminReportCard extends StatelessWidget {
       isViewedByAdmin: isViewed,
     );
 
+    final showStatusBadge =
+        report.isDraft ||
+        report.handlingStatus != HandlingStatus.newReport ||
+        DateTime.now().difference(report.createdAt).inMinutes < 60;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -425,118 +442,186 @@ class _AdminReportCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isHeld ? AppColors.danger : AppColors.border,
+          color: isHeld ? AppColors.danger : const Color(0xFFE5E7EB),
           width: isHeld ? 1.5 : 1,
         ),
-        boxShadow: const [AppColors.cardShadow],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. Header: Report Number & Time (Left) | Status & Publication Badges (Right)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Text(
-                    report.reportNumber,
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.primary,
+              Expanded(
+                child: Row(
+                  children: [
+                    Text(
+                      report.reportNumber,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (timeLabel == 'Baru')
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Baru',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                    const SizedBox(width: 8),
+                    if (timeLabel == 'Baru')
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Baru',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: Text(
+                          timeLabel,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    )
-                  else
-                    Text(
-                      timeLabel,
-                      style: AppTextStyles.caption.copyWith(fontSize: 11),
-                    ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  PublicationStateBadge(state: report.publicationState),
-                  const SizedBox(width: 6),
-                  HandlingStatusBadge(
-                    status: report.handlingStatus,
-                    createdAt: report.createdAt,
+                  if (showStatusBadge) ...[
+                    HandlingStatusBadge(
+                      status: report.handlingStatus,
+                      createdAt: report.createdAt,
+                      isDraft: report.isDraft,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  PublicationStateBadge(
+                    state: report.publicationState,
                     isDraft: report.isDraft,
+                    iconOnly: true,
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(report.title, style: AppTextStyles.sectionTitle),
+          const SizedBox(height: 6),
+
+          // 2. Title
+          Text(
+            report.title,
+            style: const TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF111827),
+              height: 1.3,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 4),
-          Text(report.locationAddress, style: AppTextStyles.caption),
+
+          // 3. Location Address
+          Text(
+            report.locationAddress,
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFF6B7280),
+              height: 1.35,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          // 4. Moderation Reason if any
           if (report.moderationReason != null) ...[
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF8E7),
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFDD888)),
               ),
               child: Text(
                 'Moderasi: ${report.moderationReason}',
-                style: const TextStyle(fontSize: 11, color: Color(0xFFD98205)),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFD98205),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+          if (report.deletedByUser) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.person_off_outlined,
+                    size: 14,
+                    color: AppColors.danger,
+                  ),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Laporan telah dihapus oleh pelapor. Menunggu konfirmasi admin untuk hapus permanen.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
           const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 8),
+
+          // 5. Divider
+          const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6)),
+          const SizedBox(height: 12),
+
+          // 6. Action Buttons
           if (isFinalized)
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.visibility_outlined, size: 16),
-                  label: const Text('Detail'),
-                  onPressed: () async {
-                    controller?.markReportAsViewed(report.id);
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReportDetailScreen(
-                          reportId: report.id,
-                          initialReport: report,
-                        ),
-                      ),
-                    );
-                    controller?.fetchReports(forceRefresh: true);
-                  },
-                ),
-                if (onDelete != null)
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    label: const Text('Hapus'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.danger),
-                    ),
-                    onPressed: onDelete,
-                  ),
+                _buildDetailButton(context, controller),
+                if (onDelete != null && report.canAdminDelete)
+                  _buildDeleteButton(isDeletedByUser: report.deletedByUser),
               ],
             )
           else
@@ -544,54 +629,124 @@ class _AdminReportCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.visibility_outlined, size: 16),
-                  label: const Text('Detail'),
-                  onPressed: () async {
-                    controller?.markReportAsViewed(report.id);
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReportDetailScreen(
-                          reportId: report.id,
-                          initialReport: report,
-                        ),
-                      ),
-                    );
-                    controller?.fetchReports(forceRefresh: true);
-                  },
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.edit_note_rounded, size: 16),
-                  label: const Text('Ubah Status'),
-                  onPressed: onUpdateStatus,
-                ),
+                _buildDetailButton(context, controller),
+                _buildUpdateStatusButton(),
                 if (report.handlingStatus != HandlingStatus.completed)
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.task_alt, size: 16),
-                    label: const Text('Selesaikan'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    onPressed: onResolve,
-                  ),
-                if (isHeld)
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.public, size: 16),
-                    label: const Text('Pulihkan Publikasi'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    onPressed: onRestorePublication,
-                  ),
+                  _buildResolveButton(),
+                if (isHeld) _buildRestorePublicationButton(),
+                if (onDelete != null && report.canAdminDelete)
+                  _buildDeleteButton(isDeletedByUser: report.deletedByUser),
               ],
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDetailButton(
+    BuildContext context,
+    AdminReportController? controller,
+  ) {
+    return OutlinedButton.icon(
+      icon: const Icon(
+        Icons.visibility_outlined,
+        size: 15,
+        color: AppColors.primary,
+      ),
+      label: const Text('Detail'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: Color(0xFF9CA3AF), width: 1),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        minimumSize: const Size(0, 34),
+        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+      ),
+      onPressed: () async {
+        controller?.markReportAsViewed(report.id);
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ReportDetailScreen(reportId: report.id, initialReport: report),
+          ),
+        );
+        controller?.fetchReports(forceRefresh: true);
+      },
+    );
+  }
+
+  Widget _buildUpdateStatusButton() {
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.tune_rounded, size: 15, color: AppColors.primary),
+      label: const Text('Ubah Status'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: Color(0xFF9CA3AF), width: 1),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        minimumSize: const Size(0, 34),
+        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+      ),
+      onPressed: onUpdateStatus,
+    );
+  }
+
+  Widget _buildResolveButton() {
+    return ElevatedButton.icon(
+      icon: const Icon(
+        Icons.check_circle_outline_rounded,
+        size: 15,
+        color: Colors.white,
+      ),
+      label: const Text('Selesaikan'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF10B981),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        minimumSize: const Size(0, 34),
+        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+      ),
+      onPressed: onResolve,
+    );
+  }
+
+  Widget _buildDeleteButton({bool isDeletedByUser = false}) {
+    return OutlinedButton.icon(
+      icon: const Icon(
+        Icons.delete_outline_rounded,
+        size: 15,
+        color: Color(0xFFEF4444),
+      ),
+      label: Text(isDeletedByUser ? 'Hapus Permanen' : 'Hapus'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFFEF4444),
+        side: const BorderSide(color: Color(0xFFFCA5A5), width: 1),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        minimumSize: const Size(0, 34),
+        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+      ),
+      onPressed: onDelete,
+    );
+  }
+
+  Widget _buildRestorePublicationButton() {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.public_rounded, size: 15, color: Colors.white),
+      label: const Text('Pulihkan Publikasi'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        minimumSize: const Size(0, 34),
+        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+      ),
+      onPressed: onRestorePublication,
     );
   }
 }

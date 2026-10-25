@@ -9,10 +9,12 @@ class DeleteReportDialog extends StatefulWidget {
     super.key,
     required this.reportNumber,
     required this.onConfirmDelete,
+    this.isOtherPartyDeleted = false,
   });
 
   final String reportNumber;
   final Future<bool> Function() onConfirmDelete;
+  final bool isOtherPartyDeleted;
 
   @override
   State<DeleteReportDialog> createState() => _DeleteReportDialogState();
@@ -70,8 +72,11 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
-            child: Text('Hapus Laporan?', style: AppTextStyles.sectionTitle),
+          Expanded(
+            child: Text(
+              widget.isOtherPartyDeleted ? 'Hapus Permanen?' : 'Hapus Laporan?',
+              style: AppTextStyles.sectionTitle,
+            ),
           ),
         ],
       ),
@@ -80,12 +85,16 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Apakah Anda yakin ingin menghapus laporan ${widget.reportNumber}? Laporan akan dihapus dari daftar aktif publik.',
+            widget.isOtherPartyDeleted
+                ? 'Pelapor telah menghapus laporan ${widget.reportNumber}. Konfirmasi ini akan menghapus laporan secara permanen dari database dan seluruh media foto lampiran akan dibersihkan dari server.'
+                : 'Apakah Anda yakin ingin menghapus laporan ${widget.reportNumber}? Laporan akan dihapus dari daftar aktif publik.',
             style: AppTextStyles.body,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Catatan: Rekam data tetap disimpan di sistem untuk kebutuhan moderasi dan jejak audit. Tindakan ini tidak dapat dibatalkan.',
+          Text(
+            widget.isOtherPartyDeleted
+                ? 'Perhatian: Tindakan ini permanen dan tidak dapat dipulihkan kembali.'
+                : 'Catatan: Laporan akan dihapus permanen dari database dan seluruh media foto akan dibersihkan dari server apabila kedua belah pihak (warga & admin) telah menghapus laporan ini.',
             style: AppTextStyles.caption,
           ),
           if (_errorMessage != null) ...[
@@ -132,7 +141,11 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Text('Hapus Laporan'),
+              : Text(
+                  widget.isOtherPartyDeleted
+                      ? 'Hapus Permanen'
+                      : 'Hapus Laporan',
+                ),
         ),
       ],
     );

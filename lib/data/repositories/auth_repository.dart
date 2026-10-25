@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,6 +42,7 @@ class AuthRepository {
     User user, {
     String? fallbackFullName,
     String? fallbackEmail,
+    String? fallbackAvatarUrl,
   }) async {
     final client = _service.client;
     String? dbUsername;
@@ -75,8 +77,46 @@ class AuthRepository {
         user.userMetadata?['full_name'] as String? ??
         fallbackFullName ??
         'Warga Laporin';
+
+    // Ambil avatar bawaan dari Google OAuth / OIDC metadata (avatar_url, picture, photo_url)
+    // atau fallback dari native GoogleSignIn (photoUrl)
+    final googleMetaAvatar =
+        user.userMetadata?['avatar_url'] as String? ??
+        user.userMetadata?['picture'] as String? ??
+        user.userMetadata?['photo_url'] as String? ??
+        fallbackAvatarUrl;
+
+    // Prioritas:
+    // 1. dbAvatarUrl jika ada di profiles (bisa custom avatar yang diunggah pengguna)
+    // 2. googleMetaAvatar jika dbAvatarUrl belum diisi / null (avatar bawaan akun Google)
     final resolvedAvatarUrl =
-        dbAvatarUrl ?? user.userMetadata?['avatar_url'] as String?;
+        (dbAvatarUrl != null && dbAvatarUrl.trim().isNotEmpty)
+        ? dbAvatarUrl.trim()
+        : (googleMetaAvatar != null && googleMetaAvatar.trim().isNotEmpty
+              ? googleMetaAvatar.trim()
+              : null);
+
+    // Jika di database profiles belum ada avatar_url (atau masih kosong),
+    // tapi pengguna memiliki foto profil bawaan Google, sinkronkan ke
+    // tabel profiles di Supabase secara otomatis agar laporan & interaksi pengguna
+    // mendapatkan foto profil Google mereka secara konsisten.
+    if ((dbAvatarUrl == null || dbAvatarUrl.trim().isEmpty) &&
+        resolvedAvatarUrl != null &&
+        resolvedAvatarUrl.isNotEmpty &&
+        client != null) {
+      try {
+        await client.from('profiles').upsert({
+          'id': user.id,
+          'full_name': resolvedFullName,
+          if (resolvedUsername.isNotEmpty) 'username': resolvedUsername,
+          'avatar_url': resolvedAvatarUrl,
+          'role': userRole.name,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (syncError) {
+        debugPrint('Catatan sync google avatar ke profiles: $syncError');
+      }
+    }
 
     return UserProfileModel(
       id: user.id,
@@ -208,8 +248,11 @@ class AuthRepository {
     }
   }
 
-  /// Simpan atau perbarui username akun pengguna
-  Future<UserProfileModel> updateUsername(String newUsername) async {
+  /// Simpan atau perbarui informasi profil pengguna (Nama Pengguna / full_name dan Nama Akun / username)
+  Future<UserProfileModel> updateProfileInfo({
+    String? fullName,
+    String? username,
+  }) async {
     final client = _service.client;
     final user = client?.auth.currentUser;
     final userId = _currentUserProfile?.id ?? user?.id;
@@ -218,31 +261,77 @@ class AuthRepository {
       throw Exception('Sesi pengguna tidak ditemukan.');
     }
 
-    final cleanUsername = newUsername.trim().toLowerCase();
-
-    // Pastikan username belum digunakan
-    final isAvailable = await checkUsernameAvailability(cleanUsername);
-    if (!isAvailable) {
-      throw Exception('Username "$cleanUsername" sudah digunakan.');
+    String? cleanUsername;
+    if (username != null) {
+      final trimmed = username.trim().replaceFirst('@', '').toLowerCase();
+      if (trimmed.isNotEmpty) {
+        // Cek ketersediaan jika username berubah
+        final currentUsername =
+            _currentUserProfile?.username
+                .trim()
+                .replaceFirst('@', '')
+                .toLowerCase() ??
+            '';
+        if (trimmed != currentUsername) {
+          final isAvailable = await checkUsernameAvailability(trimmed);
+          if (!isAvailable) {
+            throw Exception('Nama akun "@$trimmed" sudah digunakan.');
+          }
+        }
+        cleanUsername = trimmed;
+      }
     }
 
-    final displayName =
+    String? cleanFullName;
+    if (fullName != null) {
+      final trimmed = fullName.trim();
+      if (trimmed.isNotEmpty) {
+        cleanFullName = trimmed;
+      }
+    }
+
+    final finalFullName =
+        cleanFullName ??
         _currentUserProfile?.fullName ??
         user?.userMetadata?['full_name'] as String? ??
-        cleanUsername;
+        'Warga Laporin';
+
+    final finalUsername =
+        cleanUsername ??
+        _currentUserProfile?.username ??
+        user?.userMetadata?['username'] as String? ??
+        '';
 
     if (client != null) {
       try {
-        await client.from('profiles').upsert({
+        final profileUpdates = <String, dynamic>{
           'id': userId,
-          'username': cleanUsername,
-          'full_name': displayName,
+          'full_name': finalFullName,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
-        });
+        };
+        if (finalUsername.isNotEmpty) {
+          profileUpdates['username'] = finalUsername;
+        }
 
-        await client.auth.updateUser(
-          UserAttributes(data: {'username': cleanUsername}),
-        );
+        final resolvedAvatar =
+            _currentUserProfile?.avatarUrl ??
+            user?.userMetadata?['avatar_url'] as String? ??
+            user?.userMetadata?['picture'] as String? ??
+            user?.userMetadata?['photo_url'] as String?;
+        if (resolvedAvatar != null && resolvedAvatar.trim().isNotEmpty) {
+          profileUpdates['avatar_url'] = resolvedAvatar.trim();
+        }
+
+        await client.from('profiles').upsert(profileUpdates);
+
+        final authMetadataUpdates = <String, dynamic>{
+          'full_name': finalFullName,
+        };
+        if (finalUsername.isNotEmpty) {
+          authMetadataUpdates['username'] = finalUsername;
+        }
+
+        await client.auth.updateUser(UserAttributes(data: authMetadataUpdates));
       } catch (e) {
         throw Exception(
           e
@@ -254,19 +343,42 @@ class AuthRepository {
     }
 
     _currentUserProfile =
-        _currentUserProfile?.copyWith(username: cleanUsername) ??
+        _currentUserProfile?.copyWith(
+          fullName: finalFullName,
+          username: finalUsername,
+        ) ??
         UserProfileModel(
           id: userId,
           email: user?.email ?? '',
-          fullName: displayName,
-          username: cleanUsername,
+          fullName: finalFullName,
+          username: finalUsername,
           role: UserRole.fromString(user?.userMetadata?['role'] as String?),
         );
 
     return _currentUserProfile!;
   }
 
-  /// Unggah foto profil baru ke Supabase Storage dan perbarui kolom avatar_url di tabel profiles
+  /// Simpan atau perbarui username akun pengguna
+  Future<UserProfileModel> updateUsername(String newUsername) async {
+    return updateProfileInfo(username: newUsername);
+  }
+
+  /// Simpan atau perbarui nama pengguna / nama lengkap
+  Future<UserProfileModel> updateFullName(String newFullName) async {
+    return updateProfileInfo(fullName: newFullName);
+  }
+
+  /// Unggah foto profil baru ke Supabase Storage, perbarui database, dan hapus foto lama secara aman.
+  ///
+  /// Urutan aman:
+  /// 1. Catat avatar lama sebelum mutasi.
+  /// 2. Upload avatar baru (terkompresi <= 30 KB).
+  /// 3. Update database tabel profiles dan auth metadata.
+  ///    Jika database gagal, bersihkan avatar baru yatim (best-effort) dan pertahankan avatar lama.
+  /// 4. Perbarui state lokal aplikasi.
+  /// 5. Hapus file avatar lama dari Supabase Storage jika valid milik pengguna.
+  ///    Jika penghapusan avatar lama gagal, avatar baru tetap aktif (jangan batalkan mutasi).
+  /// 6. Evict cache gambar agar foto baru langsung terlihat.
   Future<UserProfileModel> updateAvatar(XFile file) async {
     final client = _service.client;
     final user = client?.auth.currentUser;
@@ -276,63 +388,111 @@ class AuthRepository {
       throw Exception('Sesi pengguna tidak ditemukan.');
     }
 
-    // 1. Upload ke Supabase Storage (path aman: avatars/{userId}/avatar_{timestamp}.{ext})
-    final avatarUrl = await MediaService.instance.uploadAvatar(
-      userId: userId,
-      file: file,
-    );
+    // 1. Ambil path avatar lama dari data profil aktif
+    final oldAvatarUrl =
+        _currentUserProfile?.avatarUrl ??
+        (user?.userMetadata?['avatar_url'] as String?);
 
-    // 2. Perbarui kolom avatar_url pada tabel public.profiles di Supabase jika client aktif
+    // 2. Upload foto baru ke Supabase Storage (otomatis terkompresi <= 30.000 byte)
+    final String newAvatarUrl;
+    try {
+      newAvatarUrl = await MediaService.instance.uploadAvatar(
+        userId: userId,
+        file: file,
+      );
+    } catch (e) {
+      // Upload avatar baru gagal: pertahankan avatar lama dan tampilkan pesan kegagalan
+      rethrow;
+    }
+
+    // 3. Perbarui referensi avatar pada tabel profiles di database
     if (client != null) {
       try {
-        await client
-            .from('profiles')
-            .update({
-              'avatar_url': avatarUrl,
-              'updated_at': DateTime.now().toUtc().toIso8601String(),
-            })
-            .eq('id', userId);
-      } catch (profileError) {
-        debugPrint('Catatan update avatar di profiles: $profileError');
         try {
+          await client
+              .from('profiles')
+              .update({
+                'avatar_url': newAvatarUrl,
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+              })
+              .eq('id', userId);
+        } catch (profileError) {
+          debugPrint('Catatan update avatar di profiles: $profileError');
+          // Fallback upsert jika baris belum terbentuk
           await client.from('profiles').upsert({
             'id': userId,
-            'avatar_url': avatarUrl,
+            'avatar_url': newAvatarUrl,
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           });
-        } catch (upsertError) {
-          debugPrint('Catatan upsert avatar di profiles: $upsertError');
         }
-      }
 
-      // 3. Perbarui user metadata di auth session
-      try {
-        await client.auth.updateUser(
-          UserAttributes(data: {'avatar_url': avatarUrl}),
+        // Perbarui user metadata di auth session
+        try {
+          await client.auth.updateUser(
+            UserAttributes(data: {'avatar_url': newAvatarUrl}),
+          );
+        } catch (authMetaError) {
+          debugPrint('Catatan update user metadata: $authMetaError');
+        }
+      } catch (dbError) {
+        // Update database gagal: bersihkan file baru yang yatim, pertahankan avatar lama
+        debugPrint(
+          'Catatan update database gagal, membersihkan avatar baru yatim: $dbError',
         );
-      } catch (authMetaError) {
-        debugPrint('Catatan update user metadata: $authMetaError');
+        try {
+          await MediaService.instance.deleteAvatarFile(
+            avatarUrl: newAvatarUrl,
+            userId: userId,
+          );
+        } catch (cleanupError) {
+          debugPrint(
+            'Catatan gagal membersihkan avatar baru yatim: $cleanupError',
+          );
+        }
+        throw Exception(
+          'Gagal memperbarui referensi foto profil di database: $dbError',
+        );
       }
     }
 
     // 4. Perbarui state lokal currentUserProfile secara reaktif
     _currentUserProfile =
-        _currentUserProfile?.copyWith(avatarUrl: avatarUrl) ??
+        _currentUserProfile?.copyWith(avatarUrl: newAvatarUrl) ??
         UserProfileModel(
           id: userId,
           email: user?.email ?? '',
           fullName:
               user?.userMetadata?['full_name'] as String? ?? 'Warga Laporin',
           username: user?.userMetadata?['username'] as String? ?? '',
-          avatarUrl: avatarUrl,
+          avatarUrl: newAvatarUrl,
           role: UserRole.fromString(user?.userMetadata?['role'] as String?),
         );
+
+    // 5. Setelah avatar baru aktif dan profil berhasil disimpan, hapus file avatar lama dari Storage
+    if (oldAvatarUrl != null &&
+        oldAvatarUrl.trim().isNotEmpty &&
+        oldAvatarUrl.trim() != newAvatarUrl.trim()) {
+      try {
+        await MediaService.instance.deleteAvatarFile(
+          avatarUrl: oldAvatarUrl,
+          userId: userId,
+        );
+      } catch (deleteError) {
+        // Kegagalan penghapusan avatar lama tidak membatalkan avatar baru yang sudah aktif
+        debugPrint(
+          'Catatan penghapusan avatar lama gagal (diabaikan agar pengguna tidak terganggu): $deleteError',
+        );
+      }
+
+      // 6. Bersihkan cache gambar lama
+      _evictImageCache(oldAvatarUrl);
+    }
 
     return _currentUserProfile!;
   }
 
   /// Reset / hapus foto profil kustom dan kembali ke avatar default generic.
-  /// Menghindari penyimpanan URL palsu dan tidak membebani server/storage.
+  /// Menghapus file avatar lama dari storage setelah database berhasil diperbarui.
   Future<UserProfileModel> removeAvatar() async {
     final client = _service.client;
     final user = client?.auth.currentUser;
@@ -341,6 +501,10 @@ class AuthRepository {
     if (userId == null) {
       throw Exception('Sesi pengguna tidak ditemukan.');
     }
+
+    final oldAvatarUrl =
+        _currentUserProfile?.avatarUrl ??
+        (user?.userMetadata?['avatar_url'] as String?);
 
     if (client != null) {
       try {
@@ -353,6 +517,7 @@ class AuthRepository {
             .eq('id', userId);
       } catch (profileError) {
         debugPrint('Catatan reset avatar di profiles: $profileError');
+        throw Exception('Gagal mereset foto profil di database: $profileError');
       }
 
       try {
@@ -365,7 +530,33 @@ class AuthRepository {
     }
 
     _currentUserProfile = _currentUserProfile?.copyWith(resetAvatar: true);
+
+    // Hapus file avatar lama dari Supabase Storage jika ada
+    if (oldAvatarUrl != null && oldAvatarUrl.trim().isNotEmpty) {
+      try {
+        await MediaService.instance.deleteAvatarFile(
+          avatarUrl: oldAvatarUrl,
+          userId: userId,
+        );
+      } catch (deleteError) {
+        debugPrint(
+          'Catatan gagal menghapus avatar lama saat reset: $deleteError',
+        );
+      }
+      _evictImageCache(oldAvatarUrl);
+    }
+
     return _currentUserProfile!;
+  }
+
+  /// Membersihkan memori imageCache Flutter agar avatar yang diperbarui tidak tertutup cache
+  void _evictImageCache(String? imageUrl) {
+    if (imageUrl == null || imageUrl.trim().isEmpty) return;
+    try {
+      PaintingBinding.instance.imageCache.evict(NetworkImage(imageUrl.trim()));
+    } catch (_) {
+      // Abaikan jika binding belum diinisialisasi pada pure unit tests
+    }
   }
 
   Future<UserProfileModel> signInWithEmail(
@@ -479,6 +670,7 @@ class AuthRepository {
         user,
         fallbackFullName: googleAccount.displayName,
         fallbackEmail: googleAccount.email,
+        fallbackAvatarUrl: googleAccount.photoUrl,
       );
 
       return _currentUserProfile!;
@@ -495,6 +687,84 @@ class AuthRepository {
       }
       throw Exception(
         msg.replaceFirst('AuthException: ', '').replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  /// Mengirim kode OTP pemulihan kata sandi ke email pengguna via Supabase Auth
+  Future<void> sendResetPasswordOtp(String email) async {
+    final client = _service.client;
+    if (client == null) {
+      throw Exception(
+        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
+      );
+    }
+
+    try {
+      await client.auth.resetPasswordForEmail(email.trim());
+    } catch (e) {
+      throw Exception(
+        e
+            .toString()
+            .replaceFirst('AuthException: ', '')
+            .replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  /// Verifikasi kode 6-digit OTP pemulihan kata sandi pengguna
+  Future<void> verifyRecoveryOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final client = _service.client;
+    if (client == null) {
+      throw Exception(
+        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
+      );
+    }
+
+    try {
+      final response = await client.auth.verifyOTP(
+        email: email.trim(),
+        token: otp.trim(),
+        type: OtpType.recovery,
+      );
+      if (response.user == null) {
+        throw Exception('Kode OTP tidak valid atau sudah kedaluwarsa.');
+      }
+    } catch (e) {
+      throw Exception(
+        e
+            .toString()
+            .replaceFirst('AuthException: ', '')
+            .replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  /// Memperbarui kata sandi baru untuk sesi pemulihan yang telah terotentikasi
+  Future<void> updatePassword(String newPassword) async {
+    final client = _service.client;
+    if (client == null) {
+      throw Exception(
+        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
+      );
+    }
+
+    try {
+      final response = await client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      if (response.user == null) {
+        throw Exception('Gagal memperbarui kata sandi.');
+      }
+    } catch (e) {
+      throw Exception(
+        e
+            .toString()
+            .replaceFirst('AuthException: ', '')
+            .replaceFirst('Exception: ', ''),
       );
     }
   }

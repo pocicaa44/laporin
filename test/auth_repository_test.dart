@@ -95,6 +95,19 @@ void main() {
       expect(AppValidators.validateUsername('admin_laporin'), isNull); // valid
     });
 
+    test('AppValidators.validatePassword enforces minimum 8 characters', () {
+      expect(AppValidators.validatePassword(null), isNotNull);
+      expect(AppValidators.validatePassword(''), isNotNull);
+      expect(AppValidators.validatePassword('12345'), isNotNull);
+      expect(AppValidators.validatePassword('1234567'), isNotNull);
+      expect(
+        AppValidators.validatePassword('1234567'),
+        equals('Kata sandi minimal 8 karakter.'),
+      );
+      expect(AppValidators.validatePassword('12345678'), isNull);
+      expect(AppValidators.validatePassword('strongPassword123'), isNull);
+    });
+
     test('AppValidators.validateConfirmPassword checks equality', () {
       expect(
         AppValidators.validateConfirmPassword(null, 'secret123'),

@@ -374,6 +374,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                           child: ChoiceChip(
                             label: Text(cat),
                             selected: isSelected,
+                            showCheckmark: false,
                             onSelected: (selected) {
                               if (selected) {
                                 setState(() => _selectedCategory = cat);

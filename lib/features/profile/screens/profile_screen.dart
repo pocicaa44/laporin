@@ -11,6 +11,7 @@ import '../../auth/controllers/auth_controller.dart';
 import '../../auth/screens/app_gate.dart';
 import '../../auth/screens/set_username_screen.dart';
 import '../../my_reports/screens/my_reports_screen.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import 'edit_profile_screen.dart';
 
@@ -342,6 +343,9 @@ class ProfileScreen extends StatelessWidget {
               onTap: auth.isLoading
                   ? () {}
                   : () async {
+                      try {
+                        context.read<NavigationController>().resetToHome();
+                      } catch (_) {}
                       await auth.signOut();
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(

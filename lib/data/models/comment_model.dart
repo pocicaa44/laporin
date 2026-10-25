@@ -55,4 +55,28 @@ class CommentModel {
       parentCommentId: json['parent_comment_id']?.toString(),
     );
   }
+
+  CommentModel copyWith({
+    String? id,
+    String? reportId,
+    String? authorId,
+    String? authorName,
+    String? authorAvatarUrl,
+    UserRole? authorRole,
+    String? body,
+    DateTime? createdAt,
+    String? parentCommentId,
+  }) {
+    return CommentModel(
+      id: id ?? this.id,
+      reportId: reportId ?? this.reportId,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,
+      authorRole: authorRole ?? this.authorRole,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      parentCommentId: parentCommentId ?? this.parentCommentId,
+    );
+  }
 }

@@ -150,7 +150,7 @@ Context7 bukan pengganti test, audit keamanan, atau pembacaan source code. Janga
 
 ## 6. Arsitektur dan Kualitas Kode
 
-- Pisahkan UI, state/presentation logic, aturan domain, dan data access sesuai pola project.
+- Pisahkan UI, state/pntation logic, aturan domain, dan data access sesuai pola project.
 - Aturan bisnis kritis tidak boleh hanya ada di widget/client.
 - Hindari duplikasi aturan status dan visibilitas; buat satu sumber aturan yang dapat diuji.
 - Gunakan model bertipe dan validasi yang eksplisit; hindari `dynamic` atau cast tidak aman jika bisa dihindari.

@@ -6,8 +6,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../feed/controllers/feed_controller.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../controllers/auth_controller.dart';
 import 'app_gate.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 /// Login screen matching DESIGN.md Section 5.2
@@ -42,6 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
+      try {
+        context.read<NavigationController>().resetToHome();
+      } catch (_) {}
+      try {
+        context.read<FeedController>().fetchFeed(auth.currentUser?.id, true);
+      } catch (_) {}
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const AppGate()),
@@ -57,6 +66,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await auth.signInWithGoogle();
 
     if (success && mounted) {
+      try {
+        context.read<NavigationController>().resetToHome();
+      } catch (_) {}
+      try {
+        context.read<FeedController>().fetchFeed(auth.currentUser?.id, true);
+      } catch (_) {}
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const AppGate()),
@@ -192,7 +207,43 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         validator: AppValidators.validatePassword,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+
+                      // Lupa Password link
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: auth.isLoading
+                              ? null
+                              : () {
+                                  auth.clearErrorMessage();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 0,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Lupa password?',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
 
                       AppButton(
                         text: 'Masuk Sekarang',

@@ -63,6 +63,10 @@ class ReportModel {
     this.terminalAt,
     this.archiveAfter,
     this.deletedAt,
+    this.deletedByUser = false,
+    this.deletedByUserAt,
+    this.deletedByAdmin = false,
+    this.deletedByAdminAt,
     required this.createdAt,
     required this.updatedAt,
     this.upvotesCount = 0,
@@ -99,6 +103,10 @@ class ReportModel {
   final DateTime? terminalAt;
   final DateTime? archiveAfter;
   final DateTime? deletedAt;
+  final bool deletedByUser;
+  final DateTime? deletedByUserAt;
+  final bool deletedByAdmin;
+  final DateTime? deletedByAdminAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int upvotesCount;
@@ -128,13 +136,24 @@ class ReportModel {
     return '@warga_laporin';
   }
 
-  /// Apakah laporan telah di-soft-delete oleh pemiliknya
-  bool get isDeleted => deletedAt != null;
+  /// Apakah laporan telah di-soft-delete (oleh user atau admin atau deletedAt diisi)
+  bool get isDeleted => deletedAt != null || deletedByUser || deletedByAdmin;
+
+  /// Apakah laporan telah dihapus oleh pelapor (user)
+  bool get isDeletedByUser => deletedByUser;
+
+  /// Apakah laporan telah dihapus oleh admin
+  bool get isDeletedByAdmin => deletedByAdmin;
+
+  /// Apakah laporan telah dihapus oleh KEDUA belah pihak (syarat hapus permanen)
+  bool get isPermanentlyDeleted => deletedByUser && deletedByAdmin;
 
   /// Aturan visibilitas publik mutlak (PRD 5.4 & AGENTS.md 3.2):
-  /// !isDeleted AND !isDraft AND publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
+  /// Tidak tampil publik jika dihapus oleh salah satu pihak, sedang draft, atau terminal/rejected/cancelled
   bool get isPubliclyVisible =>
       !isDeleted &&
+      !deletedByUser &&
+      !deletedByAdmin &&
       !isDraft &&
       publicationState == PublicationState.published &&
       handlingStatus != HandlingStatus.rejected &&
@@ -167,20 +186,36 @@ class ReportModel {
       isDiscussionActive;
 
   /// Aturan penghapusan laporan oleh pemilik (author):
+  /// - Jika sudah dihapus oleh user (atau deletedAt sudah terisi): TIDAK DAPAT dihapus lagi.
+  /// - Jika sudah dihapus oleh admin: BISA dihapus untuk menyelesaikan penghapusan permanen dua pihak.
   /// - Status baru / pending review: BISA hapus dengan confirmation dialog.
-  /// - Status ditolak atau selesai: BISA hapus dengan confirmation dialog.
+  /// - Status ditolak, selesai, atau dibatalkan: BISA hapus dengan confirmation dialog.
   /// - Status diterima / dilihat (accepted) atau sedang diproses (in_progress): TIDAK DAPAT dihapus.
+  /// Aturan penghapusan laporan oleh pemilik (author/user):
+  /// Sesuai aturan: Selain laporan yang sudah selesai (completed), ditolak (rejected),
+  /// atau batal (cancelled), baik admin ataupun user TIDAK BISA menghapus laporan.
+  /// (Dapat dihapus jika admin telah menghapusnya terlebih dahulu untuk menyelesaikan dual-party deletion).
   bool get canAuthorDelete {
-    if (isDeleted) return false;
+    if (deletedByUser) return false;
+    if (deletedAt != null && !deletedByAdmin) return false;
+    if (deletedByAdmin) return true;
     if (isDraft) return true;
-    if (handlingStatus == HandlingStatus.accepted ||
-        handlingStatus == HandlingStatus.inProgress) {
-      return false;
-    }
-    return handlingStatus == HandlingStatus.newReport ||
+    return handlingStatus == HandlingStatus.completed ||
         handlingStatus == HandlingStatus.rejected ||
-        handlingStatus == HandlingStatus.completed ||
-        publicationState == PublicationState.pendingReview;
+        handlingStatus == HandlingStatus.cancelled;
+  }
+
+  /// Aturan penghapusan laporan oleh admin:
+  /// Sesuai aturan: Selain laporan yang dihapus oleh user (deletedByUser),
+  /// yang sudah selesai (completed), ditolak (rejected), atau batal (cancelled),
+  /// baik admin ataupun user TIDAK BISA menghapus laporan.
+  bool get canAdminDelete {
+    if (deletedByAdmin) return false;
+    if (deletedByUser) return true;
+    if (isDraft) return true;
+    return handlingStatus == HandlingStatus.completed ||
+        handlingStatus == HandlingStatus.rejected ||
+        handlingStatus == HandlingStatus.cancelled;
   }
 
   /// Persentase downvote aktif (PRD 4.4 & AGENTS.md 3.3)
@@ -275,6 +310,12 @@ class ReportModel {
     DateTime? archiveAfter,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
+    bool? deletedByUser,
+    DateTime? deletedByUserAt,
+    bool clearDeletedByUserAt = false,
+    bool? deletedByAdmin,
+    DateTime? deletedByAdminAt,
+    bool clearDeletedByAdminAt = false,
     DateTime? createdAt,
     DateTime? updatedAt,
     int? upvotesCount,
@@ -313,6 +354,14 @@ class ReportModel {
       terminalAt: terminalAt ?? this.terminalAt,
       archiveAfter: archiveAfter ?? this.archiveAfter,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+      deletedByUser: deletedByUser ?? this.deletedByUser,
+      deletedByUserAt: clearDeletedByUserAt
+          ? null
+          : (deletedByUserAt ?? this.deletedByUserAt),
+      deletedByAdmin: deletedByAdmin ?? this.deletedByAdmin,
+      deletedByAdminAt: clearDeletedByAdminAt
+          ? null
+          : (deletedByAdminAt ?? this.deletedByAdminAt),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       upvotesCount: upvotesCount ?? this.upvotesCount,
@@ -356,6 +405,10 @@ class ReportModel {
       'terminal_at': terminalAt?.toUtc().toIso8601String(),
       'archive_after': archiveAfter?.toUtc().toIso8601String(),
       'deleted_at': deletedAt?.toUtc().toIso8601String(),
+      'deleted_by_user': deletedByUser,
+      'deleted_by_user_at': deletedByUserAt?.toUtc().toIso8601String(),
+      'deleted_by_admin': deletedByAdmin,
+      'deleted_by_admin_at': deletedByAdminAt?.toUtc().toIso8601String(),
       'created_at': createdAt.toUtc().toIso8601String(),
       'updated_at': updatedAt.toUtc().toIso8601String(),
       'upvotes_count': upvotesCount,
@@ -433,6 +486,14 @@ class ReportModel {
           : null,
       deletedAt: json['deleted_at'] != null
           ? DateTime.tryParse(json['deleted_at'].toString())?.toLocal()
+          : null,
+      deletedByUser: (json['deleted_by_user'] as bool?) ?? false,
+      deletedByUserAt: json['deleted_by_user_at'] != null
+          ? DateTime.tryParse(json['deleted_by_user_at'].toString())?.toLocal()
+          : null,
+      deletedByAdmin: (json['deleted_by_admin'] as bool?) ?? false,
+      deletedByAdminAt: json['deleted_by_admin_at'] != null
+          ? DateTime.tryParse(json['deleted_by_admin_at'].toString())?.toLocal()
           : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ??

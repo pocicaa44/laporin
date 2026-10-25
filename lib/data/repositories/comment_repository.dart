@@ -29,6 +29,54 @@ class CommentRepository {
               (json) => CommentModel.fromJson(Map<String, dynamic>.from(json)),
             )
             .toList();
+
+        // Batch enrich comments with latest author profile (avatar_url, full_name)
+        try {
+          final authorIds = list
+              .map((c) => c.authorId)
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList();
+          if (authorIds.isNotEmpty) {
+            final profilesData = await client
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .inFilter('id', authorIds);
+            final profileMap = <String, Map<String, dynamic>>{};
+            for (final p in (profilesData as List)) {
+              final pid = p['id']?.toString();
+              if (pid != null) {
+                profileMap[pid] = p as Map<String, dynamic>;
+              }
+            }
+            final currentAuthUser = client.auth.currentUser;
+            for (var i = 0; i < list.length; i++) {
+              final prof = profileMap[list[i].authorId];
+              var av = prof?['avatar_url'] as String?;
+
+              // Fallback jika profiles belum terisi avatar_url tapi ini adalah user yang sedang login dengan Google
+              if ((av == null || av.trim().isEmpty) &&
+                  currentAuthUser != null &&
+                  list[i].authorId == currentAuthUser.id) {
+                av =
+                    currentAuthUser.userMetadata?['avatar_url'] as String? ??
+                    currentAuthUser.userMetadata?['picture'] as String? ??
+                    currentAuthUser.userMetadata?['photo_url'] as String?;
+              }
+
+              final finalAvatar = (av != null && av.trim().isNotEmpty)
+                  ? av
+                  : list[i].authorAvatarUrl;
+
+              if (finalAvatar != list[i].authorAvatarUrl) {
+                list[i] = list[i].copyWith(authorAvatarUrl: finalAvatar);
+              }
+            }
+          }
+        } catch (enrichError) {
+          debugPrint('Catatan enrich comments profile: $enrichError');
+        }
+
         return list;
       } catch (e) {
         debugPrint('Error getComments Supabase: $e');
@@ -54,13 +102,25 @@ class CommentRepository {
     String? parentCommentId,
   }) async {
     final client = _service.client;
+    String? resolvedAvatarUrl = authorAvatarUrl;
+    if (resolvedAvatarUrl == null || resolvedAvatarUrl.trim().isEmpty) {
+      final curUser = client?.auth.currentUser;
+      if (curUser != null && curUser.id == authorId) {
+        resolvedAvatarUrl =
+            curUser.userMetadata?['avatar_url'] as String? ??
+            curUser.userMetadata?['picture'] as String? ??
+            curUser.userMetadata?['photo_url'] as String?;
+      }
+    }
+
     if (client != null) {
       try {
         final commentData = <String, dynamic>{
           'report_id': reportId,
           'author_id': authorId,
           'author_name': authorName,
-          'author_avatar_url': ?authorAvatarUrl,
+          if (resolvedAvatarUrl != null && resolvedAvatarUrl.trim().isNotEmpty)
+            'author_avatar_url': resolvedAvatarUrl.trim(),
           'author_role': authorRole.value,
           'body': body.trim(),
         };
@@ -74,9 +134,12 @@ class CommentRepository {
             .select()
             .single();
 
-        final created = CommentModel.fromJson(
+        var created = CommentModel.fromJson(
           Map<String, dynamic>.from(response),
         );
+        if (created.authorAvatarUrl == null && resolvedAvatarUrl != null) {
+          created = created.copyWith(authorAvatarUrl: resolvedAvatarUrl);
+        }
         _memoryFallbackComments.add(created);
         return created;
       } catch (e) {
@@ -92,13 +155,12 @@ class CommentRepository {
       reportId: reportId,
       authorId: authorId,
       authorName: authorName,
-      authorAvatarUrl: authorAvatarUrl,
+      authorAvatarUrl: resolvedAvatarUrl,
       authorRole: authorRole,
       body: body.trim(),
       createdAt: DateTime.now(),
       parentCommentId: parentCommentId,
     );
-
     _memoryFallbackComments.add(newComment);
     return newComment;
   }

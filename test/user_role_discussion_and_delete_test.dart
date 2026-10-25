@@ -45,11 +45,7 @@ void main() {
       );
     }
 
-    test('canAuthorDelete returns true for newReport, rejected, completed, or pendingReview', () {
-      expect(
-        buildReport(handlingStatus: HandlingStatus.newReport).canAuthorDelete,
-        isTrue,
-      );
+    test('canAuthorDelete returns true only for rejected, completed, and cancelled', () {
       expect(
         buildReport(handlingStatus: HandlingStatus.rejected).canAuthorDelete,
         isTrue,
@@ -59,24 +55,36 @@ void main() {
         isTrue,
       );
       expect(
-        buildReport(
-          handlingStatus: HandlingStatus.newReport,
-          publicationState: PublicationState.pendingReview,
-        ).canAuthorDelete,
+        buildReport(handlingStatus: HandlingStatus.cancelled).canAuthorDelete,
         isTrue,
       );
     });
 
-    test('canAuthorDelete returns false for accepted (dilihat) and inProgress (diproses)', () {
-      expect(
-        buildReport(handlingStatus: HandlingStatus.accepted).canAuthorDelete,
-        isFalse,
-      );
-      expect(
-        buildReport(handlingStatus: HandlingStatus.inProgress).canAuthorDelete,
-        isFalse,
-      );
-    });
+    test(
+      'canAuthorDelete returns false for newReport, accepted, and inProgress',
+      () {
+        expect(
+          buildReport(handlingStatus: HandlingStatus.newReport).canAuthorDelete,
+          isFalse,
+        );
+        expect(
+          buildReport(
+            handlingStatus: HandlingStatus.newReport,
+            publicationState: PublicationState.pendingReview,
+          ).canAuthorDelete,
+          isFalse,
+        );
+        expect(
+          buildReport(handlingStatus: HandlingStatus.accepted).canAuthorDelete,
+          isFalse,
+        );
+        expect(
+          buildReport(handlingStatus: HandlingStatus.inProgress)
+              .canAuthorDelete,
+          isFalse,
+        );
+      },
+    );
 
     test('canAuthorDelete returns false if already deleted', () {
       expect(
@@ -136,12 +144,24 @@ void main() {
           locationAddress: 'Semarang',
         );
 
-        // Status newReport -> bisa dihapus
-        final deletedNew = await repo.softDeleteReport(
+        // newReport tidak bisa dihapus oleh user
+        expect(
+          () =>
+              repo.softDeleteReport(reportId: rep.id, currentUserId: 'user-1'),
+          throwsA(isA<Exception>()),
+        );
+
+        // Ubah status ke completed -> baru bisa dihapus
+        await repo.updateHandlingStatus(
+          reportId: rep.id,
+          newStatus: HandlingStatus.completed,
+          completionProofUrl: 'https://example.com/proof.jpg',
+        );
+        final deletedCompleted = await repo.softDeleteReport(
           reportId: rep.id,
           currentUserId: 'user-1',
         );
-        expect(deletedNew.isDeleted, isTrue);
+        expect(deletedCompleted.isDeleted, isTrue);
       },
     );
 
@@ -169,7 +189,7 @@ void main() {
           isA<Exception>().having(
             (e) => e.toString(),
             'message',
-            contains('diterima atau sedang diproses tidak dapat dihapus'),
+            contains('dapat dihapus oleh pelapor'),
           ),
         ),
       );
@@ -186,7 +206,7 @@ void main() {
           isA<Exception>().having(
             (e) => e.toString(),
             'message',
-            contains('diterima atau sedang diproses tidak dapat dihapus'),
+            contains('dapat dihapus oleh pelapor'),
           ),
         ),
       );

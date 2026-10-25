@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/username_text_field.dart';
 import 'app_gate.dart';
@@ -38,6 +39,9 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
     final success = await auth.updateUsername(_usernameController.text);
 
     if (success && mounted) {
+      try {
+        context.read<NavigationController>().resetToHome();
+      } catch (_) {}
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(

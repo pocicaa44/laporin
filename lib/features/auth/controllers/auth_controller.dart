@@ -132,14 +132,17 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateUsername(String newUsername) async {
+  Future<bool> updateProfileInfo({String? fullName, String? username}) async {
     if (_isLoading) return false;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await authRepository.updateUsername(newUsername);
+      await authRepository.updateProfileInfo(
+        fullName: fullName,
+        username: username,
+      );
       _isLoading = false;
       notifyListeners();
       return true;
@@ -149,6 +152,14 @@ class AuthController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> updateUsername(String newUsername) async {
+    return updateProfileInfo(username: newUsername);
+  }
+
+  Future<bool> updateFullName(String newFullName) async {
+    return updateProfileInfo(fullName: newFullName);
   }
 
   Future<bool> checkUsernameAvailability(String username) async {
@@ -239,6 +250,71 @@ class AuthController extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  void clearErrorMessage() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<bool> sendResetPasswordOtp(String email) async {
+    if (_isLoading) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authRepository.sendResetPasswordOtp(email);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyRecoveryOtp({
+    required String email,
+    required String otp,
+  }) async {
+    if (_isLoading) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authRepository.verifyRecoveryOtp(email: email, otp: otp);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updatePassword(String newPassword) async {
+    if (_isLoading) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await authRepository.updatePassword(newPassword);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
     }
   }
 

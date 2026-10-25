@@ -29,7 +29,7 @@ void main() {
         latitude: -6.9924,
         longitude: 110.4225,
         locationAddress: 'Jl. Simpang Lima, Semarang',
-        handlingStatus: HandlingStatus.newReport,
+        handlingStatus: HandlingStatus.completed,
         publicationState: PublicationState.published,
         createdAt: now,
         updatedAt: now,
@@ -161,6 +161,11 @@ void main() {
     });
 
     test('softDeleteReport marks report as deleted and cancelled', () async {
+      await repo.updateHandlingStatus(
+        reportId: initialReport.id,
+        newStatus: HandlingStatus.cancelled,
+        reason: 'Dibatalkan oleh pemohon',
+      );
       final deleted = await repo.softDeleteReport(
         reportId: initialReport.id,
         currentUserId: 'user-1',
@@ -194,6 +199,11 @@ void main() {
     test(
       'updateReportDetails rejects editing an already soft-deleted report',
       () async {
+        await repo.updateHandlingStatus(
+          reportId: initialReport.id,
+          newStatus: HandlingStatus.completed,
+          completionProofUrl: 'https://example.com/proof.jpg',
+        );
         await repo.softDeleteReport(
           reportId: initialReport.id,
           currentUserId: 'user-1',
@@ -238,7 +248,7 @@ void main() {
         latitude: -6.9850,
         longitude: 110.4050,
         locationAddress: 'Pasar Bulu, Semarang',
-        handlingStatus: HandlingStatus.newReport,
+        handlingStatus: HandlingStatus.completed,
         publicationState: PublicationState.published,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
