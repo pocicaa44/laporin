@@ -179,30 +179,43 @@ class _FeedScreenState extends State<FeedScreen> {
 
           // List or Loading / Empty States
           Expanded(
-            child: controller.isLoading && controller.reports.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : controller.reports.isEmpty
-                ? EmptyState(
-                    title: 'Belum Ada Laporan',
-                    message:
-                        controller.selectedCategory == 'Semua' &&
-                            (controller.searchQuery.isEmpty)
-                        ? 'Saat ini belum ada data laporan fasilitas publik yang terdaftar di database.'
-                        : 'Belum ada laporan publik yang cocok dengan kriteria filter ini.',
-                    actionLabel:
-                        controller.selectedCategory != 'Semua' ||
-                            controller.searchQuery.isNotEmpty
-                        ? 'Reset Filter'
-                        : null,
-                    onAction: () {
-                      controller.setCategory('Semua');
-                      controller.setSearchQuery('');
-                    },
-                  )
-                : RefreshIndicator(
-                    onRefresh: () => controller.fetchFeed(),
-                    child: ListView.builder(
+            child: RefreshIndicator(
+              onRefresh: () => controller.fetchFeed(),
+              child: controller.isLoading && controller.reports.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : controller.reports.isEmpty
+                  ? LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Center(
+                            child: EmptyState(
+                              title: 'Belum Ada Laporan',
+                              message:
+                                  controller.selectedCategory == 'Semua' &&
+                                      (controller.searchQuery.isEmpty)
+                                  ? 'Saat ini belum ada data laporan fasilitas publik yang terdaftar di database.'
+                                  : 'Belum ada laporan publik yang cocok dengan kriteria filter ini.',
+                              actionLabel:
+                                  controller.selectedCategory != 'Semua' ||
+                                      controller.searchQuery.isNotEmpty
+                                  ? 'Reset Filter'
+                                  : null,
+                              onAction: () {
+                                controller.setCategory('Semua');
+                                controller.setSearchQuery('');
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
                       controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(bottom: 24, top: 4),
                       itemCount:
                           controller.reports.length +
@@ -263,7 +276,7 @@ class _FeedScreenState extends State<FeedScreen> {
                         );
                       },
                     ),
-                  ),
+            ),
           ),
         ],
       ),

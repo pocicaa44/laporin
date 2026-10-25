@@ -29,7 +29,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   Timer? _timer;
-  int _secondsRemaining = 60;
+  int _expirationSeconds = 300; // 5 menit
+  int _resendSeconds = 60; // 1 menit
   bool _hasError = false;
   String? _errorMessage;
 
@@ -41,15 +42,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _startTimer() {
     _timer?.cancel();
-    _secondsRemaining = 60;
+    _expirationSeconds = 300;
+    _resendSeconds = 60;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      if (_secondsRemaining > 0) {
+      if (_expirationSeconds > 0 || _resendSeconds > 0) {
         setState(() {
-          _secondsRemaining--;
+          if (_expirationSeconds > 0) _expirationSeconds--;
+          if (_resendSeconds > 0) _resendSeconds--;
         });
       } else {
         timer.cancel();
@@ -74,6 +77,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Future<void> _handleConfirm() async {
     final auth = context.read<AuthController>();
     if (auth.isLoading) return;
+
+    if (_expirationSeconds <= 0) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'Kode OTP telah kedaluwarsa. Silakan kirim ulang OTP.';
+      });
+      return;
+    }
 
     final otp = _currentOtp;
     if (otp.length < 6) {
@@ -110,7 +121,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   Future<void> _handleResendOtp() async {
     final auth = context.read<AuthController>();
-    if (auth.isLoading || _secondsRemaining > 0) return;
+    if (auth.isLoading || _resendSeconds > 0) return;
 
     setState(() {
       _hasError = false;
@@ -304,9 +315,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           color: AppColors.textSecondary,
                         ),
                         const SizedBox(width: 6),
-                        if (_secondsRemaining > 0)
+                        if (_expirationSeconds > 0)
                           Text(
-                            'Waktu tersisa: ${_formatTimer(_secondsRemaining)}',
+                            'Waktu tersisa: ${_formatTimer(_expirationSeconds)}',
                             style: AppTextStyles.bodySecondary.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
@@ -335,15 +346,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     // Resend OTP button
                     Center(
                       child: TextButton(
-                        onPressed: (_secondsRemaining > 0 || auth.isLoading)
+                        onPressed: (_resendSeconds > 0 || auth.isLoading)
                             ? null
                             : _handleResendOtp,
                         child: Text(
-                          _secondsRemaining > 0
-                              ? 'Kirim ulang dalam ${_formatTimer(_secondsRemaining)}'
+                          _resendSeconds > 0
+                              ? 'Kirim ulang dalam ${_formatTimer(_resendSeconds)}'
                               : 'Kirim Ulang OTP',
                           style: TextStyle(
-                            color: _secondsRemaining > 0
+                            color: _resendSeconds > 0
                                 ? AppColors.disabled
                                 : AppColors.primary,
                             fontWeight: FontWeight.w600,

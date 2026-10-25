@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,6 +19,7 @@ class AnnouncementRepository {
 
   final SupabaseService _service;
   RealtimeChannel? _realtimeChannel;
+  StreamSubscription<List<Map<String, dynamic>>>? _streamSubscription;
 
   final List<AnnouncementModel> _announcements = [];
   final Set<String> _readAnnouncementIds = {};
@@ -60,63 +63,42 @@ class AnnouncementRepository {
     if (client == null) return;
 
     try {
-      _realtimeChannel = client
-          .channel('public:announcements')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'announcements',
-            callback: (payload) {
-              _handleRealtimePayload(payload);
+      _streamSubscription?.cancel();
+      _streamSubscription = client
+          .from('announcements')
+          .stream(primaryKey: ['id'])
+          .order('created_at', ascending: false)
+          .listen(
+            (data) {
+              final list = data
+                  .map((item) => AnnouncementModel.fromJson(item))
+                  .toList();
+              _announcements.clear();
+              _announcements.addAll(list);
+              _hasFetched = true;
+              if (_isViewingAnnouncements || _markFetchedAsReadOnNextFetch) {
+                _readAnnouncementIds.addAll(_announcements.map((a) => a.id));
+                _markFetchedAsReadOnNextFetch = false;
+                _savePreferences();
+              }
+              notifyListeners();
             },
-          )
-          .subscribe();
+            onError: (e) {
+              debugPrint('Announcements realtime stream notice: $e');
+            },
+          );
     } catch (e) {
       debugPrint('Realtime announcements subscription notice: $e');
     }
   }
 
-  void _handleRealtimePayload(PostgresChangePayload payload) {
-    try {
-      final event = payload.eventType;
-      if (event == PostgresChangeEvent.insert) {
-        final record = payload.newRecord;
-        final newAnnouncement = AnnouncementModel.fromJson(record);
-        final existingIndex = _announcements.indexWhere(
-          (a) => a.id == newAnnouncement.id,
-        );
-        if (existingIndex == -1) {
-          _announcements.insert(0, newAnnouncement);
-          if (_isViewingAnnouncements) {
-            _readAnnouncementIds.add(newAnnouncement.id);
-            _savePreferences();
-          }
-          notifyListeners();
-        }
-      } else if (event == PostgresChangeEvent.update) {
-        final record = payload.newRecord;
-        final updated = AnnouncementModel.fromJson(record);
-        final index = _announcements.indexWhere((a) => a.id == updated.id);
-        if (index != -1) {
-          _announcements[index] = updated;
-          notifyListeners();
-        }
-      } else if (event == PostgresChangeEvent.delete) {
-        final oldRecord = payload.oldRecord;
-        final id = oldRecord['id']?.toString();
-        if (id != null) {
-          _announcements.removeWhere((a) => a.id == id);
-          _readAnnouncementIds.remove(id);
-          _savePreferences();
-          notifyListeners();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error handling announcements realtime payload: $e');
-    }
+  /// Memperbarui atau menyambung ulang stream realtime
+  void reconnectRealtime() {
+    _initRealtimeSubscription();
   }
 
   void dispose() {
+    _streamSubscription?.cancel();
     _realtimeChannel?.unsubscribe();
     _listeners.clear();
   }

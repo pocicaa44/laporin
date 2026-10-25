@@ -75,7 +75,16 @@ class AuthController extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      final rawMsg = e.toString().replaceFirst('Exception: ', '');
+      final lower = rawMsg.toLowerCase();
+      if (lower.contains('invalid login credentials') ||
+          lower.contains('invalid credential') ||
+          lower.contains('email atau password salah') ||
+          lower.contains('email atau password tidak sesuai')) {
+        _errorMessage = 'Email atau password salah';
+      } else {
+        _errorMessage = rawMsg;
+      }
       notifyListeners();
       return false;
     }

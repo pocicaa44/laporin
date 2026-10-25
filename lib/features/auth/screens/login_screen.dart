@@ -28,6 +28,16 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthController>().clearErrorMessage();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -291,6 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onTap: auth.isLoading
                                 ? null
                                 : () {
+                                    auth.clearErrorMessage();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(

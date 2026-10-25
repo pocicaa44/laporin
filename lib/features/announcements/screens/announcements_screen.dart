@@ -301,6 +301,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
               onRefresh: () =>
                   controller.fetchAnnouncements(forceRefresh: true),
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 16,

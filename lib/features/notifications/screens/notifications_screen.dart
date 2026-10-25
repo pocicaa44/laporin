@@ -34,17 +34,30 @@ class NotificationsScreen extends StatelessWidget {
             ),
         ],
       ),
-      body: controller.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : controller.notifications.isEmpty
-          ? const EmptyState(
-              title: 'Belum Ada Notifikasi',
-              message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
-              icon: Icons.notifications_none_rounded,
-            )
-          : RefreshIndicator(
-              onRefresh: () => controller.fetchNotifications(),
-              child: ListView.separated(
+      body: RefreshIndicator(
+        onRefresh: () => controller.fetchNotifications(),
+        child: controller.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : controller.notifications.isEmpty
+            ? LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: const Center(
+                      child: EmptyState(
+                        title: 'Belum Ada Notifikasi',
+                        message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
+                        icon: Icons.notifications_none_rounded,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -70,7 +83,7 @@ class NotificationsScreen extends StatelessWidget {
                   );
                 },
               ),
-            ),
+      ),
     );
   }
 }

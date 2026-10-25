@@ -37,6 +37,19 @@ class AuthRepository {
     _currentUserProfile = profile;
   }
 
+  SupabaseClient _requireClient() {
+    final client = _service.client;
+    if (client == null) {
+      final detail = _service.initError;
+      throw Exception(
+        detail != null
+            ? 'Koneksi Supabase belum terhubung ($detail)'
+            : 'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
+      );
+    }
+    return client;
+  }
+
   /// Helper untuk membangun [UserProfileModel] dari user Supabase dan tabel profiles secara konsisten.
   Future<UserProfileModel> _buildUserProfile(
     User user, {
@@ -151,7 +164,12 @@ class AuthRepository {
         // Offline / mock testing fallback when profile is initialized
         return true;
       }
-      throw Exception('Koneksi Supabase belum terhubung.');
+      final detail = _service.initError;
+      throw Exception(
+        detail != null
+            ? 'Koneksi Supabase belum terhubung ($detail)'
+            : 'Koneksi Supabase belum terhubung.',
+      );
     }
 
     try {
@@ -184,12 +202,7 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception(
-        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
-      );
-    }
+    final client = _requireClient();
 
     final cleanUsername = username.trim().toLowerCase();
 
@@ -563,12 +576,7 @@ class AuthRepository {
     String email,
     String password,
   ) async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception(
-        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
-      );
-    }
+    final client = _requireClient();
 
     try {
       final response = await client.auth.signInWithPassword(
@@ -583,9 +591,27 @@ class AuthRepository {
         );
         return _currentUserProfile!;
       } else {
-        throw Exception('Email atau password tidak sesuai.');
+        throw Exception('Email atau password salah');
       }
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('invalid login credentials') ||
+          msg.contains('invalid credential') ||
+          e.code == 'invalid_credentials' ||
+          (e.statusCode == '400' && msg.contains('credential'))) {
+        throw Exception('Email atau password salah');
+      }
+      throw Exception(
+        e.message
+            .replaceFirst('AuthException: ', '')
+            .replaceFirst('Exception: ', ''),
+      );
     } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('invalid login credentials') ||
+          msg.contains('invalid credential')) {
+        throw Exception('Email atau password salah');
+      }
       throw Exception(
         e
             .toString()
@@ -596,12 +622,7 @@ class AuthRepository {
   }
 
   Future<UserProfileModel?> signInWithGoogle() async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception(
-        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
-      );
-    }
+    final client = _requireClient();
 
     // Platform check: Di Web, gunakan Supabase OAuth flow (redirect/popup)
     if (kIsWeb) {
@@ -693,15 +714,12 @@ class AuthRepository {
 
   /// Mengirim kode OTP pemulihan kata sandi ke email pengguna via Supabase Auth
   Future<void> sendResetPasswordOtp(String email) async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception(
-        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
-      );
-    }
+    final client = _requireClient();
 
     try {
       await client.auth.resetPasswordForEmail(email.trim());
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     } catch (e) {
       throw Exception(
         e
@@ -717,12 +735,7 @@ class AuthRepository {
     required String email,
     required String otp,
   }) async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception(
-        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
-      );
-    }
+    final client = _requireClient();
 
     try {
       final response = await client.auth.verifyOTP(
@@ -733,6 +746,15 @@ class AuthRepository {
       if (response.user == null) {
         throw Exception('Kode OTP tidak valid atau sudah kedaluwarsa.');
       }
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('token has expired') ||
+          msg.contains('token is invalid') ||
+          msg.contains('otp has expired') ||
+          msg.contains('invalid token')) {
+        throw Exception('Kode OTP tidak valid atau sudah kedaluwarsa.');
+      }
+      throw Exception(e.message);
     } catch (e) {
       throw Exception(
         e
@@ -745,12 +767,7 @@ class AuthRepository {
 
   /// Memperbarui kata sandi baru untuk sesi pemulihan yang telah terotentikasi
   Future<void> updatePassword(String newPassword) async {
-    final client = _service.client;
-    if (client == null) {
-      throw Exception(
-        'Koneksi Supabase belum terhubung. Periksa konfigurasi .env',
-      );
-    }
+    final client = _requireClient();
 
     try {
       final response = await client.auth.updateUser(
@@ -759,6 +776,8 @@ class AuthRepository {
       if (response.user == null) {
         throw Exception('Gagal memperbarui kata sandi.');
       }
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     } catch (e) {
       throw Exception(
         e

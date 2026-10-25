@@ -682,6 +682,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                   child: RefreshIndicator(
                     onRefresh: () => controller.loadData(),
                     child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       children: [
                         // Draft banner jika laporan masih dalam status draft

@@ -1,8 +1,21 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:laporin/core/utils/app_validators.dart';
 import 'package:laporin/data/models/user_profile_model.dart';
 import 'package:laporin/data/repositories/auth_repository.dart';
 import 'package:laporin/features/auth/controllers/auth_controller.dart';
+import 'package:laporin/features/auth/screens/login_screen.dart';
+import 'package:provider/provider.dart';
+
+class _MockInvalidCredentialsAuthRepository extends AuthRepository {
+  @override
+  Future<UserProfileModel> signInWithEmail(
+    String email,
+    String password,
+  ) async {
+    throw Exception('Invalid login credentials');
+  }
+}
 
 void main() {
   group('AuthRepository and AuthController Tests (Non-demo & Native Auth)', () {
@@ -71,6 +84,52 @@ void main() {
       expect(controller.isLoading, isFalse);
       expect(controller.errorMessage, isNotNull);
     });
+
+    test('AuthController maps invalid login credentials to "Email atau password salah"', () async {
+      final repo = _MockInvalidCredentialsAuthRepository();
+      final controller = AuthController(authRepository: repo);
+
+      final success = await controller.signInWithEmail(
+        'user@laporin.id',
+        'wrongpwd',
+      );
+      expect(success, isFalse);
+      expect(controller.errorMessage, equals('Email atau password salah'));
+    });
+
+    testWidgets(
+      'LoginScreen displays "Email atau password salah" on invalid credentials',
+      (tester) async {
+        final repo = _MockInvalidCredentialsAuthRepository();
+        final controller = AuthController(authRepository: repo);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<AuthController>.value(
+            value: controller,
+            child: const MaterialApp(home: LoginScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Enter valid format email and password
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Alamat Email'),
+          'user@laporin.id',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Kata Sandi'),
+          'wrongpassword123',
+        );
+        await tester.pump();
+
+        // Tap Masuk Sekarang
+        await tester.tap(find.text('Masuk Sekarang'));
+        await tester.pumpAndSettle();
+
+        // Verify the error text is visible
+        expect(find.text('Email atau password salah'), findsOneWidget);
+      },
+    );
 
     test(
       'UserRole parsing defaults to regular user and preserves admin strictly',

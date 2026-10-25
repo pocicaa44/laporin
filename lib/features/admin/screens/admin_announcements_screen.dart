@@ -102,6 +102,7 @@ class _AdminAnnouncementsView extends StatelessWidget {
       body: RefreshIndicator(
         onRefresh: () => controller.fetchAnnouncements(forceRefresh: true),
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           children: [
             const Row(

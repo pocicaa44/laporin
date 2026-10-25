@@ -92,6 +92,7 @@ class _AdminDashboardView extends StatelessWidget {
                 : RefreshIndicator(
                     onRefresh: () => controller.fetchReports(),
                     child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       children: [
                         // KPI Metric Cards

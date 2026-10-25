@@ -90,6 +90,7 @@ class ProfileScreen extends StatelessWidget {
       body: RefreshIndicator(
         onRefresh: () => auth.refreshProfile(),
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           children: [
             // User Card

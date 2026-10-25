@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
@@ -9,9 +10,15 @@ class SupabaseService {
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
+  String? initError;
 
   Future<void> initialize() async {
-    if (!AppConfig.hasValidSupabaseConfig) return;
+    if (!AppConfig.hasValidSupabaseConfig) {
+      initError =
+          'URL Supabase atau Anon Key belum terkonfigurasi di AppConfig.';
+      debugPrint('SupabaseService: $initError');
+      return;
+    }
 
     try {
       await Supabase.initialize(
@@ -19,16 +26,29 @@ class SupabaseService {
         publishableKey: AppConfig.supabaseAnonKey,
       );
       _isInitialized = true;
-    } catch (_) {
+      initError = null;
+    } catch (e) {
+      initError = 'Inisialisasi Supabase gagal: $e';
+      debugPrint('SupabaseService initialize error: $e');
       _isInitialized = false;
     }
   }
 
   SupabaseClient? get client {
-    if (!_isInitialized) return null;
+    if (!_isInitialized) {
+      // Lazy attempt: cek apakah Supabase instance sebenarnya sudah terinisialisasi
+      try {
+        if (Supabase.instance.isInitialized) {
+          _isInitialized = true;
+          return Supabase.instance.client;
+        }
+      } catch (_) {}
+      return null;
+    }
     try {
       return Supabase.instance.client;
-    } catch (_) {
+    } catch (e) {
+      initError = 'Gagal mengakses SupabaseClient: $e';
       return null;
     }
   }

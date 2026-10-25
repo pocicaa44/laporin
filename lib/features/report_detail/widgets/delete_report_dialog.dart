@@ -72,11 +72,8 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              widget.isOtherPartyDeleted ? 'Hapus Permanen?' : 'Hapus Laporan?',
-              style: AppTextStyles.sectionTitle,
-            ),
+          const Expanded(
+            child: Text('Hapus Laporan?', style: AppTextStyles.sectionTitle),
           ),
         ],
       ),
@@ -85,17 +82,13 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.isOtherPartyDeleted
-                ? 'Pelapor telah menghapus laporan ${widget.reportNumber}. Konfirmasi ini akan menghapus laporan secara permanen dari database dan seluruh media foto lampiran akan dibersihkan dari server.'
-                : 'Apakah Anda yakin ingin menghapus laporan ${widget.reportNumber}? Laporan akan dihapus dari daftar aktif publik.',
+            'apakah anda yakin ingin menghapus laporan ${widget.reportNumber}?',
             style: AppTextStyles.body,
           ),
           const SizedBox(height: 8),
-          Text(
-            widget.isOtherPartyDeleted
-                ? 'Perhatian: Tindakan ini permanen dan tidak dapat dipulihkan kembali.'
-                : 'Catatan: Laporan akan dihapus permanen dari database dan seluruh media foto akan dibersihkan dari server apabila kedua belah pihak (warga & admin) telah menghapus laporan ini.',
-            style: AppTextStyles.caption,
+          const Text(
+            'catatan: Tindakan ini tidak dapat dibatalkan',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 12),
@@ -141,11 +134,7 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : Text(
-                  widget.isOtherPartyDeleted
-                      ? 'Hapus Permanen'
-                      : 'Hapus Laporan',
-                ),
+              : const Text('Hapus Laporan'),
         ),
       ],
     );

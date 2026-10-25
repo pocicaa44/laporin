@@ -32,6 +32,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isCheckingUsername = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthController>().clearErrorMessage();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
@@ -316,7 +326,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: AppTextStyles.bodySecondary,
                           ),
                           GestureDetector(
-                            onTap: () => Navigator.pop(context),
+                            onTap: () {
+                              context
+                                  .read<AuthController>()
+                                  .clearErrorMessage();
+                              Navigator.pop(context);
+                            },
                             child: const Text(
                               'Masuk di sini',
                               style: TextStyle(

@@ -36,7 +36,15 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
+    }
+
+    androidResources {
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 
     applicationVariants.all {
@@ -50,6 +58,20 @@ android {
     }
 }
 
+tasks.register("copyReleaseApkToFlutterApk") {
+    doLast {
+        val src = layout.buildDirectory.file("outputs/apk/release/laporin.apk").get().asFile
+        val dst = layout.buildDirectory.file("outputs/flutter-apk/laporin.apk").get().asFile
+        if (src.exists()) {
+            src.copyTo(dst, overwrite = true)
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy("copyReleaseApkToFlutterApk")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
@@ -59,3 +81,4 @@ kotlin {
 flutter {
     source = "../.."
 }
+

@@ -94,17 +94,30 @@ class _MyReportsViewState extends State<_MyReportsView> {
           ),
         ],
       ),
-      body: controller.isLoading && controller.reports.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : controller.reports.isEmpty
-          ? const EmptyState(
-              title: 'Belum Ada Laporan',
-              message: 'Anda belum memiliki riwayat laporan fasilitas publik.',
-            )
-          : RefreshIndicator(
-              onRefresh: () => controller.fetchMyReports(),
-              child: ListView.builder(
+      body: RefreshIndicator(
+        onRefresh: () => controller.fetchMyReports(),
+        child: controller.isLoading && controller.reports.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : controller.reports.isEmpty
+            ? LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: const Center(
+                      child: EmptyState(
+                        title: 'Belum Ada Laporan',
+                        message: 'Anda belum memiliki riwayat laporan fasilitas publik.',
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : ListView.builder(
                 controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -142,7 +155,7 @@ class _MyReportsViewState extends State<_MyReportsView> {
                   );
                 },
               ),
-            ),
+      ),
     );
   }
 }

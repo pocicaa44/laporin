@@ -63,6 +63,26 @@ void main() async {
   runApp(LaporinApp(authRepository: authRepository));
 }
 
+/// Custom ScrollBehavior that enables AlwaysScrollableScrollPhysics across platforms,
+/// allowing RefreshIndicator / swipe-to-refresh to trigger smoothly on Android release builds
+/// even when the list content is empty or does not exceed the viewport.
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+  }
+}
+
 class LaporinApp extends StatelessWidget {
   const LaporinApp({
     super.key,
@@ -121,14 +141,7 @@ class LaporinApp extends StatelessWidget {
         title: 'Laporin',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        scrollBehavior: const MaterialScrollBehavior().copyWith(
-          dragDevices: {
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.touch,
-            PointerDeviceKind.stylus,
-            PointerDeviceKind.trackpad,
-          },
-        ),
+        scrollBehavior: const AppScrollBehavior(),
         home: const AppGate(),
       ),
     );
