@@ -44,7 +44,7 @@ class MyReportsController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchMyReports() async {
+  Future<void> fetchMyReports({bool forceRefresh = false}) async {
     if (_reports.isEmpty) {
       _isLoading = true;
     } else {
@@ -55,6 +55,7 @@ class MyReportsController extends ChangeNotifier {
     try {
       final result = await reportRepository.getMyReports(
         userId,
+        forceRefresh: forceRefresh,
         limit: pageSize,
         offset: 0,
       );

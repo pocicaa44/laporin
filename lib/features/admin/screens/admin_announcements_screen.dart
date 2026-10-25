@@ -11,6 +11,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/repositories/announcement_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import '../controllers/admin_announcement_controller.dart';
 import '../screens/admin_create_announcement_screen.dart';
@@ -46,10 +47,55 @@ class AdminAnnouncementsScreen extends StatelessWidget {
   }
 }
 
-class _AdminAnnouncementsView extends StatelessWidget {
+class _AdminAnnouncementsView extends StatefulWidget {
   const _AdminAnnouncementsView({required this.isEmbedded});
 
   final bool isEmbedded;
+
+  @override
+  State<_AdminAnnouncementsView> createState() =>
+      _AdminAnnouncementsViewState();
+}
+
+class _AdminAnnouncementsViewState extends State<_AdminAnnouncementsView> {
+  int? _lastNavChangeCount;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isEmbedded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<AdminAnnouncementController>().fetchAnnouncements(
+            forceRefresh: true,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isEmbedded) {
+      try {
+        final nav = context.watch<NavigationController>();
+        if (nav.currentIndex == 2 &&
+            _lastNavChangeCount != nav.tabChangeCount) {
+          _lastNavChangeCount = nav.tabChangeCount;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.read<AdminAnnouncementController>().fetchAnnouncements(
+                forceRefresh: true,
+              );
+            }
+          });
+        } else {
+          _lastNavChangeCount = nav.tabChangeCount;
+        }
+      } catch (_) {}
+    }
+  }
 
   Future<void> _handleCreate(
     BuildContext context,
@@ -80,8 +126,8 @@ class _AdminAnnouncementsView extends StatelessWidget {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        leading: isEmbedded ? const DrawerMenuButton() : null,
-        automaticallyImplyLeading: !isEmbedded,
+        leading: widget.isEmbedded ? const DrawerMenuButton() : null,
+        automaticallyImplyLeading: !widget.isEmbedded,
         title: const Text('Pengumuman'),
         actions: [
           IconButton(

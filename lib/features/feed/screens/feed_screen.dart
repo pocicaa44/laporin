@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/report_model.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/feed_controller.dart';
@@ -22,6 +23,36 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   late final ScrollController _scrollController;
+  int? _lastNavChangeCount;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      final nav = context.watch<NavigationController>();
+      if (nav.currentIndex == 0 && _lastNavChangeCount != nav.tabChangeCount) {
+        _lastNavChangeCount = nav.tabChangeCount;
+        if (_scrollController.hasClients && _scrollController.offset > 0) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final auth = context.read<AuthController>();
+            context.read<FeedController>().fetchFeed(
+              auth.currentUser?.id,
+              true,
+            );
+          }
+        });
+      } else {
+        _lastNavChangeCount = nav.tabChangeCount;
+      }
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -176,6 +207,14 @@ class _FeedScreenState extends State<FeedScreen> {
               onCategorySelected: (cat) => controller.setCategory(cat),
             ),
           ),
+
+          // Linear progress bar saat background refresh sedang berjalan
+          if (controller.isRefreshing)
+            const LinearProgressIndicator(
+              minHeight: 2.5,
+              backgroundColor: Colors.transparent,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
 
           // List or Loading / Empty States
           Expanded(

@@ -192,6 +192,62 @@ void main() {
         expect(find.text('Balas'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'username font is grey and badges only appear for single/non-reply comments',
+      (tester) async {
+        final creatorStaffComment = CommentModel(
+          id: 'c3',
+          reportId: 'rep-1',
+          authorId: 'u1',
+          authorName: '@petugas_creator',
+          authorRole: UserRole.admin,
+          body: 'Komentar saya.',
+          createdAt: DateTime.now(),
+        );
+
+        // 1. Single / non-reply comment (isReply: false) -> badges appear
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CommentTile(
+                comment: creatorStaffComment,
+                isCreator: true,
+                isReply: false,
+              ),
+            ),
+          ),
+        );
+
+        final textWidget = tester.widget<Text>(find.text('@petugas_creator'));
+        expect(textWidget.style?.color, equals(const Color(0xFF6B7280)));
+        expect(find.text('Pencipta'), findsOneWidget);
+        expect(find.text('Petugas'), findsOneWidget);
+
+        // 2. Reply comment (isReply: true) -> badges do NOT appear, only username
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CommentTile(
+                comment: creatorStaffComment,
+                isCreator: true,
+                isReply: true,
+                replyToAuthor: '@target_user',
+              ),
+            ),
+          ),
+        );
+
+        final replyTextWidget = tester.widget<Text>(
+          find.text('@petugas_creator'),
+        );
+        expect(replyTextWidget.style?.color, equals(const Color(0xFF6B7280)));
+        final targetTextWidget = tester.widget<Text>(find.text('@target_user'));
+        expect(targetTextWidget.style?.color, equals(const Color(0xFF6B7280)));
+        expect(find.text('Pencipta'), findsNothing);
+        expect(find.text('Petugas'), findsNothing);
+      },
+    );
   });
 
   group('CommentThreadTile Expand & Collapse Tests', () {

@@ -7,12 +7,14 @@ class NavigationController extends ChangeNotifier {
   int _currentIndex;
   int get currentIndex => _currentIndex;
 
+  int _tabChangeCount = 0;
+  int get tabChangeCount => _tabChangeCount;
+
   /// Mengubah index navigasi aktif
   void setIndex(int index) {
-    if (_currentIndex != index) {
-      _currentIndex = index;
-      notifyListeners();
-    }
+    _currentIndex = index;
+    _tabChangeCount++;
+    notifyListeners();
   }
 
   /// Mereset navigasi kembali ke Beranda/Feed (index 0)

@@ -47,16 +47,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   void initState() {
     super.initState();
-    // Saat halaman pengumuman dibuka, set viewing dan tandai semua pengumuman sebagai sudah dibaca (badge hilang)
+    // Saat halaman pengumuman dibuka, set viewing dan tandai semua pengumuman sebagai sudah dibaca (badge hilang) serta auto-refresh
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         try {
           final controller = context.read<AnnouncementController>();
           controller.setViewingAnnouncements(true);
           controller.markAllAsRead();
-          if (controller.announcements.isEmpty) {
-            controller.fetchAnnouncements();
-          }
+          controller.fetchAnnouncements(forceRefresh: true);
         } catch (_) {}
       }
     });

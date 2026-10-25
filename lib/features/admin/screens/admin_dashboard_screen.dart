@@ -10,6 +10,7 @@ import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../../report_detail/widgets/delete_report_dialog.dart';
@@ -46,10 +47,54 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 }
 
-class _AdminDashboardView extends StatelessWidget {
+class _AdminDashboardView extends StatefulWidget {
   const _AdminDashboardView({required this.isEmbedded});
 
   final bool isEmbedded;
+
+  @override
+  State<_AdminDashboardView> createState() => _AdminDashboardViewState();
+}
+
+class _AdminDashboardViewState extends State<_AdminDashboardView> {
+  int? _lastNavChangeCount;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isEmbedded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<AdminReportController>().fetchReports(
+            forceRefresh: true,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isEmbedded) {
+      try {
+        final nav = context.watch<NavigationController>();
+        if (nav.currentIndex == 1 &&
+            _lastNavChangeCount != nav.tabChangeCount) {
+          _lastNavChangeCount = nav.tabChangeCount;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.read<AdminReportController>().fetchReports(
+                forceRefresh: true,
+              );
+            }
+          });
+        } else {
+          _lastNavChangeCount = nav.tabChangeCount;
+        }
+      } catch (_) {}
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,14 +121,14 @@ class _AdminDashboardView extends StatelessWidget {
           child: Scaffold(
             drawer: const AppDrawer(),
             appBar: AppBar(
-              leading: isEmbedded ? const DrawerMenuButton() : null,
-              automaticallyImplyLeading: !isEmbedded,
+              leading: widget.isEmbedded ? const DrawerMenuButton() : null,
+              automaticallyImplyLeading: !widget.isEmbedded,
               title: const Text('Panel Laporan'),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded),
                   tooltip: 'Segarkan Data',
-                  onPressed: () => controller.fetchReports(),
+                  onPressed: () => controller.fetchReports(forceRefresh: true),
                 ),
               ],
             ),
@@ -105,9 +150,9 @@ class _AdminDashboardView extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             _MetricCard(
-                              title: 'Diproses',
-                              value: '${controller.inProgressCount}',
-                              color: const Color(0xFFD98205),
+                              title: 'Baru',
+                              value: '${controller.newCount}',
+                              color: const Color(0xFF2563EB),
                             ),
                           ],
                         ),
@@ -115,15 +160,15 @@ class _AdminDashboardView extends StatelessWidget {
                         Row(
                           children: [
                             _MetricCard(
-                              title: 'Selesai',
-                              value: '${controller.completedCount}',
-                              color: AppColors.success,
+                              title: 'Diproses',
+                              value: '${controller.inProgressCount}',
+                              color: const Color(0xFFD98205),
                             ),
                             const SizedBox(width: 8),
                             _MetricCard(
-                              title: 'Perlu Review',
-                              value: '${controller.heldCount}',
-                              color: AppColors.danger,
+                              title: 'Selesai',
+                              value: '${controller.completedCount}',
+                              color: AppColors.success,
                             ),
                           ],
                         ),
@@ -141,28 +186,35 @@ class _AdminDashboardView extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               _FilterChip(
-                                label: 'Perlu Review (${controller.heldCount})',
-                                isSelected: controller.filter == 'held',
-                                onTap: () => controller.setFilter('held'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'Baru',
+                                label: 'Baru (${controller.newCount})',
                                 isSelected: controller.filter == 'new',
                                 onTap: () => controller.setFilter('new'),
                               ),
                               const SizedBox(width: 8),
                               _FilterChip(
-                                label: 'Diproses',
+                                label: 'Diterima (${controller.acceptedCount})',
+                                isSelected: controller.filter == 'accepted',
+                                onTap: () => controller.setFilter('accepted'),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label:
+                                    'Diproses (${controller.inProgressCount})',
                                 isSelected: controller.filter == 'in_progress',
                                 onTap: () =>
                                     controller.setFilter('in_progress'),
                               ),
                               const SizedBox(width: 8),
                               _FilterChip(
-                                label: 'Selesai',
+                                label: 'Selesai (${controller.completedCount})',
                                 isSelected: controller.filter == 'completed',
                                 onTap: () => controller.setFilter('completed'),
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Ditolak (${controller.rejectedCount})',
+                                isSelected: controller.filter == 'rejected',
+                                onTap: () => controller.setFilter('rejected'),
                               ),
                               if (controller.deletedByUserCount > 0) ...[
                                 const SizedBox(width: 8),

@@ -53,6 +53,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       });
       return;
     }
+    if (index == 0) {
+      try {
+        final auth = context.read<AuthController>();
+        context.read<FeedController>().fetchFeed(auth.currentUser?.id, true);
+      } catch (_) {}
+    }
     try {
       context.read<NavigationController>().setIndex(index);
     } catch (_) {

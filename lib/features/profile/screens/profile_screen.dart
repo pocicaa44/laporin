@@ -234,45 +234,6 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (auth.isAuthenticated)
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const EditProfileScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.penToSquare,
-                                  size: 11,
-                                ),
-                                label: const Text(
-                                  'Edit Profil',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  side: const BorderSide(
-                                    color: AppColors.primary,
-                                    width: 1.2,
-                                  ),
-                                  foregroundColor: AppColors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                       ],

@@ -8,6 +8,7 @@ import '../../../core/widgets/user_avatar.dart';
 import '../../announcements/controllers/announcement_controller.dart';
 import '../../announcements/screens/announcements_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../feed/controllers/feed_controller.dart';
 import '../../notifications/controllers/notification_controller.dart';
 import '../controllers/navigation_controller.dart';
 
@@ -28,6 +29,13 @@ class AppDrawer extends StatelessWidget {
     // Jika pengguna sedang berada di rute push di atas navigasi utama, pop ke root terlebih dahulu
     if (nav.canPop()) {
       nav.popUntil((route) => route.isFirst);
+    }
+
+    if (tabIndex == 0) {
+      try {
+        final auth = context.read<AuthController>();
+        context.read<FeedController>().fetchFeed(auth.currentUser?.id, true);
+      } catch (_) {}
     }
 
     try {

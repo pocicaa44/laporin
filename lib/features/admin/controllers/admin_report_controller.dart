@@ -12,7 +12,34 @@ class AdminReportController extends ChangeNotifier {
   final ReportRepository reportRepository;
 
   List<ReportModel> _allReports = [];
-  List<ReportModel> get reports => _allReports;
+  List<ReportModel> get reports {
+    switch (_filter) {
+      case 'deleted_by_user':
+        return _allReports.where((r) => r.deletedByUser).toList();
+      case 'new':
+        return _allReports
+            .where((r) => r.handlingStatus == HandlingStatus.newReport)
+            .toList();
+      case 'accepted':
+        return _allReports
+            .where((r) => r.handlingStatus == HandlingStatus.accepted)
+            .toList();
+      case 'in_progress':
+        return _allReports
+            .where((r) => r.handlingStatus == HandlingStatus.inProgress)
+            .toList();
+      case 'completed':
+        return _allReports
+            .where((r) => r.handlingStatus == HandlingStatus.completed)
+            .toList();
+      case 'rejected':
+        return _allReports
+            .where((r) => r.handlingStatus == HandlingStatus.rejected)
+            .toList();
+      default:
+        return _allReports;
+    }
+  }
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -32,22 +59,28 @@ class AdminReportController extends ChangeNotifier {
     }
   }
 
-  String _filter = 'all'; // 'all', 'held', 'new', 'in_progress', 'completed'
+  String _filter =
+      'all'; // 'all', 'new', 'accepted', 'in_progress', 'completed', 'rejected'
   String get filter => _filter;
 
   int get totalReports => _allReports.length;
-  int get heldCount => _allReports
-      .where((r) => r.publicationState == PublicationState.held)
+  int get newCount => _allReports
+      .where((r) => r.handlingStatus == HandlingStatus.newReport)
+      .length;
+  int get acceptedCount => _allReports
+      .where((r) => r.handlingStatus == HandlingStatus.accepted)
       .length;
   int get inProgressCount => _allReports
-      .where(
-        (r) =>
-            r.handlingStatus == HandlingStatus.inProgress ||
-            r.handlingStatus == HandlingStatus.accepted,
-      )
+      .where((r) => r.handlingStatus == HandlingStatus.inProgress)
       .length;
   int get completedCount => _allReports
       .where((r) => r.handlingStatus == HandlingStatus.completed)
+      .length;
+  int get rejectedCount => _allReports
+      .where((r) => r.handlingStatus == HandlingStatus.rejected)
+      .length;
+  int get heldCount => _allReports
+      .where((r) => r.publicationState == PublicationState.held)
       .length;
   int get deletedByUserCount =>
       _allReports.where((r) => r.deletedByUser && !r.deletedByAdmin).length;
@@ -74,7 +107,6 @@ class AdminReportController extends ChangeNotifier {
 
     try {
       final list = await reportRepository.getAdminReports(
-        filterStatus: _filter == 'all' ? null : _filter,
         forceRefresh: forceRefresh,
       );
       if (_isDisposed) return;
@@ -92,8 +124,10 @@ class AdminReportController extends ChangeNotifier {
   }
 
   void setFilter(String newFilter) {
-    _filter = newFilter;
-    fetchReports();
+    if (_filter != newFilter) {
+      _filter = newFilter;
+      notifyListeners();
+    }
   }
 
   Future<bool> updateStatus({

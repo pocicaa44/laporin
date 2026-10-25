@@ -33,9 +33,7 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
     super.dispose();
   }
 
-  bool get _requiresReason =>
-      _selectedStatus == HandlingStatus.rejected ||
-      _selectedStatus == HandlingStatus.cancelled;
+  bool get _requiresReason => _selectedStatus == HandlingStatus.rejected;
 
   @override
   Widget build(BuildContext context) {
@@ -72,13 +70,12 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Status Options
+            // Status Options: baru, diterima, diproses, ditolak
             ...[
               HandlingStatus.newReport,
               HandlingStatus.accepted,
               HandlingStatus.inProgress,
               HandlingStatus.rejected,
-              HandlingStatus.cancelled,
             ].map((status) {
               final isSelected = status == _selectedStatus;
               final isDanger = status == HandlingStatus.rejected;
@@ -111,22 +108,15 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
               TextFormField(
                 controller: _reasonController,
                 maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: _selectedStatus == HandlingStatus.rejected
-                      ? 'Alasan Penolakan * (Wajib)'
-                      : 'Alasan Pembatalan * (Wajib)',
+                decoration: const InputDecoration(
+                  labelText: 'Alasan Penolakan * (Wajib)',
                   hintText: 'Jelaskan alasan secara objektif dan sopan...',
                 ),
-                validator: (v) => AppValidators.validateReason(
-                  v,
-                  _selectedStatus == HandlingStatus.rejected
-                      ? 'penolakan'
-                      : 'pembatalan',
-                ),
+                validator: (v) => AppValidators.validateReason(v, 'penolakan'),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Catatan: Laporan yang ditolak/dibatalkan akan langsung hilang dari feed publik dan masuk jadwal arsip 24 jam.',
+                'Catatan: Laporan yang ditolak akan langsung hilang dari feed publik dan masuk jadwal arsip 24 jam.',
                 style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],

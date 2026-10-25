@@ -138,7 +138,7 @@ class CommentTile extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: AppColors.textPrimary,
+                      color: Color(0xFF6B7280),
                     ),
                   ),
                   if (replyToAuthor != null &&
@@ -158,11 +158,11 @@ class CommentTile extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: AppColors.textPrimary,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
                   ],
-                  if (isCreator) ...[
+                  if (!isReply && isCreator) ...[
                     const Text(
                       ' · ',
                       style: TextStyle(
@@ -180,7 +180,7 @@ class CommentTile extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (comment.isStaff) ...[
+                  if (!isReply && comment.isStaff) ...[
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(

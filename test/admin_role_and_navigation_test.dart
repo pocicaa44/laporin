@@ -882,6 +882,76 @@ void main() {
       },
     );
 
+    test('AdminReportController totalReports and KPI counts are not distorted by filter', () async {
+      final rep1 = await reportRepo.createReport(
+        authorId: testUser.id,
+        authorName: testUser.fullName,
+        authorUsername: testUser.username,
+        authorAvatarUrl: testUser.avatarUrl,
+        title: 'Laporan 1',
+        description: 'Desc 1',
+        category: 'Infrastruktur',
+        latitude: -6.99,
+        longitude: 110.42,
+        locationAddress: 'Jl. Pemuda',
+      );
+      await reportRepo.updateHandlingStatus(
+        reportId: rep1.id,
+        newStatus: HandlingStatus.completed,
+        completionProofUrl: 'https://example.com/proof.jpg',
+      );
+
+      final rep2 = await reportRepo.createReport(
+        authorId: testUser.id,
+        authorName: testUser.fullName,
+        authorUsername: testUser.username,
+        authorAvatarUrl: testUser.avatarUrl,
+        title: 'Laporan 2',
+        description: 'Desc 2',
+        category: 'Keamanan',
+        latitude: -6.99,
+        longitude: 110.42,
+        locationAddress: 'Jl. Sudirman',
+      );
+      await reportRepo.updateHandlingStatus(
+        reportId: rep2.id,
+        newStatus: HandlingStatus.accepted,
+      );
+
+      final controller = AdminReportController(reportRepository: reportRepo);
+      await controller.fetchReports();
+
+      final initialTotal = controller.totalReports;
+      expect(initialTotal, greaterThanOrEqualTo(2));
+      expect(controller.completedCount, equals(1));
+      expect(controller.acceptedCount, equals(1));
+
+      // When switching to 'completed' filter
+      controller.setFilter('completed');
+      expect(controller.filter, equals('completed'));
+      // totalReports must still represent the overall total, NOT just the completed ones!
+      expect(controller.totalReports, equals(initialTotal));
+      expect(controller.acceptedCount, equals(1));
+      expect(controller.completedCount, equals(1));
+      for (final r in controller.reports) {
+        expect(r.handlingStatus, equals(HandlingStatus.completed));
+      }
+
+      // When switching to 'accepted' filter
+      controller.setFilter('accepted');
+      expect(controller.filter, equals('accepted'));
+      expect(controller.totalReports, equals(initialTotal));
+      expect(controller.acceptedCount, equals(1));
+      expect(controller.completedCount, equals(1));
+      for (final r in controller.reports) {
+        expect(r.handlingStatus, equals(HandlingStatus.accepted));
+      }
+
+      // Reset to all
+      controller.setFilter('all');
+      expect(controller.reports.length, equals(initialTotal));
+    });
+
     testWidgets(
       'AdminStatusUpdateSheet renders all status options including Baru',
       (WidgetTester tester) async {
@@ -910,7 +980,7 @@ void main() {
         expect(find.text('Diterima'), findsOneWidget);
         expect(find.text('Diproses'), findsOneWidget);
         expect(find.text('Ditolak'), findsOneWidget);
-        expect(find.text('Dibatalkan'), findsOneWidget);
+        expect(find.text('Dibatalkan'), findsNothing);
       },
     );
 

@@ -9,6 +9,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/my_reports_controller.dart';
@@ -55,6 +56,27 @@ class _MyReportsView extends StatefulWidget {
 
 class _MyReportsViewState extends State<_MyReportsView> {
   late final ScrollController _scrollController;
+  int? _lastNavChangeCount;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      final nav = context.watch<NavigationController>();
+      if (nav.currentIndex == 1 && _lastNavChangeCount != nav.tabChangeCount) {
+        _lastNavChangeCount = nav.tabChangeCount;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<MyReportsController>().fetchMyReports(
+              forceRefresh: true,
+            );
+          }
+        });
+      } else {
+        _lastNavChangeCount = nav.tabChangeCount;
+      }
+    } catch (_) {}
+  }
 
   @override
   void initState() {

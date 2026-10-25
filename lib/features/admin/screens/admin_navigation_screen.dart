@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../feed/controllers/feed_controller.dart';
 import '../../feed/screens/feed_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../navigation/controllers/navigation_controller.dart';
@@ -31,6 +32,12 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
   ];
 
   void _onTabTapped(int index) {
+    if (index == 0) {
+      try {
+        final auth = context.read<AuthController>();
+        context.read<FeedController>().fetchFeed(auth.currentUser?.id, true);
+      } catch (_) {}
+    }
     try {
       context.read<NavigationController>().setIndex(index);
     } catch (_) {
