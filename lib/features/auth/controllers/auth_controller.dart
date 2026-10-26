@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/services/fcm_service.dart';
 import '../../../core/services/media_service.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -24,12 +25,14 @@ class AuthController extends ChangeNotifier {
       final event = data.event;
       if (event == AuthChangeEvent.signedOut) {
         authRepository.clearSession();
+        FcmService.instance.removeTokenFromSupabase();
         notifyListeners();
       } else if (event == AuthChangeEvent.tokenRefreshed ||
           event == AuthChangeEvent.userUpdated ||
           event == AuthChangeEvent.signedIn) {
         await authRepository.initSessionFromSupabase();
         if (_isDisposed) return;
+        FcmService.instance.syncTokenWithSupabase();
         notifyListeners();
       }
     });
@@ -332,6 +335,9 @@ class AuthController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      try {
+        await FcmService.instance.removeTokenFromSupabase();
+      } catch (_) {}
       await authRepository.signOut();
     } finally {
       _isLoading = false;

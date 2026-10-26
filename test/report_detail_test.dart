@@ -366,5 +366,107 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'ReportDetailScreen shows CircularProgressIndicator while fetching report and then renders content',
+      (tester) async {
+        final authRepo = AuthRepository();
+        final reportRepo = ReportRepository();
+        final commentRepo = CommentRepository();
+
+        final sampleReport = ReportModel(
+          id: 'rep-from-notif-1',
+          reportNumber: 'LPR-2026-9999',
+          authorId: 'user-1',
+          authorName: 'Budi Santoso',
+          areaId: 'area-1',
+          areaName: 'Kota Semarang',
+          title: 'Lampu Jalan Padam',
+          description: 'Lampu penerangan jalan padam sejak kemarin malam.',
+          category: 'Penerangan',
+          latitude: -6.99,
+          longitude: 110.42,
+          locationAddress: 'Jl. Pemuda',
+          handlingStatus: HandlingStatus.inProgress,
+          publicationState: PublicationState.published,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        // Prepopulate repository so getReportById can find it
+        reportRepo.updateReport(sampleReport);
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              Provider.value(value: authRepo),
+              Provider.value(value: reportRepo),
+              Provider.value(value: commentRepo),
+              ChangeNotifierProvider(
+                create: (_) => AuthController(authRepository: authRepo),
+              ),
+            ],
+            child: const MaterialApp(
+              home: ReportDetailScreen(
+                reportId: 'rep-from-notif-1',
+                initialReport: null,
+              ),
+            ),
+          ),
+        );
+
+        // On first frame, initialReport is null and controller is loading
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('Memuat detail laporan...'), findsOneWidget);
+        expect(find.text('Laporan Tidak Ditemukan'), findsNothing);
+
+        // Let the async fetch complete
+        await tester.pumpAndSettle();
+
+        // Now the report should be displayed
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('LPR-2026-9999'), findsOneWidget);
+        expect(find.text('Lampu Jalan Padam'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ReportDetailScreen shows "Laporan Tidak Ditemukan" and retry button only after fetch fails',
+      (tester) async {
+        final authRepo = AuthRepository();
+        final reportRepo = ReportRepository();
+        final commentRepo = CommentRepository();
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              Provider.value(value: authRepo),
+              Provider.value(value: reportRepo),
+              Provider.value(value: commentRepo),
+              ChangeNotifierProvider(
+                create: (_) => AuthController(authRepository: authRepo),
+              ),
+            ],
+            child: const MaterialApp(
+              home: ReportDetailScreen(
+                reportId: 'rep-non-existent-999',
+                initialReport: null,
+              ),
+            ),
+          ),
+        );
+
+        // On initial frame, shows loading
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('Laporan Tidak Ditemukan'), findsNothing);
+
+        // Once async fetch finishes and report is not found
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('Laporan Tidak Ditemukan'), findsOneWidget);
+        expect(find.text('Coba Muat Ulang'), findsOneWidget);
+      },
+    );
   });
 }

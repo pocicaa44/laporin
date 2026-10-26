@@ -428,6 +428,26 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final report = controller.report;
     final currentUserId = auth.currentUser?.id ?? 'guest';
 
+    // 1. Tampilkan loading spin saat proses pengambilan data dan data laporan belum ada
+    if (controller.isLoading && report == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Detail Laporan')),
+        body: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Memuat detail laporan...',
+                style: AppTextStyles.bodySecondary,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final isAdmin = auth.isAdmin;
     final isOwner = report?.authorId == currentUserId;
     final isDeletedForViewer =

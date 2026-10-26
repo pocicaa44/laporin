@@ -5,8 +5,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+
 import 'core/config/app_config.dart';
+import 'core/services/fcm_service.dart';
 import 'core/theme/app_theme.dart';
+import 'firebase_options.dart';
 import 'data/repositories/announcement_repository.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/comment_repository.dart';
@@ -37,6 +41,16 @@ void main() async {
   // Safely load .env and initialize Supabase client
   await AppConfig.initialize();
   await SupabaseService.instance.initialize();
+
+  // Initialize Firebase and Cloud Messaging
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await FcmService.instance.initialize();
+  } catch (e) {
+    debugPrint('Firebase/FCM initialization notice: $e');
+  }
 
   // Initialize native Google Sign-In with platform-safe configuration
   try {
@@ -138,6 +152,7 @@ class LaporinApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: FcmService.navigatorKey,
         title: 'Laporin',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

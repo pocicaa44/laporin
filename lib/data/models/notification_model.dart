@@ -1,9 +1,11 @@
 enum NotificationType {
   statusChanged('status_changed', 'Perubahan Status'),
   newComment('new_comment', 'Komentar Baru'),
+  replyComment('reply_comment', 'Balasan Komentar'),
   upvoted('upvoted', 'Dukungan Warga'),
   moderation('moderation', 'Tindakan Moderasi'),
-  announcement('announcement', 'Pengumuman Resmi');
+  announcement('announcement', 'Pengumuman Resmi'),
+  newReport('new_report', 'Laporan Baru');
 
   const NotificationType(this.value, this.label);
   final String value;

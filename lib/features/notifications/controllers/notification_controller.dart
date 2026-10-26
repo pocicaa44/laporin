@@ -41,7 +41,7 @@ class NotificationController extends ChangeNotifier {
     try {
       final list = await repository.getNotifications();
       if (_isDisposed) return;
-      _notifications = list;
+      _notifications = List<NotificationModel>.from(list);
     } catch (_) {
     } finally {
       if (!_isDisposed) {
@@ -52,19 +52,35 @@ class NotificationController extends ChangeNotifier {
   }
 
   Future<void> markAsRead(String id) async {
-    await repository.markAsRead(id);
     final index = _notifications.indexWhere((n) => n.id == id);
-    if (index != -1) {
-      _notifications[index] = _notifications[index].copyWith(isRead: true);
+    if (index != -1 && !_notifications[index].isRead) {
+      final updated = List<NotificationModel>.from(_notifications);
+      updated[index] = updated[index].copyWith(isRead: true);
+      _notifications = updated;
       notifyListeners();
+    }
+
+    try {
+      await repository.markAsRead(id);
+    } catch (e) {
+      debugPrint('NotificationController markAsRead notice: $e');
     }
   }
 
   Future<void> markAllAsRead() async {
-    await repository.markAllAsRead();
-    for (int i = 0; i < _notifications.length; i++) {
-      _notifications[i] = _notifications[i].copyWith(isRead: true);
-    }
+    if (_notifications.isEmpty || unreadCount == 0) return;
+
+    // 1. Optimistic update: langsung jadikan semua isRead = true agar UI merespons instan
+    _notifications = _notifications
+        .map((n) => n.copyWith(isRead: true))
+        .toList();
     notifyListeners();
+
+    // 2. Simpan perubahan ke repository dan database
+    try {
+      await repository.markAllAsRead();
+    } catch (e) {
+      debugPrint('NotificationController markAllAsRead notice: $e');
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/fcm_service.dart';
 import '../../admin/screens/admin_navigation_screen.dart';
 import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/screens/main_navigation_screen.dart';
@@ -48,6 +49,11 @@ class _AppGateState extends State<AppGate> {
       if (!hasUsername) {
         return const SetUsernameScreen();
       }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FcmService.instance.consumePendingInitialMessage();
+      });
+
       if (auth.isAdmin) {
         return const AdminNavigationScreen();
       }

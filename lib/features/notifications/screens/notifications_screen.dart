@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/notification_model.dart';
+import '../../announcements/screens/announcements_screen.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/notification_controller.dart';
@@ -78,6 +79,13 @@ class NotificationsScreen extends StatelessWidget {
                                 ReportDetailScreen(reportId: item.reportId!),
                           ),
                         );
+                      } else if (item.type == NotificationType.announcement) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AnnouncementsScreen(),
+                          ),
+                        );
                       }
                     },
                   );
@@ -108,6 +116,10 @@ class _NotificationItem extends StatelessWidget {
         icon = Icons.chat_bubble_outline_rounded;
         iconColor = AppColors.info;
         break;
+      case NotificationType.replyComment:
+        icon = Icons.reply_rounded;
+        iconColor = AppColors.info;
+        break;
       case NotificationType.upvoted:
         icon = Icons.thumb_up_alt_outlined;
         iconColor = AppColors.success;
@@ -119,6 +131,10 @@ class _NotificationItem extends StatelessWidget {
       case NotificationType.announcement:
         icon = Icons.campaign_outlined;
         iconColor = const Color(0xFFD98205);
+        break;
+      case NotificationType.newReport:
+        icon = Icons.assignment_outlined;
+        iconColor = AppColors.primary;
         break;
     }
 
@@ -161,6 +177,16 @@ class _NotificationItem extends StatelessWidget {
             Text(item.createdAt.toRelativeTime(), style: AppTextStyles.caption),
           ],
         ),
+        trailing: !item.isRead
+            ? Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              )
+            : null,
       ),
     );
   }

@@ -14,8 +14,9 @@ class ReportDetailController extends ChangeNotifier {
     required this.commentRepository,
     ReportModel? initialReport,
     this.currentUserId,
-  }) : _report = initialReport {
-    _isLoadingComments = true;
+  })  : _report = initialReport,
+        _isLoading = initialReport == null,
+        _isLoadingComments = true {
     loadData();
   }
 
