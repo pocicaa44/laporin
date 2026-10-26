@@ -114,6 +114,33 @@ void main() {
       expect(MediaService.avatarResolutions.contains(decoded.width), isTrue);
     });
 
+    test('Foto dengan metadata EXIF berhasil distrip dan dikompresi di bawah 30 KB', () {
+      final imageWithExif = img.Image(width: 400, height: 400);
+      for (int y = 0; y < 400; y++) {
+        for (int x = 0; x < 400; x++) {
+          imageWithExif.setPixelRgb(x, y, (x * 3) % 256, (y * 5) % 256, 120);
+        }
+      }
+      // Simulate heavy camera metadata
+      imageWithExif.textData = {
+        'CameraModel': 'Pixel 8 Pro',
+        'MakerNote': 'A' * 5000,
+      };
+      final rawJpegWithMeta = Uint8List.fromList(img.encodeJpg(imageWithExif));
+
+      final compressed = MediaService.compressAvatarBytes(rawJpegWithMeta);
+      expect(
+        compressed.lengthInBytes,
+        lessThanOrEqualTo(MediaService.maxAvatarSizeBytes),
+      );
+      expect(compressed.lengthInBytes, lessThanOrEqualTo(30000));
+
+      final decoded = img.decodeImage(compressed);
+      expect(decoded, isNotNull);
+      expect(decoded!.exif.isEmpty, isTrue);
+      expect(decoded.textData == null || decoded.textData!.isEmpty, isTrue);
+    });
+
     test('Format file tidak didukung atau corrupt ditolak dengan aman', () {
       final corruptBytes = Uint8List.fromList([0, 1, 2, 3, 4, 5, 6, 7]);
       expect(

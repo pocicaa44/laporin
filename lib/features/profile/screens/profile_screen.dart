@@ -7,8 +7,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/user_profile_model.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../auth/controllers/auth_controller.dart';
-import '../../auth/screens/app_gate.dart';
 import '../../auth/screens/set_username_screen.dart';
 import '../../my_reports/screens/my_reports_screen.dart';
 import '../../navigation/controllers/navigation_controller.dart';
@@ -74,6 +74,77 @@ class ProfileScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _handleLogout(BuildContext context, AuthController auth) async {
+    if (auth.isLoading) return;
+
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    var isDialogShowing = true;
+
+    // Dialog loading non-dismissible langsung muncul saat tombol logout ditekan
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Sedang logout',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).then((_) {
+      isDialogShowing = false;
+    });
+
+    try {
+      try {
+        context.read<NavigationController>().resetToHome();
+      } catch (_) {}
+      await auth.signOut();
+    } finally {
+      final nav = rootNav.mounted
+          ? rootNav
+          : FcmService.navigatorKey.currentState;
+      if (nav != null) {
+        if (!auth.isAuthenticated) {
+          nav.popUntil((route) => route.isFirst);
+        } else if (isDialogShowing && nav.canPop()) {
+          nav.pop();
+          isDialogShowing = false;
+        }
+      }
+    }
   }
 
   @override
@@ -304,19 +375,7 @@ class ProfileScreen extends StatelessWidget {
               textColor: AppColors.danger,
               onTap: auth.isLoading
                   ? () {}
-                  : () async {
-                      try {
-                        context.read<NavigationController>().resetToHome();
-                      } catch (_) {}
-                      await auth.signOut();
-                      if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AppGate()),
-                          (route) => false,
-                        );
-                      }
-                    },
+                  : () => _handleLogout(context, auth),
             ),
           ],
         ),

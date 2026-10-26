@@ -27,14 +27,17 @@ class MediaService {
   /// Maximum avatar size in bytes (30 KB = 30,000 bytes per avatar optimization rule)
   static const int maxAvatarSizeBytes = 30000;
 
+  /// Absolute fallback upper bound for avatar size (100 KB) in extreme edge cases
+  static const int maxAvatarFallbackSizeBytes = 100 * 1024;
+
   /// Target dimension for square avatar photo (256x256 pixels)
   static const int targetAvatarDimension = 256;
 
   /// Step-down resolutions for adaptive avatar compression
-  static const List<int> avatarResolutions = [256, 192, 128];
+  static const List<int> avatarResolutions = [256, 192, 128, 96];
 
   /// Step-down qualities for adaptive avatar compression
-  static const List<int> avatarQualities = [75, 65, 55, 45, 35, 25];
+  static const List<int> avatarQualities = [75, 65, 55, 45, 35, 25, 20];
 
   /// Adaptively crops to 1:1, bakes EXIF orientation, resizes, and compresses
   /// an avatar image to <= 30,000 bytes (max 30 KB).
@@ -42,10 +45,11 @@ class MediaService {
   /// Steps:
   /// 1. Decode raw bytes into an Image object.
   /// 2. Bake EXIF orientation to ensure upright display without distortion.
-  /// 3. Center-crop to 1:1 square aspect ratio.
-  /// 4. Adaptively attempt combinations of resolutions (256, 192, 128) and qualities (75 -> 25).
-  /// 5. Return immediately when byte size is <= 30,000 bytes.
-  /// 6. If even 128x128 at quality 25 exceeds 30,000 bytes, throw an informative exception.
+  /// 3. Strip EXIF, ICC profile, and metadata to eliminate heavy camera bloat and protect privacy.
+  /// 4. Center-crop to 1:1 square aspect ratio.
+  /// 5. Adaptively attempt combinations of resolutions (256, 192, 128, 96) and qualities (75 -> 20).
+  /// 6. Return immediately when byte size is <= 30,000 bytes.
+  /// 7. If extreme high-entropy photo slightly exceeds 30 KB, gracefully fallback to smallest compressed (<= 100 KB).
   static Uint8List compressAvatarBytes(Uint8List rawBytes) {
     final original = img.decodeImage(rawBytes);
     if (original == null) {
@@ -54,6 +58,9 @@ class MediaService {
 
     // Bake EXIF orientation to keep correct rotation
     final baked = img.bakeOrientation(original);
+    baked.exif = img.ExifData();
+    baked.iccProfile = null;
+    baked.textData = null;
 
     // Center crop to 1:1 square aspect ratio
     final side = math.min(baked.width, baked.height);
@@ -62,6 +69,12 @@ class MediaService {
     final cropped = (baked.width == side && baked.height == side)
         ? baked
         : img.copyCrop(baked, x: cropX, y: cropY, width: side, height: side);
+
+    cropped.exif = img.ExifData();
+    cropped.iccProfile = null;
+    cropped.textData = null;
+
+    Uint8List? smallestCompressed;
 
     // Adaptive compression loop across resolutions and qualities
     for (final dim in avatarResolutions) {
@@ -74,14 +87,32 @@ class MediaService {
               interpolation: img.Interpolation.linear,
             );
 
+      resized.exif = img.ExifData();
+      resized.iccProfile = null;
+      resized.textData = null;
+
       for (final quality in avatarQualities) {
         final compressed = Uint8List.fromList(
           img.encodeJpg(resized, quality: quality),
         );
+
+        if (smallestCompressed == null ||
+            compressed.lengthInBytes < smallestCompressed.lengthInBytes) {
+          smallestCompressed = compressed;
+        }
+
         if (compressed.lengthInBytes <= maxAvatarSizeBytes) {
           return compressed;
         }
       }
+    }
+
+    // Graceful fallback: jika foto resolusi rendah dengan detail sangat tinggi
+    // masih sedikit di atas 30 KB namun <= 100 KB, gunakan hasil kompresi terkecil
+    // alih-alih melempar error yang memblokir pengguna mengganti foto profil.
+    if (smallestCompressed != null &&
+        smallestCompressed.lengthInBytes <= maxAvatarFallbackSizeBytes) {
+      return smallestCompressed;
     }
 
     throw Exception(
@@ -179,9 +210,9 @@ class MediaService {
   Future<XFile?> pickAvatarImage(ImageSource source) async {
     final picked = await pickImage(
       source,
-      maxWidth: null,
-      maxHeight: null,
-      imageQuality: 100,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
     );
     if (picked == null) return null;
 
@@ -355,15 +386,15 @@ class MediaService {
     try {
       var bytes = await _readFileBytesInIsolate(file);
 
-      // Pastikan bytes telah dikompresi ke <= 30.000 byte dan 1:1 rasio
+      // Pastikan bytes telah dikompresi ke format avatar (target <= 30.000 byte dan 1:1 rasio)
       if (bytes.lengthInBytes > maxAvatarSizeBytes) {
         bytes = await compressAvatar(bytes);
       }
 
-      // Validasi ketat sisi klien: ukuran final tidak boleh melebihi 30.000 byte
-      if (bytes.lengthInBytes > maxAvatarSizeBytes) {
+      // Validasi aman sisi klien: ukuran final tidak boleh melebihi batas fallback
+      if (bytes.lengthInBytes > maxAvatarFallbackSizeBytes) {
         throw Exception(
-          'Ukuran foto profil (${bytes.lengthInBytes} byte) melebihi batas maksimal 30 KB.',
+          'Ukuran foto profil (${bytes.lengthInBytes} byte) melebihi batas maksimal storage.',
         );
       }
 

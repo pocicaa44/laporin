@@ -276,6 +276,7 @@ class _AnnouncementCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -300,17 +301,18 @@ class _AnnouncementCard extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
                     Text(
                       announcement.createdAt.toRelativeTime(),
                       style: AppTextStyles.caption,
                     ),
                     const SizedBox(width: 4),
                     PopupMenuButton<String>(
-                      icon: const Icon(
-                        Icons.more_vert_rounded,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
                       tooltip: 'Opsi Pengumuman',
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -361,10 +363,15 @@ class _AnnouncementCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                      child: const Icon(
+                        Icons.more_vert_rounded,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(announcement.title, style: AppTextStyles.sectionTitle),
                 const SizedBox(height: 6),
                 Text(
@@ -384,15 +391,16 @@ class _AnnouncementCard extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Icon(
                       Icons.verified_user_rounded,
                       size: 14,
                       color: AppColors.primary,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
                       'Diterbitkan oleh: ${announcement.authorName}',
                       style: AppTextStyles.caption.copyWith(
