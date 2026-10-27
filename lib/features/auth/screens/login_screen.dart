@@ -129,15 +129,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Container(
                           width: 72,
                           height: 72,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [AppColors.cardShadow],
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [AppColors.cardShadow],
                           ),
-                          child: Image.asset(
-                            'assets/logo_laporin.png',
-                            fit: BoxFit.contain,
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/logo_laporin.png',
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),

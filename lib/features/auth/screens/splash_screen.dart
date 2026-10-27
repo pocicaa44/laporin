@@ -61,19 +61,23 @@ class _SplashScreenState extends State<SplashScreen> {
                           Container(
                             width: 120,
                             height: 120,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: const [AppColors.cardShadow],
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [AppColors.modalShadow],
                             ),
-                            child: Image.asset(
-                              'assets/logo_laporin.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => const FaIcon(
-                                FontAwesomeIcons.bullhorn,
-                                size: 54,
-                                color: AppColors.primary,
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/logo_laporin.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => Container(
+                                  color: AppColors.surface,
+                                  alignment: Alignment.center,
+                                  child: const FaIcon(
+                                    FontAwesomeIcons.bullhorn,
+                                    size: 54,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

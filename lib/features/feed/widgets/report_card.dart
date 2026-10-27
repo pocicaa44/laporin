@@ -225,55 +225,70 @@ class ReportCard extends StatelessWidget {
           ),
 
           // Independent interactions row: Upvote, Downvote, Comments
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                _VoteButton(
-                  icon: FontAwesomeIcons.thumbsUp,
-                  count: report.upvotesCount,
-                  isActive: report.currentUserVote == 'up',
-                  activeColor: AppColors.primary,
-                  onTap: onUpvote,
+          Builder(
+            builder: (context) {
+              final isCompleted =
+                  report.handlingStatus == HandlingStatus.completed;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                const SizedBox(width: 12),
-                _VoteButton(
-                  icon: FontAwesomeIcons.thumbsDown,
-                  count: report.downvotesCount,
-                  isActive: report.currentUserVote == 'down',
-                  activeColor: AppColors.danger,
-                  onTap: onDownvote,
-                ),
-                const Spacer(),
-                InkWell(
-                  onTap: onTap,
-                  mouseCursor: SystemMouseCursors.click,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
+                child: Row(
+                  children: [
+                    _VoteButton(
+                      icon: FontAwesomeIcons.thumbsUp,
+                      count: report.upvotesCount,
+                      isActive: report.currentUserVote == 'up',
+                      activeColor: AppColors.primary,
+                      isEnabled: !isCompleted,
+                      onTap: isCompleted ? null : onUpvote,
                     ),
-                    child: Row(
-                      children: [
-                        const FaIcon(
-                          FontAwesomeIcons.comment,
-                          size: 14,
-                          color: AppColors.textSecondary,
+                    const SizedBox(width: 12),
+                    _VoteButton(
+                      icon: FontAwesomeIcons.thumbsDown,
+                      count: report.downvotesCount,
+                      isActive: report.currentUserVote == 'down',
+                      activeColor: AppColors.danger,
+                      isEnabled: !isCompleted,
+                      onTap: isCompleted ? null : onDownvote,
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: onTap,
+                      mouseCursor: SystemMouseCursors.click,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${report.commentsCount} komentar',
-                          style: AppTextStyles.caption.copyWith(
-                            fontWeight: FontWeight.w500,
+                        child: Opacity(
+                          opacity: report.isDiscussionActive ? 1.0 : 0.4,
+                          child: Row(
+                            children: [
+                              const FaIcon(
+                                FontAwesomeIcons.comment,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${report.commentsCount} komentar',
+                                style: AppTextStyles.caption.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -297,53 +312,62 @@ class _VoteButton extends StatelessWidget {
     required this.isActive,
     required this.activeColor,
     required this.onTap,
+    this.isEnabled = true,
   });
 
   final FaIconData icon;
   final int count;
   final bool isActive;
   final Color activeColor;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool isEnabled;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      mouseCursor: SystemMouseCursors.click,
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isActive
-              ? activeColor.withValues(alpha: 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isActive
-                ? activeColor.withValues(alpha: 0.28)
+    final effectiveColor = !isEnabled
+        ? AppColors.textSecondary.withValues(alpha: 0.5)
+        : (isActive ? activeColor : AppColors.textSecondary);
+
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.4,
+      child: InkWell(
+        onTap: isEnabled ? onTap : null,
+        mouseCursor: isEnabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isEnabled && isActive
+                ? activeColor.withValues(alpha: 0.12)
                 : Colors.transparent,
-            width: 1,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isEnabled && isActive
+                  ? activeColor.withValues(alpha: 0.28)
+                  : Colors.transparent,
+              width: 1,
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FaIcon(
-              icon,
-              size: 14,
-              color: isActive ? activeColor : AppColors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? activeColor : AppColors.textSecondary,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FaIcon(icon, size: 14, color: effectiveColor),
+              const SizedBox(width: 6),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isEnabled && isActive
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  color: effectiveColor,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

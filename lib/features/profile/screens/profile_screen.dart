@@ -353,10 +353,13 @@ class ProfileScreen extends StatelessWidget {
                   context: context,
                   applicationName: 'Laporin',
                   applicationVersion: '1.0.0 (MVP)',
-                  applicationIcon: Image.asset(
-                    'assets/logo_laporin.png',
-                    width: 48,
-                    height: 48,
+                  applicationIcon: ClipOval(
+                    child: Image.asset(
+                      'assets/logo_laporin.png',
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   children: const [
                     Text(

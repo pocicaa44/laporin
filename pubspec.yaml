@@ -68,8 +68,15 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/logo_laporin.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/logo_laporin.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#172C4F"
+  adaptive_icon_foreground: "assets/logo_laporin_adaptive_foreground.png"
+  adaptive_icon_foreground_inset: 0
+  web:
+    generate: true
+    image_path: "assets/logo_laporin.png"
+    background_color: "#172C4F"
+    theme_color: "#596CFF"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -87,6 +94,7 @@ flutter:
     - .env
     - assets/env
     - assets/logo_laporin.png
+    - assets/laporin-logo.jpg
     - assets/generic-avatar.png
 
   # An image asset can refer to one or more resolution-specific "variants", see

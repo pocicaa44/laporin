@@ -519,5 +519,107 @@ void main() {
         expect(find.text('Keberatan (4)'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'ReportCard dims upvote and downvote buttons when report status is completed, but keeps comment active',
+      (tester) async {
+        final completedReport = createDummyReport(
+          id: 'rep-completed',
+          upvotes: 12,
+          downvotes: 3,
+          handling: HandlingStatus.completed,
+        );
+        bool upvoted = false;
+        bool downvoted = false;
+        bool cardOrCommentTapped = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ReportCard(
+                report: completedReport,
+                onTap: () => cardOrCommentTapped = true,
+                onUpvote: () => upvoted = true,
+                onDownvote: () => downvoted = true,
+              ),
+            ),
+          ),
+        );
+
+        // Find vote buttons
+        final upvoteTextFinder = find.text('12');
+        final downvoteTextFinder = find.text('3');
+        expect(upvoteTextFinder, findsOneWidget);
+        expect(downvoteTextFinder, findsOneWidget);
+
+        // Verify opacity is 0.4 for completed status vote buttons
+        final opacities = tester.widgetList<Opacity>(
+          find.descendant(
+            of: find.byType(ReportCard),
+            matching: find.byType(Opacity),
+          ),
+        );
+        expect(opacities.any((o) => o.opacity == 0.4), isTrue);
+
+        // Tap upvote -> should NOT trigger onUpvote
+        await tester.tap(upvoteTextFinder);
+        await tester.pump();
+        expect(upvoted, isFalse);
+
+        // Tap downvote -> should NOT trigger onDownvote
+        await tester.tap(downvoteTextFinder);
+        await tester.pump();
+        expect(downvoted, isFalse);
+
+        // Tap comment -> should trigger onTap (discussion is still active)
+        final commentFinder = find.text(
+          '${completedReport.commentsCount} komentar',
+        );
+        expect(commentFinder, findsOneWidget);
+        await tester.tap(commentFinder);
+        await tester.pump();
+        expect(cardOrCommentTapped, isTrue);
+
+        // Comment opacity is 1.0 when discussion is active
+        final commentOpacity = tester.widget<Opacity>(
+          find.ancestor(
+            of: find.text('${completedReport.commentsCount} komentar'),
+            matching: find.byType(Opacity),
+          ),
+        );
+        expect(commentOpacity.opacity, equals(1.0));
+      },
+    );
+
+    testWidgets('ReportCard dims comment icon when discussion is turned off', (
+      tester,
+    ) async {
+      final discussionDisabledReport = createDummyReport(
+        id: 'rep-discussion-off',
+        handling: HandlingStatus.inProgress,
+      ).copyWith(isDiscussionActive: false);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ReportCard(
+              report: discussionDisabledReport,
+              onTap: () {},
+              onUpvote: () {},
+              onDownvote: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Comment opacity is 0.4 when discussion is turned off
+      final commentOpacity = tester.widget<Opacity>(
+        find.ancestor(
+          of: find.text('${discussionDisabledReport.commentsCount} komentar'),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(commentOpacity.opacity, equals(0.4));
+    });
   });
 }
