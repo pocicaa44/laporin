@@ -12,95 +12,337 @@ import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/notification_controller.dart';
 
 /// Notifications list screen per DESIGN.md Section 5.12
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  bool _isSelectionMode = false;
+  final Set<String> _selectedIds = {};
+  bool _isDeleting = false;
+
+  void _enterSelectionMode() {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedIds.clear();
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _toggleSelectAll(List<NotificationModel> notifications) {
+    setState(() {
+      if (_selectedIds.length == notifications.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds.addAll(notifications.map((n) => n.id));
+      }
+    });
+  }
+
+  Future<void> _handleDeleteSelected(NotificationController controller) async {
+    if (_selectedIds.isEmpty || _isDeleting) return;
+    setState(() => _isDeleting = true);
+
+    final idsToDelete = _selectedIds.toList();
+    await controller.deleteNotifications(idsToDelete);
+
+    if (mounted) {
+      setState(() {
+        _isSelectionMode = false;
+        _selectedIds.clear();
+        _isDeleting = false;
+      });
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${idsToDelete.length} notifikasi berhasil dihapus'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<NotificationController>();
 
-    return Scaffold(
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: const DrawerMenuButton(),
-        title: const Text('Notifikasi'),
-        actions: [
-          if (controller.unreadCount > 0)
-            TextButton(
-              onPressed: () => controller.markAllAsRead(),
-              child: const Text(
-                'Tandai Dibaca',
-                style: TextStyle(color: AppColors.primary, fontSize: 13),
+    // Jika notifikasi kosong saat mode seleksi, otomatis keluar dari mode seleksi
+    if (controller.notifications.isEmpty && _isSelectionMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _isSelectionMode) {
+          _exitSelectionMode();
+        }
+      });
+    }
+
+    final isAllSelected =
+        controller.notifications.isNotEmpty &&
+        _selectedIds.length == controller.notifications.length;
+
+    return PopScope(
+      canPop: !_isSelectionMode,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _isSelectionMode) {
+          _exitSelectionMode();
+        }
+      },
+      child: Scaffold(
+        drawer: _isSelectionMode ? null : const AppDrawer(),
+        appBar: AppBar(
+          leading: _isSelectionMode
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: 'Batal',
+                  onPressed: _exitSelectionMode,
+                )
+              : const DrawerMenuButton(),
+          title: Text(
+            _isSelectionMode
+                ? (_selectedIds.isEmpty
+                      ? 'Pilih Notifikasi'
+                      : '${_selectedIds.length} Dipilih')
+                : 'Notifikasi',
+          ),
+          actions: [
+            if (!_isSelectionMode) ...[
+              if (controller.unreadCount > 0)
+                TextButton(
+                  onPressed: () => controller.markAllAsRead(),
+                  child: const Text(
+                    'Tandai Dibaca',
+                    style: TextStyle(color: AppColors.primary, fontSize: 13),
+                  ),
+                ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded),
+                tooltip: 'Hapus Notifikasi',
+                onPressed: controller.notifications.isEmpty
+                    ? null
+                    : _enterSelectionMode,
               ),
-            ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => controller.fetchNotifications(),
-        child: controller.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : controller.notifications.isEmpty
-            ? LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: const Center(
-                      child: EmptyState(
-                        title: 'Belum Ada Notifikasi',
-                        message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
-                        icon: Icons.notifications_none_rounded,
+            ] else ...[
+              TextButton(
+                onPressed: _exitSelectionMode,
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => controller.fetchNotifications(),
+          child: controller.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : controller.notifications.isEmpty
+              ? LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: const Center(
+                        child: EmptyState(
+                          title: 'Belum Ada Notifikasi',
+                          message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
+                          icon: Icons.notifications_none_rounded,
+                        ),
                       ),
                     ),
                   ),
+                )
+              : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  itemCount: controller.notifications.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final item = controller.notifications[index];
+                    final isSelected = _selectedIds.contains(item.id);
+
+                    return _NotificationItem(
+                      item: item,
+                      isSelectionMode: _isSelectionMode,
+                      isSelected: isSelected,
+                      onToggleSelect: () => _toggleSelection(item.id),
+                      onTap: () {
+                        if (_isSelectionMode) {
+                          _toggleSelection(item.id);
+                          return;
+                        }
+
+                        controller.markAsRead(item.id);
+                        if (item.reportId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ReportDetailScreen(reportId: item.reportId!),
+                            ),
+                          );
+                        } else if (item.type == NotificationType.announcement) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AnnouncementsScreen(),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+        ),
+        bottomNavigationBar:
+            _isSelectionMode && controller.notifications.isNotEmpty
+            ? SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    border: const Border(
+                      top: BorderSide(color: AppColors.border),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Kiri bawah: "Pilih Semua"
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => _toggleSelectAll(controller.notifications),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Checkbox(
+                                value: isAllSelected,
+                                onChanged: (_) =>
+                                    _toggleSelectAll(controller.notifications),
+                                activeColor: AppColors.primary,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Pilih Semua',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Kanan bawah: Tombol "Hapus"
+                      ElevatedButton(
+                        onPressed: _selectedIds.isEmpty || _isDeleting
+                            ? null
+                            : () => _handleDeleteSelected(controller),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppColors.border,
+                          disabledForegroundColor: AppColors.disabled,
+                          elevation: 0,
+                          minimumSize: const Size(88, 40),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: _isDeleting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                'Hapus',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               )
-            : ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                itemCount: controller.notifications.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final item = controller.notifications[index];
-                  return _NotificationItem(
-                    item: item,
-                    onTap: () {
-                      controller.markAsRead(item.id);
-                      if (item.reportId != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ReportDetailScreen(reportId: item.reportId!),
-                          ),
-                        );
-                      } else if (item.type == NotificationType.announcement) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AnnouncementsScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  );
-                },
-              ),
+            : null,
       ),
     );
   }
 }
 
 class _NotificationItem extends StatelessWidget {
-  const _NotificationItem({required this.item, required this.onTap});
+  const _NotificationItem({
+    required this.item,
+    required this.onTap,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onToggleSelect,
+  });
 
   final NotificationModel item;
   final VoidCallback onTap;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onToggleSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -138,14 +380,19 @@ class _NotificationItem extends StatelessWidget {
         break;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: item.isRead ? AppColors.surface : const Color(0xFFF7F8FF),
+    return Material(
+      color: isSelected
+          ? AppColors.danger.withValues(alpha: 0.05)
+          : (item.isRead ? AppColors.surface : const Color(0xFFF7F8FF)),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: item.isRead
-              ? AppColors.border
-              : AppColors.primary.withValues(alpha: 0.3),
+        side: BorderSide(
+          color: isSelected
+              ? AppColors.danger
+              : (item.isRead
+                    ? AppColors.border
+                    : AppColors.primary.withValues(alpha: 0.3)),
+          width: isSelected ? 1.5 : 1.0,
         ),
       ),
       child: ListTile(
@@ -177,16 +424,25 @@ class _NotificationItem extends StatelessWidget {
             Text(item.createdAt.toRelativeTime(), style: AppTextStyles.caption),
           ],
         ),
-        trailing: !item.isRead
-            ? Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+        trailing: isSelectionMode
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (_) => onToggleSelect?.call(),
+                activeColor: AppColors.danger,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
                 ),
               )
-            : null,
+            : (!item.isRead
+                  ? Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  : null),
       ),
     );
   }

@@ -83,4 +83,22 @@ class NotificationController extends ChangeNotifier {
       debugPrint('NotificationController markAllAsRead notice: $e');
     }
   }
+
+  /// Menghapus daftar notifikasi berdasarkan ID secara permanen
+  Future<void> deleteNotifications(List<String> ids) async {
+    if (ids.isEmpty) return;
+
+    // Optimistic update: langsung hapus dari daftar state
+    final idsSet = ids.toSet();
+    _notifications = _notifications
+        .where((n) => !idsSet.contains(n.id))
+        .toList();
+    notifyListeners();
+
+    try {
+      await repository.deleteNotifications(ids);
+    } catch (e) {
+      debugPrint('NotificationController deleteNotifications notice: $e');
+    }
+  }
 }

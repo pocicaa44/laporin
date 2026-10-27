@@ -104,4 +104,26 @@ class NotificationRepository {
       _notifications[i] = _notifications[i].copyWith(isRead: true);
     }
   }
+
+  /// Menghapus daftar notifikasi berdasarkan ID secara permanen
+  Future<void> deleteNotifications(List<String> ids) async {
+    if (ids.isEmpty) return;
+
+    final client = _service.client;
+    final currentUser = _service.currentUser;
+
+    if (client != null && currentUser != null) {
+      try {
+        await client
+            .from('notifications')
+            .delete()
+            .inFilter('id', ids)
+            .eq('user_id', currentUser.id);
+      } catch (e) {
+        debugPrint('Catatan deleteNotifications Supabase: $e');
+      }
+    }
+
+    _notifications.removeWhere((n) => ids.contains(n.id));
+  }
 }

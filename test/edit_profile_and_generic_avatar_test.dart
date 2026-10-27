@@ -196,23 +196,20 @@ void main() {
       },
     );
 
-    testWidgets(
-      'ProfileScreen has Edit Profil button in card and menu option',
-      (tester) async {
-        await tester.pumpWidget(createTestApp());
-        await tester.pumpAndSettle();
+    testWidgets('ProfileScreen has Edit Profil menu option', (tester) async {
+      await tester.pumpWidget(createTestApp());
+      await tester.pumpAndSettle();
 
-        // Edit Profil in user card and menu item
-        expect(find.text('Edit Profil'), findsNWidgets(2));
-        expect(find.text('Ubah foto profil dan username Anda'), findsOneWidget);
+      // Edit Profil in menu item
+      expect(find.text('Edit Profil'), findsOneWidget);
+      expect(find.text('Ubah foto profil dan username Anda'), findsOneWidget);
 
-        // Tapping Edit Profil opens EditProfileScreen
-        await tester.tap(find.text('Ubah foto profil dan username Anda'));
-        await tester.pumpAndSettle();
+      // Tapping Edit Profil opens EditProfileScreen
+      await tester.tap(find.text('Ubah foto profil dan username Anda'));
+      await tester.pumpAndSettle();
 
-        expect(find.byType(EditProfileScreen), findsOneWidget);
-      },
-    );
+      expect(find.byType(EditProfileScreen), findsOneWidget);
+    });
   });
 
   group('3. EditProfileScreen Tests', () {

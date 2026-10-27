@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
@@ -14,8 +15,45 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with RouteAware {
   bool _isNavigating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    NetworkService.instance.setOverviewActive(true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute != null) {
+      NetworkService.routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    NetworkService.routeObserver.unsubscribe(this);
+    NetworkService.instance.setOverviewActive(false, notifyIfOffline: false);
+    super.dispose();
+  }
+
+  @override
+  void didPush() {
+    NetworkService.instance.setOverviewActive(true);
+  }
+
+  @override
+  void didPushNext() {
+    NetworkService.instance.setOverviewActive(false);
+  }
+
+  @override
+  void didPopNext() {
+    NetworkService.instance.setOverviewActive(true);
+  }
 
   Future<void> _handleStart() async {
     if (_isNavigating) return;

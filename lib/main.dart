@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'core/config/app_config.dart';
 import 'core/services/fcm_service.dart';
+import 'core/services/network_service.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'data/repositories/announcement_repository.dart';
@@ -74,6 +75,9 @@ void main() async {
   final authRepository = AuthRepository();
   await authRepository.initSessionFromSupabase();
 
+  // Initialize network connectivity monitoring
+  await NetworkService.instance.initialize();
+
   runApp(LaporinApp(authRepository: authRepository));
 }
 
@@ -103,16 +107,25 @@ class LaporinApp extends StatelessWidget {
     this.authRepository,
     this.reportRepository,
     this.announcementRepository,
+    this.networkService,
   });
 
   final AuthRepository? authRepository;
   final ReportRepository? reportRepository;
   final AnnouncementRepository? announcementRepository;
+  final NetworkService? networkService;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveNetworkService = networkService ?? NetworkService.instance;
+
     return MultiProvider(
       providers: [
+        // Network connectivity monitoring
+        ChangeNotifierProvider<NetworkService>.value(
+          value: effectiveNetworkService,
+        ),
+
         // Repositories
         Provider(
           create: (_) {
@@ -153,6 +166,8 @@ class LaporinApp extends StatelessWidget {
       ],
       child: MaterialApp(
         navigatorKey: FcmService.navigatorKey,
+        scaffoldMessengerKey: NetworkService.scaffoldMessengerKey,
+        navigatorObservers: [NetworkService.routeObserver],
         title: 'Laporin',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

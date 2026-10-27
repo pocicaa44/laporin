@@ -87,5 +87,33 @@ void main() {
       final list = await repository.getNotifications();
       expect(list.every((n) => n.isRead), isTrue);
     });
+
+    test(
+      'deleteNotifications removes matching notifications from list',
+      () async {
+        final item1 = NotificationModel(
+          id: 'notif-1',
+          title: 'Notif 1',
+          message: 'Pesan 1',
+          type: NotificationType.statusChanged,
+          createdAt: DateTime.now(),
+        );
+        final item2 = NotificationModel(
+          id: 'notif-2',
+          title: 'Notif 2',
+          message: 'Pesan 2',
+          type: NotificationType.announcement,
+          createdAt: DateTime.now(),
+        );
+
+        repository.setNotificationsForTesting([item1, item2]);
+
+        await repository.deleteNotifications(['notif-1']);
+
+        final list = await repository.getNotifications();
+        expect(list.length, equals(1));
+        expect(list.first.id, equals('notif-2'));
+      },
+    );
   });
 }
