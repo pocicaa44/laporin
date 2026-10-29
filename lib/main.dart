@@ -11,6 +11,7 @@ import 'core/config/app_config.dart';
 import 'core/services/fcm_service.dart';
 import 'core/services/network_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/top_connectivity_strip.dart';
 import 'firebase_options.dart';
 import 'data/repositories/announcement_repository.dart';
 import 'data/repositories/auth_repository.dart';
@@ -172,6 +173,28 @@ class LaporinApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         scrollBehavior: const AppScrollBehavior(),
+        builder: (context, child) {
+          final isOverview = context.watch<NetworkService>().isOverviewActive;
+          final topPadding = MediaQuery.paddingOf(context).top;
+          final bannerTop = isOverview
+              ? topPadding
+              : topPadding + kToolbarHeight;
+
+          return Material(
+            color: Colors.transparent,
+            child: Stack(
+              children: [
+                child ?? const SizedBox.shrink(),
+                Positioned(
+                  top: bannerTop,
+                  left: 0,
+                  right: 0,
+                  child: const TopConnectivityStrip(),
+                ),
+              ],
+            ),
+          );
+        },
         home: const AppGate(),
       ),
     );

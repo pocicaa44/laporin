@@ -13,7 +13,7 @@ import 'package:provider/provider.dart';
 void main() {
   group('1. Default Generic Avatar & Optimization Tests', () {
     testWidgets(
-      'UserAvatar renders Image.asset with generic-avatar.png when avatarUrl is null',
+      'UserAvatar renders Image.asset with generic-avatar-profile.png when avatarUrl is null',
       (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
@@ -33,12 +33,12 @@ void main() {
         final imageWidget = tester.widget<Image>(imageFinder);
         expect(imageWidget.image, isA<AssetImage>());
         final assetImage = imageWidget.image as AssetImage;
-        expect(assetImage.assetName, equals('assets/generic-avatar.png'));
+        expect(assetImage.assetName, equals(UserAvatar.defaultAvatarAsset));
       },
     );
 
     testWidgets(
-      'UserAvatar renders Image.asset with generic-avatar.png when avatarUrl is empty',
+      'UserAvatar renders Image.asset with generic-avatar-profile.png when avatarUrl is empty',
       (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
@@ -58,7 +58,7 @@ void main() {
         final imageWidget = tester.widget<Image>(imageFinder);
         expect(imageWidget.image, isA<AssetImage>());
         final assetImage = imageWidget.image as AssetImage;
-        expect(assetImage.assetName, equals('assets/generic-avatar.png'));
+        expect(assetImage.assetName, equals(UserAvatar.defaultAvatarAsset));
       },
     );
 

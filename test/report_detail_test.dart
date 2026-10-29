@@ -468,5 +468,116 @@ void main() {
         expect(find.text('Coba Muat Ulang'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'ReportDetailScreen shows delete confirmation dialog and deletes comment on confirm',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final authRepo = AuthRepository();
+        final reportRepo = ReportRepository();
+        final commentRepo = CommentRepository();
+
+        authRepo.setCurrentUserProfileForTesting(
+          const UserProfileModel(
+            id: 'user-current',
+            email: 'user@example.com',
+            fullName: 'User Saya',
+            username: 'usersaya',
+            role: UserRole.user,
+          ),
+        );
+        final authController = AuthController(authRepository: authRepo);
+
+        final testReport = ReportModel(
+          id: 'rep-detail-del-test',
+          reportNumber: 'LPR-2026-1122',
+          authorId: 'user-other',
+          authorName: 'Penulis Laporan',
+          areaId: 'area-1',
+          areaName: 'Kota Semarang',
+          title: 'Laporan Uji Hapus Komentar',
+          description: 'Deskripsi uji',
+          category: 'Infrastruktur',
+          latitude: -6.99,
+          longitude: 110.42,
+          locationAddress: 'Jl. Uji',
+          handlingStatus: HandlingStatus.newReport,
+          publicationState: PublicationState.published,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          commentsCount: 1,
+        );
+
+        await tester.runAsync(() async {
+          await commentRepo.addComment(
+            reportId: testReport.id,
+            authorId: 'user-current',
+            authorName: '@usersaya',
+            authorRole: UserRole.user,
+            body: 'Komentar saya di halaman detail',
+          );
+        });
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              Provider.value(value: authRepo),
+              Provider.value(value: reportRepo),
+              Provider.value(value: commentRepo),
+              ChangeNotifierProvider.value(value: authController),
+            ],
+            child: MaterialApp(
+              home: ReportDetailScreen(
+                reportId: testReport.id,
+                initialReport: testReport,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
+
+        // Verifikasi komentar dan tombol Balas & Hapus muncul
+        expect(find.text('Komentar saya di halaman detail'), findsOneWidget);
+        expect(find.text('Balas'), findsOneWidget);
+        expect(find.text('Hapus'), findsOneWidget);
+
+        // Tap Hapus -> Muncul Dialog Konfirmasi
+        await tester.tap(find.text('Hapus'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Hapus Komentar?'), findsOneWidget);
+        expect(find.text('Batal'), findsOneWidget);
+
+        // Tap Batal -> Dialog tertutup, komentar tetap ada
+        await tester.tap(find.text('Batal'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Hapus Komentar?'), findsNothing);
+        expect(find.text('Komentar saya di halaman detail'), findsOneWidget);
+
+        // Tap Hapus lagi -> Dialog muncul lagi
+        await tester.tap(find.text('Hapus'));
+        await tester.pumpAndSettle();
+
+        // Tap Hapus di dalam dialog -> Komentar terhapus, SnackBar muncul
+        final dialogHapusButton = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Hapus'),
+        );
+        await tester.tap(dialogHapusButton);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Komentar berhasil dihapus'), findsOneWidget);
+        expect(find.text('Komentar saya di halaman detail'), findsNothing);
+      },
+    );
   });
 }

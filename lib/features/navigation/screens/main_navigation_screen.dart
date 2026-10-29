@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../admin/screens/admin_navigation_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -38,6 +39,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void _onTabTapped(int index) {
     if (index == 2) {
+      if (!context.isOnline) return;
       if (_isOpeningCreate) return;
       _isOpeningCreate = true;
       // Floating "+" Action: Open Create Report
@@ -68,6 +70,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isOnline = context.isOnline;
     final auth = context.watch<AuthController>();
     if (auth.isAdmin) {
       return const AdminNavigationScreen();
@@ -131,24 +134,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         onTap: () => _onTabTapped(1),
                       ),
 
-                      // Center prominent "+" action button
+                      // Center prominent "+" action button (Buat Laporan)
                       MouseRegion(
-                        cursor: SystemMouseCursors.click,
+                        cursor: isOnline
+                            ? SystemMouseCursors.click
+                            : SystemMouseCursors.forbidden,
                         child: GestureDetector(
-                          onTap: () => _onTabTapped(2),
+                          onTap: isOnline ? () => _onTabTapped(2) : null,
                           child: Container(
                             width: 48,
                             height: 48,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
+                            decoration: BoxDecoration(
+                              color: isOnline
+                                  ? AppColors.primary
+                                  : AppColors.disabled,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color.fromRGBO(89, 108, 255, 0.35),
-                                  offset: Offset(0, 4),
-                                  blurRadius: 10,
-                                ),
-                              ],
+                              boxShadow: isOnline
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color.fromRGBO(
+                                          89,
+                                          108,
+                                          255,
+                                          0.35,
+                                        ),
+                                        offset: Offset(0, 4),
+                                        blurRadius: 10,
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: const Center(
                               child: FaIcon(

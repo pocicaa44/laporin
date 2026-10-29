@@ -164,4 +164,30 @@ class CommentRepository {
     _memoryFallbackComments.add(newComment);
     return newComment;
   }
+
+  /// Menghapus komentar dari Supabase (mengikuti RLS FOR DELETE) atau memory fallback
+  Future<void> deleteComment(
+    String commentId, {
+    String? userId,
+    bool isCallerAdmin = false,
+  }) async {
+    final client = _service.client;
+    if (client != null) {
+      try {
+        var query = client.from('comments').delete().eq('id', commentId);
+
+        if (!isCallerAdmin && userId != null && userId.isNotEmpty) {
+          query = query.eq('author_id', userId);
+        }
+
+        await query;
+      } catch (e) {
+        debugPrint('Error deleteComment Supabase: $e');
+        rethrow;
+      }
+    }
+
+    // In-memory fallback (offline / tests)
+    _memoryFallbackComments.removeWhere((c) => c.id == commentId);
+  }
 }

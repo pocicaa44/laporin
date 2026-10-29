@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/services/boundary_service.dart';
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/report_model.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../navigation/controllers/navigation_controller.dart';
@@ -24,10 +26,29 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   late final ScrollController _scrollController;
   int? _lastNavChangeCount;
+  bool _wasOffline = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    try {
+      final isOnline = context.isOnline;
+      if (_wasOffline && isOnline) {
+        _wasOffline = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            final auth = context.read<AuthController>();
+            context.read<FeedController>().fetchFeed(
+              auth.currentUser?.id,
+              true,
+            );
+          }
+        });
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
+    } catch (_) {}
+
     try {
       final nav = context.watch<NavigationController>();
       if (nav.currentIndex == 0 && _lastNavChangeCount != nav.tabChangeCount) {
@@ -77,6 +98,17 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _handleVote(BuildContext context, ReportModel report, String voteType) {
+    if (!context.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Dukungan atau tanggapan tidak dapat diberikan saat offline.',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     final auth = context.read<AuthController>();
     final user = auth.currentUser;
     if (!auth.isAuthenticated || user == null) {
@@ -96,6 +128,7 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<FeedController>();
+    final isOnline = context.isOnline;
     final auth = context.watch<AuthController>();
     final currentUserId = auth.currentUser?.id;
 
@@ -223,35 +256,46 @@ class _FeedScreenState extends State<FeedScreen> {
               child: controller.isLoading && controller.reports.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : controller.reports.isEmpty
-                  ? LayoutBuilder(
-                      builder: (context, constraints) => SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
-                          ),
-                          child: Center(
-                            child: EmptyState(
-                              title: 'Belum Ada Laporan',
-                              message:
-                                  controller.selectedCategory == 'Semua' &&
-                                      (controller.searchQuery.isEmpty)
-                                  ? 'Saat ini belum ada data laporan fasilitas publik yang terdaftar di database.'
-                                  : 'Belum ada laporan publik yang cocok dengan kriteria filter ini.',
-                              actionLabel:
-                                  controller.selectedCategory != 'Semua' ||
-                                      controller.searchQuery.isNotEmpty
-                                  ? 'Reset Filter'
-                                  : null,
-                              onAction: () {
-                                controller.setCategory('Semua');
-                                controller.setSearchQuery('');
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
+                  ? (!isOnline
+                        ? OfflineFallbackView(
+                            onRetry: () =>
+                                controller.fetchFeed(currentUserId, true),
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) =>
+                                SingleChildScrollView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: constraints.maxHeight,
+                                    ),
+                                    child: Center(
+                                      child: EmptyState(
+                                        title: 'Belum Ada Laporan',
+                                        message:
+                                            controller.selectedCategory ==
+                                                    'Semua' &&
+                                                (controller.searchQuery.isEmpty)
+                                            ? 'Saat ini belum ada data laporan fasilitas publik yang terdaftar di database.'
+                                            : 'Belum ada laporan publik yang cocok dengan kriteria filter ini.',
+                                        actionLabel:
+                                            controller.selectedCategory !=
+                                                    'Semua' ||
+                                                controller
+                                                    .searchQuery
+                                                    .isNotEmpty
+                                            ? 'Reset Filter'
+                                            : null,
+                                        onAction: () {
+                                          controller.setCategory('Semua');
+                                          controller.setSearchQuery('');
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          ))
                   : ListView.builder(
                       controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),

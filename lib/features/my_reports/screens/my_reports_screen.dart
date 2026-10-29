@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
@@ -57,10 +59,27 @@ class _MyReportsView extends StatefulWidget {
 class _MyReportsViewState extends State<_MyReportsView> {
   late final ScrollController _scrollController;
   int? _lastNavChangeCount;
+  bool _wasOffline = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    try {
+      final isOnline = context.isOnline;
+      if (_wasOffline && isOnline) {
+        _wasOffline = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<MyReportsController>().fetchMyReports(
+              forceRefresh: true,
+            );
+          }
+        });
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
+    } catch (_) {}
+
     try {
       final nav = context.watch<NavigationController>();
       if (nav.currentIndex == 1 && _lastNavChangeCount != nav.tabChangeCount) {
@@ -103,6 +122,7 @@ class _MyReportsViewState extends State<_MyReportsView> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<MyReportsController>();
+    final isOnline = context.isOnline;
 
     return Scaffold(
       drawer: const AppDrawer(),
@@ -121,22 +141,27 @@ class _MyReportsViewState extends State<_MyReportsView> {
         child: controller.isLoading && controller.reports.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : controller.reports.isEmpty
-            ? LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: const Center(
-                      child: EmptyState(
-                        title: 'Belum Ada Laporan',
-                        message: 'Anda belum memiliki riwayat laporan fasilitas publik.',
+            ? (!isOnline
+                  ? OfflineFallbackView(
+                      onRetry: () =>
+                          controller.fetchMyReports(forceRefresh: true),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: const Center(
+                            child: EmptyState(
+                              title: 'Belum Ada Laporan',
+                              message: 'Anda belum memiliki riwayat laporan fasilitas publik.',
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              )
+                    ))
             : ListView.builder(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),

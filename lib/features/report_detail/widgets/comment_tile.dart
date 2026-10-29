@@ -99,6 +99,8 @@ class CommentTile extends StatelessWidget {
     this.replyToAuthor,
     this.onReply,
     this.isReply = false,
+    this.currentUserId,
+    this.onDelete,
   });
 
   final CommentModel comment;
@@ -106,6 +108,14 @@ class CommentTile extends StatelessWidget {
   final String? replyToAuthor;
   final VoidCallback? onReply;
   final bool isReply;
+  final String? currentUserId;
+  final VoidCallback? onDelete;
+
+  bool get _canDelete =>
+      onDelete != null &&
+      currentUserId != null &&
+      currentUserId!.isNotEmpty &&
+      comment.authorId == currentUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +229,7 @@ class CommentTile extends StatelessWidget {
         ),
         const SizedBox(height: 6),
 
-        // 3. Footer: Timestamp ringkas & tombol Balas
+        // 3. Footer: Timestamp ringkas & tombol Balas & tombol Hapus
         Row(
           children: [
             Text(
@@ -235,6 +245,25 @@ class CommentTile extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Text(
                     'Balas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4B5563),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (_canDelete) ...[
+              const SizedBox(width: 14),
+              InkWell(
+                key: Key('delete_comment_${comment.id}'),
+                onTap: onDelete,
+                borderRadius: BorderRadius.circular(4),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    'Hapus',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -264,6 +293,8 @@ class CommentThreadTile extends StatelessWidget {
     required this.onReply,
     required this.isExpanded,
     required this.onToggleExpanded,
+    this.currentUserId,
+    this.onDelete,
   });
 
   final CommentThreadItem thread;
@@ -271,6 +302,8 @@ class CommentThreadTile extends StatelessWidget {
   final void Function(CommentModel commentToReply) onReply;
   final bool isExpanded;
   final VoidCallback onToggleExpanded;
+  final String? currentUserId;
+  final void Function(CommentModel commentToDelete)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -283,6 +316,8 @@ class CommentThreadTile extends StatelessWidget {
           isCreator: thread.root.authorId == reportAuthorId,
           onReply: () => onReply(thread.root),
           isReply: false,
+          currentUserId: currentUserId,
+          onDelete: onDelete != null ? () => onDelete!(thread.root) : null,
         ),
 
         // 2. Daftar Balasan jika expanded
@@ -302,6 +337,10 @@ class CommentThreadTile extends StatelessWidget {
                     replyToAuthor: thread.replies[i].replyToAuthorName,
                     onReply: () => onReply(thread.replies[i].comment),
                     isReply: true,
+                    currentUserId: currentUserId,
+                    onDelete: onDelete != null
+                        ? () => onDelete!(thread.replies[i].comment)
+                        : null,
                   ),
                 ],
                 const SizedBox(height: 10),

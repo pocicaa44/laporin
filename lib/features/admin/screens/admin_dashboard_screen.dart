@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
@@ -58,6 +60,7 @@ class _AdminDashboardView extends StatefulWidget {
 
 class _AdminDashboardViewState extends State<_AdminDashboardView> {
   int? _lastNavChangeCount;
+  bool _wasOffline = false;
 
   @override
   void initState() {
@@ -76,6 +79,22 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    try {
+      final isOnline = context.isOnline;
+      if (_wasOffline && isOnline) {
+        _wasOffline = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<AdminReportController>().fetchReports(
+              forceRefresh: true,
+            );
+          }
+        });
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
+    } catch (_) {}
+
     if (widget.isEmbedded) {
       try {
         final nav = context.watch<NavigationController>();
@@ -99,6 +118,7 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AdminReportController>();
+    final isOnline = context.isOnline;
 
     return Container(
       color: const Color(0xFFF0F2F5),
@@ -234,11 +254,16 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
 
                         // Reports List
                         if (controller.reports.isEmpty)
-                          const EmptyState(
-                            title: 'Tidak Ada Laporan',
-                            message:
-                                'Tidak ada laporan dalam kategori filter ini.',
-                          )
+                          (!isOnline
+                              ? OfflineFallbackView(
+                                  onRetry: () => controller.fetchReports(
+                                    forceRefresh: true,
+                                  ),
+                                )
+                              : const EmptyState(
+                                  title: 'Tidak Ada Laporan',
+                                  message: 'Tidak ada laporan dalam kategori filter ini.',
+                                ))
                         else
                           ...controller.reports.map(
                             (report) => _AdminReportCard(

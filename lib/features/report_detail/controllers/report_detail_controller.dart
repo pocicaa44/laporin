@@ -14,9 +14,9 @@ class ReportDetailController extends ChangeNotifier {
     required this.commentRepository,
     ReportModel? initialReport,
     this.currentUserId,
-  })  : _report = initialReport,
-        _isLoading = initialReport == null,
-        _isLoadingComments = true {
+  }) : _report = initialReport,
+       _isLoading = initialReport == null,
+       _isLoadingComments = true {
     loadData();
   }
 
@@ -214,6 +214,35 @@ class ReportDetailController extends ChangeNotifier {
     } catch (e) {
       _isSendingComment = false;
       _errorMessage = 'Gagal mengirim komentar: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Menghapus komentar milik pengguna aktif atau admin
+  Future<bool> deleteComment({
+    required String commentId,
+    required String userId,
+    bool isCallerAdmin = false,
+  }) async {
+    try {
+      await commentRepository.deleteComment(
+        commentId,
+        userId: userId,
+        isCallerAdmin: isCallerAdmin,
+      );
+
+      _comments.removeWhere((c) => c.id == commentId);
+      if (_report != null) {
+        _report = _report!.copyWith(commentsCount: _comments.length);
+        reportRepository.updateReport(_report!);
+      } else {
+        reportRepository.updateReportCommentsCount(reportId, _comments.length);
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Gagal menghapus komentar: ${e.toString()}';
       notifyListeners();
       return false;
     }

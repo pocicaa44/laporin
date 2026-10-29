@@ -1,20 +1,26 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../theme/app_colors.dart';
 
-/// NetworkService monitors network connectivity and displays offline/online SnackBars
-/// across the application, with the exception of the initial overview/splash screen.
+typedef InternetChecker = Future<bool> Function();
+
+/// NetworkService monitors network connectivity, validates real internet reachability,
+/// and broadcasts reactive connectivity status across the application.
 class NetworkService extends ChangeNotifier {
-  NetworkService({Connectivity? connectivity})
-    : _connectivity = connectivity ?? Connectivity();
+  NetworkService({Connectivity? connectivity, InternetChecker? internetChecker})
+    : _connectivity = connectivity ?? Connectivity(),
+      _internetChecker = internetChecker ?? defaultInternetChecker;
 
   /// Global singleton instance
   static final NetworkService instance = NetworkService();
 
-  /// Global ScaffoldMessenger key to show SnackBars from anywhere without Scaffold context
+  /// Global ScaffoldMessenger key
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -23,19 +29,39 @@ class NetworkService extends ChangeNotifier {
       RouteObserver<ModalRoute<void>>();
 
   final Connectivity _connectivity;
+  final InternetChecker _internetChecker;
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+  final StreamController<bool> _statusController =
+      StreamController<bool>.broadcast();
 
   bool _isOnline = true;
   bool _isOverviewActive = false;
-  bool _hasInitialized = false;
+  bool _isTestingMode = false;
 
   /// Current online status
   bool get isOnline => _isOnline;
 
-  /// Whether user is currently on the initial overview/splash screen
+  /// Stream of connectivity status changes
+  Stream<bool> get onOnlineStatusChanged => _statusController.stream;
+
+  /// Whether user is currently on the initial overview/splash screen (retained for backward compatibility)
   bool get isOverviewActive => _isOverviewActive;
 
-  /// Check whether the results indicate active network connection
+  /// Default internet checker validating real host lookup
+  static Future<bool> defaultInternetChecker() async {
+    if (kIsWeb) {
+      return true;
+    }
+    try {
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Check whether the results indicate active network interface
   static bool isConnectedResults(List<ConnectivityResult> results) {
     if (results.isEmpty) return false;
     return results.any(
@@ -48,16 +74,15 @@ class NetworkService extends ChangeNotifier {
     );
   }
 
-  /// Initialize connectivity listening
+  /// Initialize connectivity listening and verify internet
   Future<void> initialize() async {
     try {
       final results = await _connectivity.checkConnectivity();
-      _isOnline = isConnectedResults(results);
+      await _evaluateConnectivity(results, initial: true);
     } catch (e) {
       debugPrint('NetworkService initialize error: $e');
       _isOnline = true;
     }
-    _hasInitialized = true;
 
     await _subscription?.cancel();
     _subscription = _connectivity.onConnectivityChanged.listen(
@@ -65,54 +90,64 @@ class NetworkService extends ChangeNotifier {
     );
   }
 
-  /// Handle connectivity state change
-  void handleConnectivityResults(List<ConnectivityResult> results) {
+  /// Evaluate interface and real internet reachability
+  Future<void> _evaluateConnectivity(
+    List<ConnectivityResult> results, {
+    bool initial = false,
+  }) async {
+    final hasInterface = isConnectedResults(results);
+    bool online = false;
+    if (hasInterface) {
+      try {
+        online = await _internetChecker();
+      } catch (_) {
+        online = false;
+      }
+    }
+
     final wasOnline = _isOnline;
-    final nowOnline = isConnectedResults(results);
-    _isOnline = nowOnline;
+    _isOnline = online;
 
-    if (_hasInitialized && wasOnline == nowOnline) {
-      return;
+    if (!initial && wasOnline != online) {
+      _statusController.add(online);
+      notifyListeners();
+    } else if (initial) {
+      notifyListeners();
     }
-    _hasInitialized = true;
-
-    if (!nowOnline) {
-      // Device is now offline
-      if (!_isOverviewActive) {
-        showOfflineSnackBar();
-      }
-    } else {
-      // Device is now back online (only notify if was previously offline)
-      if (!wasOnline && !_isOverviewActive) {
-        showOnlineSnackBar();
-      }
-    }
-
-    notifyListeners();
   }
 
-  /// Set whether the initial overview/splash screen is active
+  /// Handle connectivity state change from platform stream
+  Future<void> handleConnectivityResults(
+    List<ConnectivityResult> results,
+  ) async {
+    await _evaluateConnectivity(results);
+  }
+
+  /// Manually check connection reachability on-demand
+  Future<bool> checkConnection() async {
+    if (_isTestingMode) {
+      return _isOnline;
+    }
+    try {
+      final results = await _connectivity.checkConnectivity();
+      await _evaluateConnectivity(results);
+    } catch (_) {}
+    return _isOnline;
+  }
+
+  /// Set overview active (backward-compatible method)
   void setOverviewActive(bool active, {bool notifyIfOffline = true}) {
     if (_isOverviewActive == active) return;
     _isOverviewActive = active;
-
-    if (active) {
-      // Entering overview screen: hide any network snackbars
-      hideSnackBar();
-    } else if (notifyIfOffline) {
-      // Leaving overview screen: if currently offline, show offline warning
-      if (!_isOnline) {
-        showOfflineSnackBar();
-      }
-    }
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
-  /// Show "Anda sedang offline" SnackBar
+  /// Backward-compatible SnackBar helpers
   void showOfflineSnackBar() {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger == null || !messenger.mounted) return;
-
     try {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
@@ -141,16 +176,12 @@ class NetworkService extends ChangeNotifier {
           ),
         ),
       );
-    } catch (e) {
-      debugPrint('showOfflineSnackBar skipped: $e');
-    }
+    } catch (_) {}
   }
 
-  /// Show "Kembali online" SnackBar
   void showOnlineSnackBar() {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger == null || !messenger.mounted) return;
-
     try {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
@@ -179,12 +210,9 @@ class NetworkService extends ChangeNotifier {
           ),
         ),
       );
-    } catch (e) {
-      debugPrint('showOnlineSnackBar skipped: $e');
-    }
+    } catch (_) {}
   }
 
-  /// Hide current SnackBar
   void hideSnackBar() {
     try {
       scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
@@ -196,21 +224,14 @@ class NetworkService extends ChangeNotifier {
     required bool isOnline,
     bool? isOverviewActive,
   }) {
+    _isTestingMode = true;
     if (isOverviewActive != null) {
       _isOverviewActive = isOverviewActive;
     }
     final wasOnline = _isOnline;
     _isOnline = isOnline;
-    _hasInitialized = true;
-
-    if (!isOnline) {
-      if (!_isOverviewActive) {
-        showOfflineSnackBar();
-      }
-    } else {
-      if (!wasOnline && !_isOverviewActive) {
-        showOnlineSnackBar();
-      }
+    if (wasOnline != isOnline) {
+      _statusController.add(isOnline);
     }
     notifyListeners();
   }
@@ -218,6 +239,28 @@ class NetworkService extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    _statusController.close();
     super.dispose();
+  }
+}
+
+/// Convenience extension on BuildContext for safe network state access
+extension NetworkContextExtension on BuildContext {
+  /// Safely watch current online status with fallback for isolated widget tests
+  bool get isOnline {
+    try {
+      return watch<NetworkService>().isOnline;
+    } catch (_) {
+      return NetworkService.instance.isOnline;
+    }
+  }
+
+  /// Safely read NetworkService instance with fallback for isolated widget tests
+  NetworkService get networkService {
+    try {
+      return read<NetworkService>();
+    } catch (_) {
+      return NetworkService.instance;
+    }
   }
 }

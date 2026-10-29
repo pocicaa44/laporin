@@ -8,6 +8,7 @@ import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../core/services/fcm_service.dart';
+import '../../../core/services/network_service.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/screens/set_username_screen.dart';
 import '../../my_reports/screens/my_reports_screen.dart';
@@ -150,6 +151,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isOnline = context.isOnline;
     final user = auth.currentUser;
 
     return Scaffold(
@@ -320,15 +322,20 @@ class ProfileScreen extends StatelessWidget {
               _ProfileMenuItem(
                 icon: FontAwesomeIcons.userPen,
                 title: 'Edit Profil',
-                subtitle: 'Ubah foto profil dan username Anda',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const EditProfileScreen(),
-                    ),
-                  );
-                },
+                subtitle: isOnline
+                    ? 'Ubah foto profil dan username Anda'
+                    : 'Edit profil dinonaktifkan saat offline',
+                isEnabled: isOnline,
+                onTap: isOnline
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EditProfileScreen(),
+                          ),
+                        );
+                      }
+                    : null,
               ),
 
             if (!auth.isAdmin)
@@ -392,20 +399,29 @@ class _ProfileMenuItem extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
-    this.iconColor = AppColors.primary,
-    this.textColor = AppColors.textPrimary,
+    this.iconColor,
+    this.textColor,
+    this.isEnabled = true,
     required this.onTap,
   });
 
   final FaIconData icon;
   final String title;
   final String? subtitle;
-  final Color iconColor;
-  final Color textColor;
-  final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? textColor;
+  final bool isEnabled;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveIconColor = isEnabled
+        ? (iconColor ?? AppColors.primary)
+        : AppColors.disabled;
+    final effectiveTextColor = isEnabled
+        ? (textColor ?? AppColors.textPrimary)
+        : AppColors.textSecondary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -417,20 +433,22 @@ class _ProfileMenuItem extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
-          onTap: onTap,
-          leading: FaIcon(icon, color: iconColor, size: 18),
+          onTap: isEnabled ? onTap : null,
+          leading: FaIcon(icon, color: effectiveIconColor, size: 18),
           title: Text(
             title,
-            style: AppTextStyles.label.copyWith(color: textColor),
+            style: AppTextStyles.label.copyWith(color: effectiveTextColor),
           ),
           subtitle: subtitle != null
               ? Text(subtitle!, style: AppTextStyles.caption)
               : null,
-          trailing: const FaIcon(
-            FontAwesomeIcons.chevronRight,
-            size: 14,
-            color: AppColors.textSecondary,
-          ),
+          trailing: isEnabled
+              ? const FaIcon(
+                  FontAwesomeIcons.chevronRight,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                )
+              : null,
         ),
       ),
     );

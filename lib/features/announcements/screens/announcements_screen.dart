@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/repositories/announcement_repository.dart';
 import '../../admin/controllers/admin_announcement_controller.dart';
@@ -35,12 +37,24 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   ];
 
   AnnouncementController? _announcementController;
+  bool _wasOffline = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     try {
       _announcementController = context.read<AnnouncementController>();
+      final isOnline = context.isOnline;
+      if (_wasOffline && isOnline) {
+        _wasOffline = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _announcementController?.fetchAnnouncements(forceRefresh: true);
+          }
+        });
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
     } catch (_) {}
   }
 
@@ -253,6 +267,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isOnline = context.isOnline;
     final isAdmin = auth.isAdmin;
     final controller = context.watch<AnnouncementController>();
     if (controller.unreadCount > 0) {
@@ -414,13 +429,19 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       ),
                     )
                   else if (filteredList.isEmpty)
-                    EmptyState(
-                      icon: Icons.campaign_outlined,
-                      title: 'Belum Ada Pengumuman',
-                      message: _selectedCategory == 'Semua'
-                          ? 'Belum ada pengumuman resmi yang diterbitkan saat ini.'
-                          : 'Tidak ada pengumuman dalam kategori "$_selectedCategory".',
-                    )
+                    (!isOnline
+                        ? OfflineFallbackView(
+                            onRetry: () => controller.fetchAnnouncements(
+                              forceRefresh: true,
+                            ),
+                          )
+                        : EmptyState(
+                            icon: Icons.campaign_outlined,
+                            title: 'Belum Ada Pengumuman',
+                            message: _selectedCategory == 'Semua'
+                                ? 'Belum ada pengumuman resmi yang diterbitkan saat ini.'
+                                : 'Tidak ada pengumuman dalam kategori "$_selectedCategory".',
+                          ))
                   else
                     ...filteredList.map((announcement) {
                       return Padding(

@@ -145,7 +145,23 @@ class AuthRepository {
     final client = _service.client;
     final sessionUser = client?.auth.currentUser;
     if (sessionUser != null && client != null) {
-      _currentUserProfile = await _buildUserProfile(sessionUser);
+      try {
+        _currentUserProfile = await _buildUserProfile(sessionUser);
+      } catch (e) {
+        debugPrint('Catatan initSessionFromSupabase offline fallback: $e');
+        _currentUserProfile = UserProfileModel(
+          id: sessionUser.id,
+          email: sessionUser.email ?? '',
+          fullName:
+              sessionUser.userMetadata?['full_name'] as String? ??
+              'Warga Laporin',
+          username: sessionUser.userMetadata?['username'] as String? ?? '',
+          avatarUrl: sessionUser.userMetadata?['avatar_url'] as String?,
+          role: UserRole.fromString(
+            sessionUser.userMetadata?['role'] as String?,
+          ),
+        );
+      }
     } else {
       _currentUserProfile = null;
     }

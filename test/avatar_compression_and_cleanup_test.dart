@@ -254,7 +254,7 @@ void main() {
     );
 
     test('Asset generic default avatar tidak dihapus dari storage', () {
-      const assetPath = 'assets/generic-avatar.png';
+      const assetPath = 'assets/generic-avatar-profile.png';
       final refAsset = MediaService.parseAvatarStoragePath(
         avatarUrl: assetPath,
         userId: userId,

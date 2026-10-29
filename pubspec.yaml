@@ -95,8 +95,7 @@ flutter:
     - .env
     - assets/env
     - assets/logo_laporin.png
-    - assets/laporin-logo.jpg
-    - assets/generic-avatar.png
+    - assets/generic-avatar-profile.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

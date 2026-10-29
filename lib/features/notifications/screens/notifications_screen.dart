@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/notification_model.dart';
 import '../../announcements/screens/announcements_screen.dart';
 import '../../navigation/widgets/app_drawer.dart';
@@ -23,6 +25,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
   bool _isDeleting = false;
+  bool _wasOffline = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      final isOnline = context.isOnline;
+      if (_wasOffline && isOnline) {
+        _wasOffline = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<NotificationController>().fetchNotifications();
+          }
+        });
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
+    } catch (_) {}
+  }
 
   void _enterSelectionMode() {
     setState(() {
@@ -59,6 +80,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _handleDeleteSelected(NotificationController controller) async {
+    if (!context.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hapus notifikasi tidak dapat dilakukan saat offline.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     if (_selectedIds.isEmpty || _isDeleting) return;
     setState(() => _isDeleting = true);
 
@@ -86,6 +116,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<NotificationController>();
+    final isOnline = context.isOnline;
 
     // Jika notifikasi kosong saat mode seleksi, otomatis keluar dari mode seleksi
     if (controller.notifications.isEmpty && _isSelectionMode) {
@@ -160,23 +191,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: controller.isLoading
               ? const Center(child: CircularProgressIndicator())
               : controller.notifications.isEmpty
-              ? LayoutBuilder(
-                  builder: (context, constraints) => SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: const Center(
-                        child: EmptyState(
-                          title: 'Belum Ada Notifikasi',
-                          message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
-                          icon: Icons.notifications_none_rounded,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
+              ? (!isOnline
+                    ? OfflineFallbackView(
+                        onRetry: () => controller.fetchNotifications(),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) =>
+                            SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: const Center(
+                                  child: EmptyState(
+                                    title: 'Belum Ada Notifikasi',
+                                    message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
+                                    icon: Icons.notifications_none_rounded,
+                                  ),
+                                ),
+                              ),
+                            ),
+                      ))
               : ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(

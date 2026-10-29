@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_validators.dart';
@@ -93,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isOnline = context.isOnline;
 
     return Container(
       color: const Color(0xFFF0F2F5),
@@ -258,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       AppButton(
                         text: 'Masuk Sekarang',
                         isLoading: auth.isLoading,
-                        onPressed: _handleEmailLogin,
+                        onPressed: isOnline ? _handleEmailLogin : null,
                       ),
                       const SizedBox(height: 20),
 
@@ -284,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 18,
                         ),
                         isLoading: auth.isLoading,
-                        onPressed: _handleGoogleLogin,
+                        onPressed: isOnline ? _handleGoogleLogin : null,
                       ),
                       const SizedBox(height: 24),
 

@@ -20,22 +20,37 @@ class AuthController extends ChangeNotifier {
   bool _isDisposed = false;
 
   void _initAuthListener() {
-    _authSubscription = authRepository.onAuthStateChange?.listen((data) async {
-      if (_isDisposed) return;
-      final event = data.event;
-      if (event == AuthChangeEvent.signedOut) {
-        authRepository.clearSession();
-        FcmService.instance.removeTokenFromSupabase();
-        notifyListeners();
-      } else if (event == AuthChangeEvent.tokenRefreshed ||
-          event == AuthChangeEvent.userUpdated ||
-          event == AuthChangeEvent.signedIn) {
-        await authRepository.initSessionFromSupabase();
+    _authSubscription = authRepository.onAuthStateChange?.listen(
+      (data) async {
         if (_isDisposed) return;
-        FcmService.instance.syncTokenWithSupabase();
-        notifyListeners();
-      }
-    });
+        final event = data.event;
+        if (event == AuthChangeEvent.signedOut) {
+          authRepository.clearSession();
+          try {
+            FcmService.instance.removeTokenFromSupabase();
+          } catch (_) {}
+          notifyListeners();
+        } else if (event == AuthChangeEvent.tokenRefreshed ||
+            event == AuthChangeEvent.userUpdated ||
+            event == AuthChangeEvent.signedIn) {
+          try {
+            await authRepository.initSessionFromSupabase();
+          } catch (e) {
+            debugPrint('Auth listener initSession notice: $e');
+          }
+          if (_isDisposed) return;
+          try {
+            FcmService.instance.syncTokenWithSupabase();
+          } catch (e) {
+            debugPrint('Auth listener syncToken notice: $e');
+          }
+          notifyListeners();
+        }
+      },
+      onError: (error) {
+        debugPrint('Auth state change listener notice: $error');
+      },
+    );
   }
 
   @override

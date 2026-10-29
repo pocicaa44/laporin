@@ -43,13 +43,14 @@ class FcmService {
   /// Android notification channel dengan Importance.max agar sistem Android menampilkan pop-up banner
   static const AndroidNotificationChannel androidNotificationChannel =
       AndroidNotificationChannel(
-    'laporin_channel',
-    'Notifikasi Laporin',
-    description: 'Pemberitahuan pembaruan status laporan dan pengumuman warga.',
-    importance: Importance.max,
-    playSound: true,
-    enableVibration: true,
-  );
+        'laporin_channel',
+        'Notifikasi Laporin',
+        description:
+            'Pemberitahuan pembaruan status laporan dan pengumuman warga.',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
 
   FirebaseMessaging? _messagingInstance;
   FirebaseMessaging? get _messaging {
@@ -94,9 +95,9 @@ class FcmService {
             DarwinInitializationSettings();
         const InitializationSettings initializationSettings =
             InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-        );
+              android: initializationSettingsAndroid,
+              iOS: initializationSettingsDarwin,
+            );
 
         await _localNotifications.initialize(
           settings: initializationSettings,
@@ -114,7 +115,8 @@ class FcmService {
         // Buat notification channel dengan Importance.max di sistem Android
         await _localNotifications
             .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
+              AndroidFlutterLocalNotificationsPlugin
+            >()
             ?.createNotificationChannel(androidNotificationChannel);
       } catch (e) {
         debugPrint('FcmService local notifications init notice: $e');
@@ -264,12 +266,11 @@ class FcmService {
   /// Penanganan notifikasi saat aplikasi berada di latar depan (foreground)
   void _handleForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
-    final title = notification?.title ??
+    final title =
+        notification?.title ??
         (message.data['title'] as String?) ??
         'Notifikasi Baru';
-    final body = notification?.body ??
-        (message.data['body'] as String?) ??
-        '';
+    final body = notification?.body ?? (message.data['body'] as String?) ?? '';
 
     final context = navigatorKey.currentContext;
     if (context != null) {
@@ -285,7 +286,8 @@ class FcmService {
 
     // 2. Tampilkan notifikasi pop-up sistem di Android (Heads-Up Banner)
     if (title.isNotEmpty || body.isNotEmpty) {
-      final notificationId = message.messageId?.hashCode ??
+      final notificationId =
+          message.messageId?.hashCode ??
           DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
       _localNotifications.show(

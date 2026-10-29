@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/comment_model.dart';
@@ -64,6 +66,25 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   final _commentFocusNode = FocusNode();
   CommentModel? _replyingToComment;
   final Set<String> _expandedThreadIds = {};
+  bool _wasOffline = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      final isOnline = context.isOnline;
+      if (_wasOffline && isOnline) {
+        _wasOffline = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<ReportDetailController>().loadData();
+          }
+        });
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -106,6 +127,74 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     });
   }
 
+  Future<void> _handleDeleteComment(CommentModel comment) async {
+    if (!context.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hapus komentar tidak dapat dilakukan saat offline.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Komentar?'),
+        content: const Text('Apakah Anda yakin ingin menghapus komentar ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final controller = context.read<ReportDetailController>();
+    final auth = context.read<AuthController>();
+    final userId = auth.currentUser?.id;
+    if (userId == null) return;
+
+    final success = await controller.deleteComment(
+      commentId: comment.id,
+      userId: userId,
+      isCallerAdmin: auth.isAdmin,
+    );
+
+    if (!mounted) return;
+    if (success) {
+      if (_replyingToComment?.id == comment.id) {
+        setState(() {
+          _replyingToComment = null;
+        });
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Komentar berhasil dihapus'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(controller.errorMessage ?? 'Gagal menghapus komentar'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   String _formatCommentCount(int count) {
     try {
       return NumberFormat('#,###', 'id_ID').format(count).replaceAll(',', '.');
@@ -115,6 +204,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   }
 
   void _sendComment() {
+    if (!context.isOnline) return;
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
@@ -184,6 +274,15 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   }
 
   void _openEditScreen(ReportModel currentReport) async {
+    if (!context.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Edit laporan tidak dapat dilakukan saat offline.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     final updated = await Navigator.push<ReportModel>(
       context,
       MaterialPageRoute(
@@ -197,6 +296,17 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   }
 
   void _handleVote(String voteType) {
+    if (!context.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Dukungan atau tanggapan tidak dapat diberikan saat offline.',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     final auth = context.read<AuthController>();
     final user = auth.currentUser;
     if (!auth.isAuthenticated || user == null) {
@@ -227,6 +337,15 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     String userId, {
     bool isAdmin = false,
   }) async {
+    if (!context.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hapus laporan tidak dapat dilakukan saat offline.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     final isOtherPartyDeleted = isAdmin
         ? currentReport.deletedByUser
         : currentReport.deletedByAdmin;
@@ -424,9 +543,17 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<ReportDetailController>();
+    final isOnline = context.isOnline;
     final auth = context.watch<AuthController>();
     final report = controller.report;
     final currentUserId = auth.currentUser?.id ?? 'guest';
+
+    if (report == null && !isOnline && !controller.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Detail Laporan')),
+        body: OfflineFallbackView(onRetry: () => controller.loadData()),
+      );
+    }
 
     // 1. Tampilkan loading spin saat proses pengambilan data dan data laporan belum ada
     if (controller.isLoading && report == null) {
@@ -1331,12 +1458,13 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                         if (report.isPubliclyVisible && !report.isTerminal)
                           VoteActionBar(
                             report: report,
-                            isEnabled: report.isVotingActive,
-                            disabledReason:
-                                report.handlingStatus ==
-                                    HandlingStatus.completed
-                                ? 'Penilaian suara ditutup (Laporan Selesai)'
-                                : null,
+                            isEnabled: isOnline && report.isVotingActive,
+                            disabledReason: !isOnline
+                                ? 'Tidak tersedia dalam mode offline'
+                                : (report.handlingStatus ==
+                                          HandlingStatus.completed
+                                      ? 'Penilaian suara ditutup (Laporan Selesai)'
+                                      : null),
                             onUpvote: () => _handleVote('up'),
                             onDownvote: () => _handleVote('down'),
                           ),
@@ -1460,6 +1588,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       });
                                     },
                                     onReply: _startReply,
+                                    currentUserId: auth.currentUser?.id,
+                                    onDelete: _handleDeleteComment,
                                   ),
                                 ],
                               ],
@@ -1571,12 +1701,17 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                         child: TextField(
                                           controller: _commentController,
                                           focusNode: _commentFocusNode,
+                                          enabled: isOnline,
                                           textInputAction: TextInputAction.send,
-                                          onSubmitted: (_) => _sendComment(),
+                                          onSubmitted: isOnline
+                                              ? (_) => _sendComment()
+                                              : null,
                                           decoration: InputDecoration(
-                                            hintText: _replyingToComment != null
-                                                ? 'Tulis balasan untuk ${_replyingToComment!.authorName.trim().startsWith('@') ? _replyingToComment!.authorName.trim() : '@${_replyingToComment!.authorName.trim()}'}...'
-                                                : 'Tulis komentar atau tanggapan...',
+                                            hintText: !isOnline
+                                                ? 'Komentar dinonaktifkan saat offline'
+                                                : (_replyingToComment != null
+                                                      ? 'Tulis balasan untuk ${_replyingToComment!.authorName.trim().startsWith('@') ? _replyingToComment!.authorName.trim() : '@${_replyingToComment!.authorName.trim()}'}...'
+                                                      : 'Tulis komentar atau tanggapan...'),
                                             hintStyle: AppTextStyles.caption,
                                             contentPadding:
                                                 const EdgeInsets.symmetric(
@@ -1619,13 +1754,17 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                                       strokeWidth: 2,
                                                     ),
                                               )
-                                            : const Icon(
+                                            : Icon(
                                                 Icons.send_rounded,
-                                                color: AppColors.primary,
+                                                color: isOnline
+                                                    ? AppColors.primary
+                                                    : AppColors.disabled,
                                               ),
-                                        onPressed: controller.isSendingComment
-                                            ? null
-                                            : _sendComment,
+                                        onPressed:
+                                            (isOnline &&
+                                                !controller.isSendingComment)
+                                            ? _sendComment
+                                            : null,
                                       ),
                                     ],
                                   ),

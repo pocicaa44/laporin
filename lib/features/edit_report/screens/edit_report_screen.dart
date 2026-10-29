@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/app_button.dart';
@@ -101,6 +102,7 @@ class _EditReportFormState extends State<_EditReportForm> {
   }
 
   void _submit() async {
+    if (!context.isOnline) return;
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthController>();
@@ -148,6 +150,7 @@ class _EditReportFormState extends State<_EditReportForm> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<EditReportController>();
+    final isOnline = context.isOnline;
 
     return PopScope(
       canPop: !_isFormDirty(controller) || controller.isLoading,
@@ -230,7 +233,7 @@ class _EditReportFormState extends State<_EditReportForm> {
                 AppButton(
                   text: 'Simpan Perubahan',
                   isLoading: controller.isLoading,
-                  onPressed: _submit,
+                  onPressed: isOnline && !controller.isLoading ? _submit : null,
                 ),
                 const SizedBox(height: 16),
               ],

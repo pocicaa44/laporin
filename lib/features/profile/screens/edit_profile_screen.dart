@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/services/media_service.dart';
+import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_image.dart';
@@ -87,6 +88,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _showAvatarOptionsSheet() {
+    if (!context.isOnline) return;
     final user = context.read<AuthController>().currentUser;
     final hasCustomAvatar =
         (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) ||
@@ -182,6 +184,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _handleSave() async {
+    if (!context.isOnline) return;
     final auth = context.read<AuthController>();
     final user = auth.currentUser;
     if (user == null || _isSaving) return;
@@ -439,6 +442,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isOnline = context.isOnline;
     final user = auth.currentUser;
 
     return Scaffold(
@@ -721,7 +725,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         size: 18,
                         color: Colors.white,
                       ),
-                      onPressed: _isSaving ? null : _handleSave,
+                      onPressed: isOnline && !_isSaving ? _handleSave : null,
                     ),
                   ],
                 ),

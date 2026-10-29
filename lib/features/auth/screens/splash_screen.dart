@@ -27,6 +27,11 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    try {
+      context.networkService.setOverviewActive(true);
+    } catch (_) {
+      NetworkService.instance.setOverviewActive(true);
+    }
     final modalRoute = ModalRoute.of(context);
     if (modalRoute != null) {
       NetworkService.routeObserver.subscribe(this, modalRoute);
@@ -36,23 +41,39 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
   @override
   void dispose() {
     NetworkService.routeObserver.unsubscribe(this);
-    NetworkService.instance.setOverviewActive(false, notifyIfOffline: false);
+    try {
+      context.networkService.setOverviewActive(false, notifyIfOffline: false);
+    } catch (_) {
+      NetworkService.instance.setOverviewActive(false, notifyIfOffline: false);
+    }
     super.dispose();
   }
 
   @override
   void didPush() {
-    NetworkService.instance.setOverviewActive(true);
+    try {
+      context.networkService.setOverviewActive(true);
+    } catch (_) {
+      NetworkService.instance.setOverviewActive(true);
+    }
   }
 
   @override
   void didPushNext() {
-    NetworkService.instance.setOverviewActive(false);
+    try {
+      context.networkService.setOverviewActive(false);
+    } catch (_) {
+      NetworkService.instance.setOverviewActive(false);
+    }
   }
 
   @override
   void didPopNext() {
-    NetworkService.instance.setOverviewActive(true);
+    try {
+      context.networkService.setOverviewActive(true);
+    } catch (_) {
+      NetworkService.instance.setOverviewActive(true);
+    }
   }
 
   Future<void> _handleStart() async {
@@ -74,6 +95,8 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    final isOnline = context.isOnline;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -151,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
                           AppButton(
                             text: 'Mulai Sekarang',
                             isLoading: _isNavigating,
-                            onPressed: _handleStart,
+                            onPressed: isOnline ? _handleStart : null,
                           ),
                         ],
                       ),

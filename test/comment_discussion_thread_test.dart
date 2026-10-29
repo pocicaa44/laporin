@@ -480,4 +480,281 @@ void main() {
       },
     );
   });
+
+  group('Delete Comment Feature Tests', () {
+    test(
+      'CommentRepository deleteComment removes comment from storage',
+      () async {
+        final commentRepo = CommentRepository();
+        final c1 = await commentRepo.addComment(
+          reportId: 'rep-del-test',
+          authorId: 'user-1',
+          authorName: 'User Satu',
+          authorRole: UserRole.user,
+          body: 'Komentar yang akan dihapus',
+        );
+
+        var comments = await commentRepo.getComments('rep-del-test');
+        expect(comments.any((c) => c.id == c1.id), isTrue);
+
+        await commentRepo.deleteComment(c1.id, userId: 'user-1');
+
+        comments = await commentRepo.getComments('rep-del-test');
+        expect(comments.any((c) => c.id == c1.id), isFalse);
+      },
+    );
+
+    test(
+      'ReportDetailController deleteComment removes comment and updates count',
+      () async {
+        final reportRepo = ReportRepository();
+        final commentRepo = CommentRepository();
+
+        final testReport = ReportModel(
+          id: 'rep-ctrl-del-test',
+          reportNumber: 'LPR-2026-9999',
+          authorId: 'u-owner',
+          authorName: 'Owner Laporan',
+          areaId: 'area-1',
+          areaName: 'Kota Semarang',
+          title: 'Sampah Menumpuk',
+          description: 'Deskripsi',
+          category: 'Kebersihan',
+          latitude: -6.99,
+          longitude: 110.42,
+          locationAddress: 'Semarang',
+          handlingStatus: HandlingStatus.newReport,
+          publicationState: PublicationState.published,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          commentsCount: 2,
+        );
+
+        final c1 = await commentRepo.addComment(
+          reportId: testReport.id,
+          authorId: 'user-1',
+          authorName: 'User Satu',
+          authorRole: UserRole.user,
+          body: 'Komentar 1',
+        );
+        final c2 = await commentRepo.addComment(
+          reportId: testReport.id,
+          authorId: 'user-2',
+          authorName: 'User Dua',
+          authorRole: UserRole.user,
+          body: 'Komentar 2',
+        );
+
+        final controller = ReportDetailController(
+          reportId: testReport.id,
+          reportRepository: reportRepo,
+          commentRepository: commentRepo,
+          initialReport: testReport,
+          currentUserId: 'user-1',
+        );
+
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(controller.comments.length, equals(2));
+
+        final success = await controller.deleteComment(
+          commentId: c1.id,
+          userId: 'user-1',
+        );
+
+        expect(success, isTrue);
+        expect(controller.comments.length, equals(1));
+        expect(controller.comments.first.id, equals(c2.id));
+        expect(controller.report?.commentsCount, equals(1));
+
+        controller.dispose();
+      },
+    );
+
+    testWidgets(
+      'CommentTile shows "Hapus" only when currentUserId matches comment author',
+      (tester) async {
+        final comment = CommentModel(
+          id: 'c-test-1',
+          reportId: 'rep-1',
+          authorId: 'user-current',
+          authorName: '@akunsaya',
+          body: 'Ini komentar milik saya sendiri.',
+          createdAt: DateTime.now(),
+        );
+
+        // Kasus 1: Komentar milik akun yang sedang digunakan -> Tombol "Hapus" muncul di sebelah "Balas"
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CommentTile(
+                comment: comment,
+                currentUserId: 'user-current',
+                onReply: () {},
+                onDelete: () {},
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Balas'), findsOneWidget);
+        expect(find.text('Hapus'), findsOneWidget);
+        expect(
+          find.byKey(const Key('delete_comment_c-test-1')),
+          findsOneWidget,
+        );
+
+        // Kasus 2: Komentar milik akun lain -> Tombol "Hapus" TIDAK muncul
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CommentTile(
+                comment: comment,
+                currentUserId: 'user-lain',
+                onReply: () {},
+                onDelete: () {},
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Balas'), findsOneWidget);
+        expect(find.text('Hapus'), findsNothing);
+        expect(find.byKey(const Key('delete_comment_c-test-1')), findsNothing);
+
+        // Kasus 3: Tidak ada pengguna yang login (guest) -> Tombol "Hapus" TIDAK muncul
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CommentTile(
+                comment: comment,
+                currentUserId: null,
+                onReply: () {},
+                onDelete: () {},
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Balas'), findsOneWidget);
+        expect(find.text('Hapus'), findsNothing);
+      },
+    );
+
+    testWidgets('Tapping "Hapus" in CommentTile triggers onDelete callback', (
+      tester,
+    ) async {
+      final comment = CommentModel(
+        id: 'c-tap-1',
+        reportId: 'rep-1',
+        authorId: 'user-me',
+        authorName: '@me',
+        body: 'Komentar untuk tes tap hapus.',
+        createdAt: DateTime.now(),
+      );
+
+      bool deleted = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CommentTile(
+              comment: comment,
+              currentUserId: 'user-me',
+              onReply: () {},
+              onDelete: () {
+                deleted = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      final balasTextWidget = tester.widget<Text>(find.text('Balas'));
+      final hapusTextWidget = tester.widget<Text>(find.text('Hapus'));
+      expect(hapusTextWidget.style?.color, equals(const Color(0xFF4B5563)));
+      expect(
+        hapusTextWidget.style?.color,
+        equals(balasTextWidget.style?.color),
+      );
+      expect(
+        hapusTextWidget.style?.fontSize,
+        equals(balasTextWidget.style?.fontSize),
+      );
+      expect(
+        hapusTextWidget.style?.fontWeight,
+        equals(balasTextWidget.style?.fontWeight),
+      );
+
+      await tester.tap(find.text('Hapus'));
+      await tester.pump();
+
+      expect(deleted, isTrue);
+    });
+
+    testWidgets(
+      'CommentThreadTile shows Hapus only for comments belonging to currentUserId',
+      (tester) async {
+        final thread = CommentThreadItem(
+          root: CommentModel(
+            id: 'root-c',
+            reportId: 'rep-1',
+            authorId: 'author-other',
+            authorName: '@orang_lain',
+            body: 'Komentar orang lain',
+            createdAt: DateTime.now(),
+          ),
+          replies: [
+            CommentReplyItem(
+              comment: CommentModel(
+                id: 'reply-c',
+                reportId: 'rep-1',
+                authorId: 'author-me',
+                authorName: '@saya',
+                body: 'Balasan dari saya',
+                createdAt: DateTime.now(),
+                parentCommentId: 'root-c',
+              ),
+              replyToAuthorName: '@orang_lain',
+            ),
+          ],
+        );
+
+        CommentModel? deletedTarget;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CommentThreadTile(
+                thread: thread,
+                reportAuthorId: 'rep-author',
+                isExpanded: true,
+                onToggleExpanded: () {},
+                onReply: (_) {},
+                currentUserId: 'author-me',
+                onDelete: (c) {
+                  deletedTarget = c;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Root adalah akun lain -> tidak ada tombol Hapus
+        expect(find.byKey(const Key('delete_comment_root-c')), findsNothing);
+
+        // Reply adalah akun saya -> tombol Hapus muncul
+        expect(find.byKey(const Key('delete_comment_reply-c')), findsOneWidget);
+
+        // Hanya ada tepat 1 tombol Hapus di layar (milik reply)
+        expect(find.text('Hapus'), findsOneWidget);
+
+        // Tap tombol Hapus pada reply
+        await tester.tap(find.text('Hapus'));
+        await tester.pump();
+
+        expect(deletedTarget, isNotNull);
+        expect(deletedTarget!.id, equals('reply-c'));
+      },
+    );
+  });
 }

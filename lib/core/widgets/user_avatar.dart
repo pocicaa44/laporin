@@ -44,7 +44,7 @@ class UserAvatar extends StatelessWidget {
 
   /// Path asset untuk avatar default Laporin.
   /// Disimpan sebagai asset lokal agar tidak membebani server/database.
-  static const String defaultAvatarAsset = 'assets/generic-avatar.png';
+  static const String defaultAvatarAsset = 'assets/generic-avatar-profile.png';
 
   @override
   Widget build(BuildContext context) {
