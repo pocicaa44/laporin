@@ -86,13 +86,6 @@ class UserAvatar extends StatelessWidget {
                 color: AppColors.primary,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
               ),
               child: const FaIcon(
                 FontAwesomeIcons.camera,

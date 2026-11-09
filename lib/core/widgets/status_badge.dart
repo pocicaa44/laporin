@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/report_model.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
-/// Distinct badge for handling_status (Diterima, Diproses, Selesai, Ditolak, Dibatalkan)
+/// Distinct sharp rectangular badge for handling_status (DESIGN.md Section 4.4)
 class HandlingStatusBadge extends StatelessWidget {
   const HandlingStatusBadge({
     super.key,
@@ -20,16 +21,16 @@ class HandlingStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isDraft) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFFEF8E7),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFFFDD888)),
+          color: const Color(0xFFFFFBEB),
+          borderRadius: AppRadius.badge,
+          border: Border.all(color: const Color(0xFFFDE68A), width: 1),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.edit_note_rounded, size: 14, color: Color(0xFFD98205)),
+            Icon(Icons.edit_note_rounded, size: 14, color: Color(0xFFB45309)),
             SizedBox(width: 4),
             Text(
               'Draft',
@@ -56,47 +57,55 @@ class HandlingStatusBadge extends StatelessWidget {
 
     Color bg;
     Color fg;
+    Color borderColor;
     IconData icon;
     String label = status.label;
 
     switch (status) {
       case HandlingStatus.newReport:
-        bg = AppColors.primarySoft;
-        fg = AppColors.primaryStrong;
+        bg = const Color(0xFFEFF6FF);
+        fg = const Color(0xFF1D4ED8);
+        borderColor = const Color(0xFFBFDBFE);
         icon = Icons.fiber_new_rounded;
         break;
       case HandlingStatus.accepted:
-        bg = const Color(0xFFE8F4FD);
-        fg = AppColors.info;
+        bg = const Color(0xFFF0F9FF);
+        fg = const Color(0xFF0284C7);
+        borderColor = const Color(0xFFBAE6FD);
         icon = Icons.check_circle_outline_rounded;
         break;
       case HandlingStatus.inProgress:
-        bg = const Color(0xFFFEF8E7);
-        fg = const Color(0xFFD98205);
+        bg = const Color(0xFFFFFBEB);
+        fg = const Color(0xFFB45309);
+        borderColor = const Color(0xFFFDE68A);
         icon = Icons.autorenew_rounded;
         break;
       case HandlingStatus.completed:
-        bg = const Color(0xFFE8F8F0);
-        fg = AppColors.success;
+        bg = const Color(0xFFF0FDF4);
+        fg = const Color(0xFF15803D);
+        borderColor = const Color(0xFFBBF7D0);
         icon = Icons.task_alt_rounded;
         break;
       case HandlingStatus.rejected:
-        bg = const Color(0xFFFDECEE);
-        fg = AppColors.danger;
+        bg = const Color(0xFFFEF2F2);
+        fg = const Color(0xFFB91C1C);
+        borderColor = const Color(0xFFFECACA);
         icon = Icons.cancel_outlined;
         break;
       case HandlingStatus.cancelled:
-        bg = const Color(0xFFF1F3F9);
+        bg = const Color(0xFFF8FAFC);
         fg = AppColors.textSecondary;
+        borderColor = AppColors.border;
         icon = Icons.block_rounded;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.badge,
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -117,7 +126,7 @@ class HandlingStatusBadge extends StatelessWidget {
   }
 }
 
-/// Distinct badge for publication_state (Menunggu Review, Dipublikasikan, Ditahan, Diarsipkan)
+/// Distinct sharp rectangular badge for publication_state (DESIGN.md Section 4.4)
 class PublicationStateBadge extends StatelessWidget {
   const PublicationStateBadge({
     super.key,
@@ -140,18 +149,15 @@ class PublicationStateBadge extends StatelessWidget {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF8E7),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: const Color(0xFFD98205).withValues(alpha: 0.3),
-                width: 1,
-              ),
+              color: const Color(0xFFFFFBEB),
+              borderRadius: AppRadius.badge,
+              border: Border.all(color: const Color(0xFFFDE68A), width: 1),
             ),
             child: const Center(
               child: Icon(
                 Icons.edit_note_rounded,
                 size: 14,
-                color: Color(0xFFD98205),
+                color: Color(0xFFB45309),
               ),
             ),
           ),
@@ -160,17 +166,14 @@ class PublicationStateBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: const Color(0xFFFEF8E7),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: const Color(0xFFD98205).withValues(alpha: 0.3),
-            width: 1,
-          ),
+          color: const Color(0xFFFFFBEB),
+          borderRadius: AppRadius.badge,
+          border: Border.all(color: const Color(0xFFFDE68A), width: 1),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.edit_note_rounded, size: 12, color: Color(0xFFD98205)),
+            Icon(Icons.edit_note_rounded, size: 12, color: Color(0xFFB45309)),
             SizedBox(width: 4),
             Text(
               'Draft',
@@ -187,28 +190,33 @@ class PublicationStateBadge extends StatelessWidget {
 
     Color bg;
     Color fg;
+    Color borderColor;
     IconData icon;
     String label = state.label;
 
     switch (state) {
       case PublicationState.pendingReview:
-        bg = const Color(0xFFFEF8E7);
-        fg = const Color(0xFFD98205);
+        bg = const Color(0xFFFFFBEB);
+        fg = const Color(0xFFB45309);
+        borderColor = const Color(0xFFFDE68A);
         icon = Icons.hourglass_empty_rounded;
         break;
       case PublicationState.published:
-        bg = const Color(0xFFE8F8F0);
-        fg = AppColors.success;
+        bg = const Color(0xFFF0FDF4);
+        fg = const Color(0xFF15803D);
+        borderColor = const Color(0xFFBBF7D0);
         icon = Icons.public_rounded;
         break;
       case PublicationState.held:
-        bg = const Color(0xFFFDECEE);
-        fg = AppColors.danger;
+        bg = const Color(0xFFFEF2F2);
+        fg = const Color(0xFFB91C1C);
+        borderColor = const Color(0xFFFECACA);
         icon = Icons.flag_rounded;
         break;
       case PublicationState.archived:
-        bg = const Color(0xFFF1F3F9);
+        bg = const Color(0xFFF8FAFC);
         fg = AppColors.textSecondary;
+        borderColor = AppColors.border;
         icon = Icons.archive_outlined;
         break;
     }
@@ -221,8 +229,8 @@ class PublicationStateBadge extends StatelessWidget {
           height: 26,
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: fg.withValues(alpha: 0.3), width: 1),
+            borderRadius: AppRadius.badge,
+            border: Border.all(color: borderColor, width: 1),
           ),
           child: Center(child: Icon(icon, size: 14, color: fg)),
         ),
@@ -233,8 +241,8 @@ class PublicationStateBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: fg.withValues(alpha: 0.3), width: 1),
+        borderRadius: AppRadius.badge,
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

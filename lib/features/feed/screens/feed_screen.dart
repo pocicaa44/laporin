@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/services/boundary_service.dart';
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/report_model.dart';
@@ -14,6 +14,7 @@ import '../../report_detail/screens/report_detail_screen.dart';
 import '../controllers/feed_controller.dart';
 import '../widgets/category_filter_bar.dart';
 import '../widgets/report_card.dart';
+import 'feed_map_screen.dart';
 
 /// Main public community feed matching DESIGN.md Section 5.3
 class FeedScreen extends StatefulWidget {
@@ -144,33 +145,29 @@ class _FeedScreenState extends State<FeedScreen> {
       appBar: AppBar(
         leading: const DrawerMenuButton(),
         titleSpacing: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on, size: 16, color: AppColors.primary),
-                  SizedBox(width: 4),
-                  Text(
-                    BoundaryService.provinceName,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryStrong,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        title: const Text(
+          'Laporin',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: 'Peta Sebaran Laporan',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      FeedMapScreen(initialReports: controller.reports),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Segarkan Laporan',
@@ -187,13 +184,24 @@ class _FeedScreenState extends State<FeedScreen> {
               children: [
                 Expanded(
                   child: TextField(
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Cari laporan atau lokasi...',
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      prefixIcon: Icon(Icons.search_rounded, size: 20),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderRadius: AppRadius.pill,
+                        borderSide: BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.pill,
+                        borderSide: BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.pill,
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onChanged: (val) => controller.setSearchQuery(val),
@@ -201,11 +209,14 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
                 const SizedBox(width: 10),
                 PopupMenuButton<String>(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.input,
+                  ),
                   icon: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.input,
                       border: Border.all(color: AppColors.border),
                     ),
                     child: const Icon(
@@ -231,6 +242,9 @@ class _FeedScreenState extends State<FeedScreen> {
               ],
             ),
           ),
+
+          // Scope Menu: "Semua" vs "{Provinsi Terdeteksi}"
+          _buildScopeSelectorMenu(context, controller),
 
           // Categories Filter
           Padding(
@@ -362,6 +376,111 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildScopeSelectorMenu(
+    BuildContext context,
+    FeedController controller,
+  ) {
+    final isNational = controller.isNational;
+    final isDetectedActive = controller.isDetectedProvinceActive;
+    final detectedName = controller.detectedProvinceName;
+    final isDetecting = controller.isDetectingLocation;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            // Menu Option 1: "Semua"
+            _buildScopePill(
+              icon: Icons.public,
+              label: 'Semua',
+              isSelected: isNational,
+              onTap: () => controller.switchToAll(),
+            ),
+            const SizedBox(width: 8),
+
+            // Menu Option 2: "{Wilayah Terdeteksi}"
+            _buildScopePill(
+              icon: isDetecting && detectedName == null
+                  ? Icons.location_searching_rounded
+                  : Icons.my_location_rounded,
+              label:
+                  detectedName ??
+                  (isDetecting ? 'Mendeteksi...' : 'Lokasi Terdeteksi'),
+              isSelected: isDetectedActive,
+              onTap: () async {
+                final success = await controller.switchToDetectedProvince();
+                if (!success &&
+                    context.mounted &&
+                    controller.detectedProvinceName == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Tidak dapat mendeteksi lokasi. Pastikan izin lokasi dan GPS aktif.',
+                      ),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScopePill({
+    IconData? icon,
+    Widget? leadingWidget,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: AppRadius.pill,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: AppRadius.pill,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (leadingWidget != null) ...[
+              leadingWidget,
+              const SizedBox(width: 6),
+            ] else if (icon != null) ...[
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

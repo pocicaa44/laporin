@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/widgets/username_text_field.dart';
+import '../widgets/profile_photo_detail_dialog.dart';
 
 /// Screen allowing users to edit their profile (avatar photo and username).
 class EditProfileScreen extends StatefulWidget {
@@ -87,6 +89,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  void _showAvatarDetail() {
+    final user = context.read<AuthController>().currentUser;
+    ProfilePhotoDetailDialog.show(
+      context: context,
+      avatarUrl: _resetToDefault
+          ? null
+          : (_selectedAvatarBytes == null ? user?.avatarUrl : null),
+      avatarBytes: _selectedAvatarBytes,
+    );
+  }
+
   void _showAvatarOptionsSheet() {
     if (!context.isOnline) return;
     final user = context.read<AuthController>().currentUser;
@@ -96,9 +109,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (ctx) {
         return SafeArea(
           child: Padding(
@@ -130,6 +142,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                ListTile(
+                  leading: const FaIcon(
+                    FontAwesomeIcons.solidEye,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  title: const Text('Lihat Foto Profil'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showAvatarDetail();
+                  },
+                ),
                 ListTile(
                   leading: const FaIcon(
                     FontAwesomeIcons.images,
@@ -370,43 +394,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.shade100,
-              border: Border.all(color: AppColors.border, width: 2),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
+          Tooltip(
+            message: 'Ketuk untuk melihat foto profil',
+            child: InkWell(
+              onTap: (_isSaving || _isProcessingAvatar)
+                  ? null
+                  : _showAvatarDetail,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey.shade100,
+                  border: Border.all(color: AppColors.border, width: 2),
                 ),
-              ],
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                avatarImage,
-                if (_isProcessingAvatar)
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.black45,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    avatarImage,
+                    if (_isProcessingAvatar)
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
           Positioned(
@@ -417,7 +443,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ? AppColors.border
                   : AppColors.primary,
               shape: const CircleBorder(),
-              elevation: 2,
+              elevation: 0,
               child: InkWell(
                 onTap: (_isSaving || _isProcessingAvatar)
                     ? null
@@ -484,9 +510,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             horizontal: 10,
                             vertical: 4,
                           ),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.pill,
                           ),
                           child: const Text(
                             'Akan menggunakan avatar standar',
@@ -516,9 +542,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       controller: _nameController,
                       enabled: !_isSaving,
                       textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'Contoh: Budi Santoso',
-                        prefixIcon: const Padding(
+                        prefixIcon: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 14),
                           child: FaIcon(
                             FontAwesomeIcons.user,
@@ -526,38 +552,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        prefixIconConstraints: const BoxConstraints(
-                          minWidth: 44,
-                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 44),
                         filled: true,
                         fillColor: AppColors.surface,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderRadius: AppRadius.input,
+                          borderSide: BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderRadius: AppRadius.input,
+                          borderSide: BorderSide(color: AppColors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
+                          borderRadius: AppRadius.input,
+                          borderSide: BorderSide(
                             color: AppColors.primary,
                             width: 1.5,
                           ),
                         ),
                         errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.danger),
+                          borderRadius: AppRadius.input,
+                          borderSide: BorderSide(color: AppColors.danger),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
+                          borderRadius: AppRadius.input,
+                          borderSide: BorderSide(
                             color: AppColors.danger,
                             width: 1.5,
                           ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
                         ),
@@ -623,7 +647,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.card,
                         border: Border.all(color: AppColors.border),
                       ),
                       child: Column(

@@ -124,10 +124,10 @@ class EditReportController extends ChangeNotifier {
       return null;
     }
 
-    // Validasi lokasi Jawa Tengah (PRD & Acceptance Criteria)
-    if (!BoundaryService.instance.isInsideCentralJava(_latitude, _longitude)) {
+    // Validasi lokasi Indonesia
+    if (!BoundaryService.instance.isInsideIndonesia(_latitude, _longitude)) {
       _isLoading = false;
-      _errorMessage = BoundaryService.outsideAreaErrorMessage;
+      _errorMessage = BoundaryService.outsideIndonesiaErrorMessage;
       notifyListeners();
       return null;
     }

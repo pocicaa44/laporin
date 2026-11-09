@@ -114,13 +114,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             appBar: AppBar(title: const Text('Daftar Akun')),
@@ -141,7 +134,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 72,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            boxShadow: [AppColors.cardShadow],
                           ),
                           child: ClipOval(
                             child: Image.asset(
@@ -171,8 +163,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFDECEE),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.dangerSubtle,
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(8),
+                            ),
                             border: Border.all(color: AppColors.danger),
                           ),
                           child: Text(

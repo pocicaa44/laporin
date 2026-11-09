@@ -4,10 +4,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/services/boundary_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../screens/map_location_picker_screen.dart';
 
-/// Modular widget for selecting and validating report location (< 150 lines)
+/// Modular widget for selecting and validating report location (< 300 lines)
 class ReportLocationPicker extends StatefulWidget {
   const ReportLocationPicker({
     super.key,
@@ -52,7 +53,7 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
         if (!res.isValidRegion) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(BoundaryService.gpsOutsideAreaMessage),
+              content: Text(BoundaryService.gpsOutsideIndonesiaMessage),
               backgroundColor: AppColors.warning,
             ),
           );
@@ -129,7 +130,7 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
     final hasLocation = widget.address.isNotEmpty;
     final isValidRegion =
         hasLocation &&
-        BoundaryService.instance.isInsideCentralJava(
+        BoundaryService.instance.isInsideIndonesia(
           widget.latitude,
           widget.longitude,
         );
@@ -146,12 +147,18 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: isValidRegion
-                      ? AppColors.primarySoft
-                      : AppColors.danger.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                      ? AppColors.primarySubtle
+                      : AppColors.dangerSubtle,
+                  borderRadius: AppRadius.pill,
+                  border: Border.all(
+                    color: isValidRegion
+                        ? const Color(0xFFBFDBFE)
+                        : const Color(0xFFFECACA),
+                    width: 1,
+                  ),
                 ),
                 child: Text(
-                  isValidRegion ? widget.areaName : 'Di Luar Jawa Tengah',
+                  isValidRegion ? widget.areaName : 'Di Luar Wilayah Indonesia',
                   style: AppTextStyles.caption.copyWith(
                     color: isValidRegion ? AppColors.primary : AppColors.danger,
                     fontWeight: FontWeight.bold,
@@ -165,7 +172,7 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.card,
             border: Border.all(
               color: hasLocation && !isValidRegion
                   ? AppColors.danger
@@ -208,7 +215,7 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                           hasLocation
                               ? (isValidRegion
                                     ? 'Koordinat: ${widget.latitude.toStringAsFixed(4)}, ${widget.longitude.toStringAsFixed(4)} (Cakupan: ${widget.areaName})'
-                                    : 'Koordinat di luar Provinsi Jawa Tengah')
+                                    : 'Koordinat di luar wilayah Indonesia')
                               : 'Buka peta interaktif atau gunakan sensor GPS perangkat Anda.',
                           style: AppTextStyles.caption.copyWith(
                             color: isValidRegion
@@ -224,7 +231,7 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
               if (hasLocation && !isValidRegion) ...[
                 const SizedBox(height: 10),
                 const Text(
-                  BoundaryService.outsideAreaErrorMessage,
+                  BoundaryService.outsideIndonesiaErrorMessage,
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.danger,
@@ -251,8 +258,8 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.primary),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.button,
                         ),
                         minimumSize: const Size.fromHeight(40),
                       ),
@@ -272,8 +279,9 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        elevation: 0,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.button,
                         ),
                         minimumSize: const Size.fromHeight(40),
                       ),

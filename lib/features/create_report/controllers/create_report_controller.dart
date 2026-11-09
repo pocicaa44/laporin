@@ -119,9 +119,9 @@ class CreateReportController extends ChangeNotifier {
       return null;
     }
 
-    if (!BoundaryService.instance.isInsideCentralJava(_latitude, _longitude)) {
+    if (!BoundaryService.instance.isInsideIndonesia(_latitude, _longitude)) {
       _isLoading = false;
-      _errorMessage = BoundaryService.outsideAreaErrorMessage;
+      _errorMessage = BoundaryService.outsideIndonesiaErrorMessage;
       notifyListeners();
       return null;
     }

@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -121,9 +122,8 @@ class _AdminCreateAnnouncementScreenState
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppRadius.card,
                       border: Border.all(color: AppColors.border),
-                      boxShadow: const [AppColors.cardShadow],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,10 +186,13 @@ class _AdminCreateAnnouncementScreenState
                                   selected: isSelected,
                                   selectedColor: AppColors.primary,
                                   backgroundColor: AppColors.surface,
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.border,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: AppRadius.pill,
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                    ),
                                   ),
                                   onSelected: _isPublishing
                                       ? null
@@ -245,7 +248,7 @@ class _AdminCreateAnnouncementScreenState
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.danger.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppRadius.input,
                               border: Border.all(
                                 color: AppColors.danger.withValues(alpha: 0.3),
                               ),

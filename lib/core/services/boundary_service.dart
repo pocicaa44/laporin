@@ -2,19 +2,30 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 
-/// Official boundary polygon data and geospatial validation for Provinsi Jawa Tengah.
-/// Based on official BAKOSURTANAL (BIG) 1:250,000 administrative survey data.
+import 'boundary_data.dart';
+
+/// Official boundary polygon data and geospatial validation for Indonesia and regions.
+/// Enforces territorial bounds across all of Indonesia while maintaining backward compatibility.
 class BoundaryService {
   BoundaryService._();
   static final BoundaryService instance = BoundaryService._();
 
   static const String provinceName = 'Jawa Tengah';
+  static const String countryName = 'Indonesia';
 
-  /// Standard user-facing message when selected location is outside Central Java
+  /// Standard user-facing message when selected location is outside Indonesia
+  static const String outsideIndonesiaErrorMessage =
+      'Lokasi laporan hanya tersedia di wilayah Indonesia.';
+
+  /// User-facing message when device GPS is outside Indonesia
+  static const String gpsOutsideIndonesiaMessage =
+      'Posisi GPS perangkat Anda berada di luar wilayah Indonesia. Silakan pilih titik kejadian di dalam wilayah Indonesia.';
+
+  /// Standard user-facing message when selected location is outside Central Java (legacy pilot)
   static const String outsideAreaErrorMessage =
       'Laporan hanya dapat dibuat untuk lokasi kejadian di Provinsi Jawa Tengah. Silakan pilih lokasi lain di dalam wilayah Jawa Tengah.';
 
-  /// User-facing message when device GPS is outside Central Java
+  /// User-facing message when device GPS is outside Central Java (legacy pilot)
   static const String gpsOutsideAreaMessage =
       'Posisi GPS perangkat Anda berada di luar Provinsi Jawa Tengah. Silakan pilih titik kejadian di dalam wilayah Jawa Tengah secara manual pada peta.';
 
@@ -23,194 +34,42 @@ class BoundaryService {
   static const double defaultLng = 110.4203;
   static const String defaultAreaName = 'Jawa Tengah';
 
-  // Bounding box for fast preliminary filtering
-  static const double _minLat = -8.35;
-  static const double _maxLat = -5.70;
-  static const double _minLng = 108.50;
-  static const double _maxLng = 111.75;
+  /// Recommended center coordinate for Indonesia
+  static const double defaultIndonesiaLat = -2.5489;
+  static const double defaultIndonesiaLng = 118.0149;
 
-  /// Official boundary rings: [ [ [lng, lat], ... ] ]
-  /// Ring 0: Mainland Central Java (132 vertices bordering Jabar, Jatim, and DIY enclave)
-  /// Ring 1: Nusakambangan island (Cilacap)
-  /// Ring 2: Kepulauan Karimunjawa (Jepara)
-  static const List<List<List<double>>> _jawaTengahPolygons = [
-    // 1. Mainland Central Java
-    [
-      [108.829338, -6.74608],
-      [108.854889, -6.799195],
-      [108.952652, -6.83733],
-      [109.027512, -6.774646],
-      [109.116945, -6.849453],
-      [109.284729, -6.873732],
-      [109.375954, -6.859314],
-      [109.444908, -6.835716],
-      [109.525772, -6.783483],
-      [109.574196, -6.837207],
-      [109.704632, -6.859836],
-      [109.83173, -6.91085],
-      [109.994609, -6.926026],
-      [110.135114, -6.886767],
-      [110.161217, -6.857075],
-      [110.218449, -6.858777],
-      [110.224055, -6.898671],
-      [110.282545, -6.910134],
-      [110.360636, -6.958464],
-      [110.439422, -6.946518],
-      [110.482428, -6.918728],
-      [110.567362, -6.805168],
-      [110.593362, -6.738227],
-      [110.63764, -6.680221],
-      [110.692026, -6.53139],
-      [110.686522, -6.496921],
-      [110.72816, -6.449049],
-      [110.8402, -6.409402],
-      [110.920682, -6.406552],
-      [111.03451, -6.421138],
-      [111.051265, -6.504015],
-      [111.089495, -6.595203],
-      [111.135153, -6.652081],
-      [111.208681, -6.687917],
-      [111.288116, -6.682676],
-      [111.353966, -6.700903],
-      [111.460175, -6.661293],
-      [111.493095, -6.616364],
-      [111.563789, -6.638492],
-      [111.694595, -6.752857],
-      [111.659874, -6.780993],
-      [111.648499, -6.828923],
-      [111.615326, -6.836943],
-      [111.609039, -6.903624],
-      [111.566604, -6.951681],
-      [111.612236, -6.971057],
-      [111.62486, -7.065532],
-      [111.580716, -7.201196],
-      [111.544593, -7.209885],
-      [111.448722, -7.280662],
-      [111.438232, -7.353508],
-      [111.346387, -7.352231],
-      [111.219641, -7.295056],
-      [111.241771, -7.24923],
-      [111.146592, -7.262771],
-      [111.133153, -7.30824],
-      [111.132803, -7.386832],
-      [111.112659, -7.415796],
-      [111.151654, -7.563807],
-      [111.189209, -7.603958],
-      [111.180164, -7.709611],
-      [111.230736, -7.747669],
-      [111.283073, -7.744789],
-      [111.281219, -7.782755],
-      [111.314003, -7.85079],
-      [111.269707, -7.930492],
-      [111.231346, -7.948041],
-      [111.181503, -7.916514],
-      [111.140442, -7.938492],
-      [111.134033, -8.020032],
-      [111.108658, -8.065952],
-      [111.072105, -8.050748],
-      [111.031685, -8.082599],
-      [110.956131, -8.063713],
-      [110.911171, -8.121149],
-      [110.904457, -8.210409],
-      [110.836136, -8.202934],
-      [110.788666, -8.154592],
-      [110.790009, -8.1165],
-      [110.758797, -8.030742],
-      [110.771225, -7.899249],
-      [110.786538, -7.818944],
-      [110.750929, -7.82466],
-      [110.723794, -7.791503],
-      [110.657083, -7.785867],
-      [110.588886, -7.804361],
-      [110.54336, -7.798195],
-      [110.498291, -7.745311],
-      [110.444958, -7.536631],
-      [110.379147, -7.595244],
-      [110.254532, -7.683113],
-      [110.25954, -7.645667],
-      [110.142883, -7.645877],
-      [110.132286, -7.741732],
-      [110.06321, -7.813906],
-      [110.042953, -7.89204],
-      [110.011826, -7.886903],
-      [109.896675, -7.844425],
-      [109.690193, -7.792683],
-      [109.47419, -7.756908],
-      [109.424683, -7.76845],
-      [109.380403, -7.724499],
-      [109.277812, -7.701472],
-      [109.105467, -7.685618],
-      [109.048995, -7.697629],
-      [108.993577, -7.744561],
-      [108.96375, -7.715322],
-      [108.933997, -7.720566],
-      [108.93102, -7.713349],
-      [108.919786, -7.706645],
-      [108.896909, -7.70961],
-      [108.876058, -7.694295],
-      [108.865476, -7.611036],
-      [108.827862, -7.599123],
-      [108.804252, -7.673145],
-      [108.738433, -7.609161],
-      [108.753132, -7.543514],
-      [108.724345, -7.486524],
-      [108.714968, -7.421927],
-      [108.662295, -7.340506],
-      [108.603483, -7.350607],
-      [108.560766, -7.334588],
-      [108.555715, -7.290434],
-      [108.582017, -7.240565],
-      [108.556373, -7.171165],
-      [108.628929, -7.137631],
-      [108.696854, -7.151166],
-      [108.726479, -7.116722],
-      [108.777687, -7.104835],
-      [108.798622, -7.004968],
-      [108.761101, -6.98307],
-      [108.76516, -6.896383],
-      [108.824615, -6.829293],
-      [108.829338, -6.74608],
-    ],
-    // 2. Nusakambangan island
-    [
-      [108.864219, -7.706541],
-      [108.870832, -7.712705],
-      [108.910178, -7.708335],
-      [108.92574, -7.719276],
-      [108.932456, -7.721225],
-      [108.947685, -7.721218],
-      [108.957728, -7.718627],
-      [108.98867, -7.776379],
-      [108.907681, -7.751549],
-      [108.811508, -7.734937],
-      [108.828885, -7.685307],
-      [108.864219, -7.706541],
-    ],
-    // 3. Karimunjawa islands
-    [
-      [110.3500, -5.7800],
-      [110.5200, -5.7800],
-      [110.5200, -5.9200],
-      [110.3500, -5.9200],
-      [110.3500, -5.7800],
-    ],
-  ];
+  // Central Java bounding box for fast preliminary filtering
+  static const double _minJatengLat = -8.35;
+  static const double _maxJatengLat = -5.70;
+  static const double _minJatengLng = 108.50;
+  static const double _maxJatengLng = 111.75;
 
-  /// Tests whether the given latitude and longitude coordinates fall within
-  /// the official administrative boundaries of Provinsi Jawa Tengah.
-  ///
-  /// Applies fail-closed validation for non-finite or invalid numbers.
-  bool isInsideCentralJava(double lat, double lng) {
+  // Indonesia bounding box
+  static const double _minIndoLat = -11.50;
+  static const double _maxIndoLat = 6.50;
+  static const double _minIndoLng = 94.50;
+  static const double _maxIndoLng = 141.50;
+
+  /// Primary validation method for nationwide Laporin applications
+  bool isValidReportLocation(double lat, double lng) {
+    return isInsideIndonesia(lat, lng);
+  }
+
+  /// Tests whether coordinates fall within the sovereign territory of Indonesia (NKRI).
+  bool isInsideIndonesia(double lat, double lng) {
     if (!lat.isFinite || !lng.isFinite) return false;
     if (lat < -90.0 || lat > 90.0 || lng < -180.0 || lng > 180.0) return false;
 
     // Fast bounding box check
-    if (lat < _minLat || lat > _maxLat || lng < _minLng || lng > _maxLng) {
+    if (lat < _minIndoLat ||
+        lat > _maxIndoLat ||
+        lng < _minIndoLng ||
+        lng > _maxIndoLng) {
       return false;
     }
 
-    // Precise ray-casting point-in-polygon across MultiPolygon rings
-    for (final polygon in _jawaTengahPolygons) {
+    // Precise ray-casting across Indonesian territorial rings
+    for (final polygon in BoundaryData.indonesiaRings) {
       if (_isPointInPolygon(lng, lat, polygon)) {
         return true;
       }
@@ -219,12 +78,51 @@ class BoundaryService {
     return false;
   }
 
-  /// Asynchronously tests whether coordinates fall within Central Java
-  /// on a dedicated background isolate to keep the UI thread completely unblocked.
-  Future<bool> isInsideCentralJavaAsync(double lat, double lng) async {
+  /// Asynchronously tests whether coordinates fall within Indonesia on a background isolate.
+  Future<bool> isInsideIndonesiaAsync(double lat, double lng) async {
+    if (!lat.isFinite || !lng.isFinite) return false;
+    if (lat < _minIndoLat ||
+        lat > _maxIndoLat ||
+        lng < _minIndoLng ||
+        lng > _maxIndoLng) {
+      return false;
+    }
+    if (kIsWeb) {
+      return isInsideIndonesia(lat, lng);
+    }
+    return await Isolate.run<bool>(() => isInsideIndonesia(lat, lng));
+  }
+
+  /// Tests whether coordinates fall within Provinsi Jawa Tengah (backward compatible).
+  bool isInsideCentralJava(double lat, double lng) {
     if (!lat.isFinite || !lng.isFinite) return false;
     if (lat < -90.0 || lat > 90.0 || lng < -180.0 || lng > 180.0) return false;
-    if (lat < _minLat || lat > _maxLat || lng < _minLng || lng > _maxLng) {
+
+    // Fast bounding box check
+    if (lat < _minJatengLat ||
+        lat > _maxJatengLat ||
+        lng < _minJatengLng ||
+        lng > _maxJatengLng) {
+      return false;
+    }
+
+    // Precise ray-casting across Central Java rings
+    for (final polygon in BoundaryData.jawaTengahPolygons) {
+      if (_isPointInPolygon(lng, lat, polygon)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Asynchronously tests Central Java bounds on a background isolate.
+  Future<bool> isInsideCentralJavaAsync(double lat, double lng) async {
+    if (!lat.isFinite || !lng.isFinite) return false;
+    if (lat < _minJatengLat ||
+        lat > _maxJatengLat ||
+        lng < _minJatengLng ||
+        lng > _maxJatengLng) {
       return false;
     }
     if (kIsWeb) {

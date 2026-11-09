@@ -159,21 +159,21 @@ class OtpInputRow extends StatelessWidget {
             filled: true,
             fillColor: backgroundColor,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
               borderSide: BorderSide(
                 color: borderColor,
                 width: hasError ? 1.5 : 1.0,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
               borderSide: BorderSide(
                 color: borderColor,
                 width: hasError ? 1.5 : 1.0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
               borderSide: BorderSide(
                 color: hasError ? AppColors.danger : AppColors.primary,
                 width: 2.0,

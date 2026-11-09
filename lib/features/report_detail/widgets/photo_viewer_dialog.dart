@@ -3,6 +3,8 @@ import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_radius.dart';
+
 /// Modal dialog untuk melihat foto dalam resolusi penuh, mendukung swipe/geser antar foto dan pinch-to-zoom.
 class PhotoViewerDialog extends StatefulWidget {
   const PhotoViewerDialog({
@@ -181,7 +183,7 @@ class _PhotoViewerDialogState extends State<PhotoViewerDialog> {
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.black54,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: AppRadius.pill,
                                 border: Border.all(
                                   color: Colors.white24,
                                   width: 0.5,
@@ -223,9 +225,9 @@ class _PhotoViewerDialogState extends State<PhotoViewerDialog> {
                     horizontal: 14,
                     vertical: 6,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.black45,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppRadius.pill,
                   ),
                   child: Text(
                     count > 1

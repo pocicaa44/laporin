@@ -45,7 +45,18 @@ void main() {
       );
     }
 
-    test('canAuthorDelete returns true only for rejected, completed, and cancelled', () {
+    test('canAuthorDelete returns true for newReport, rejected, completed, and cancelled', () {
+      expect(
+        buildReport(handlingStatus: HandlingStatus.newReport).canAuthorDelete,
+        isTrue,
+      );
+      expect(
+        buildReport(
+          handlingStatus: HandlingStatus.newReport,
+          publicationState: PublicationState.published,
+        ).canAuthorDelete,
+        isTrue,
+      );
       expect(
         buildReport(handlingStatus: HandlingStatus.rejected).canAuthorDelete,
         isTrue,
@@ -60,31 +71,16 @@ void main() {
       );
     });
 
-    test(
-      'canAuthorDelete returns false for newReport, accepted, and inProgress',
-      () {
-        expect(
-          buildReport(handlingStatus: HandlingStatus.newReport).canAuthorDelete,
-          isFalse,
-        );
-        expect(
-          buildReport(
-            handlingStatus: HandlingStatus.newReport,
-            publicationState: PublicationState.pendingReview,
-          ).canAuthorDelete,
-          isFalse,
-        );
-        expect(
-          buildReport(handlingStatus: HandlingStatus.accepted).canAuthorDelete,
-          isFalse,
-        );
-        expect(
-          buildReport(handlingStatus: HandlingStatus.inProgress)
-              .canAuthorDelete,
-          isFalse,
-        );
-      },
-    );
+    test('canAuthorDelete returns false for accepted and inProgress', () {
+      expect(
+        buildReport(handlingStatus: HandlingStatus.accepted).canAuthorDelete,
+        isFalse,
+      );
+      expect(
+        buildReport(handlingStatus: HandlingStatus.inProgress).canAuthorDelete,
+        isFalse,
+      );
+    });
 
     test('canAuthorDelete returns false if already deleted', () {
       expect(
@@ -144,21 +140,33 @@ void main() {
           locationAddress: 'Semarang',
         );
 
-        // newReport tidak bisa dihapus oleh user
-        expect(
-          () =>
-              repo.softDeleteReport(reportId: rep.id, currentUserId: 'user-1'),
-          throwsA(isA<Exception>()),
-        );
-
-        // Ubah status ke completed -> baru bisa dihapus
-        await repo.updateHandlingStatus(
+        // newReport (laporan baru dipublikasikan) bisa dihapus oleh user
+        final deletedNew = await repo.softDeleteReport(
           reportId: rep.id,
+          currentUserId: 'user-1',
+        );
+        expect(deletedNew.isDeleted, isTrue);
+        expect(deletedNew.deletedByUser, isTrue);
+        expect(deletedNew.handlingStatus, equals(HandlingStatus.cancelled));
+
+        // Laporan kedua yang berstatus completed -> juga bisa dihapus
+        final rep2 = await repo.createReport(
+          authorId: 'user-1',
+          authorName: 'Budi',
+          title: 'Jalan Rusak',
+          description: 'Jalan rusak di tanjakan.',
+          category: 'Jalan & Infrastruktur',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Semarang',
+        );
+        await repo.updateHandlingStatus(
+          reportId: rep2.id,
           newStatus: HandlingStatus.completed,
           completionProofUrl: 'https://example.com/proof.jpg',
         );
         final deletedCompleted = await repo.softDeleteReport(
-          reportId: rep.id,
+          reportId: rep2.id,
           currentUserId: 'user-1',
         );
         expect(deletedCompleted.isDeleted, isTrue);
@@ -374,6 +382,64 @@ void main() {
 
         // "Hapus Laporan" TIDAK BOLEH tampil saat sedang diproses
         expect(find.text('Hapus Laporan'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Owner can delete newly published report (newReport) via popup menu and confirmation dialog',
+      (tester) async {
+        final now = DateTime.now();
+        final newlyPublishedReport = ReportModel(
+          id: 'rep-newly-published',
+          reportNumber: 'LPR-2026-NEW',
+          authorId: 'usr-owner',
+          authorName: 'Pemilik Laporan',
+          areaId: 'area-jateng',
+          areaName: 'Semarang',
+          title: 'Lampu Jalan Rusak',
+          description: 'Lampu jalan mati total sejak tadi sore.',
+          category: 'Fasilitas Umum',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Semarang',
+          handlingStatus: HandlingStatus.newReport,
+          publicationState: PublicationState.published,
+          isDiscussionActive: true,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await tester.pumpWidget(
+          createTestApp(newlyPublishedReport, 'usr-owner'),
+        );
+        await tester.pumpAndSettle();
+
+        // Buka Popup Menu opsi
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Hapus Laporan'), findsOneWidget);
+        await tester.tap(find.text('Hapus Laporan'));
+        await tester.pumpAndSettle();
+
+        // Dialog confirmation should appear
+        expect(find.text('Hapus Laporan?'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Hapus Laporan'),
+          findsOneWidget,
+        );
+
+        // Tap Hapus Laporan inside the dialog
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Hapus Laporan'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // Laporan berhasil di-soft-delete oleh pemilik
+        final updatedInRepo = await repo.getReportById(
+          newlyPublishedReport.id,
+          userId: 'usr-owner',
+        );
+        expect(updatedInRepo?.isDeleted, isTrue);
       },
     );
 

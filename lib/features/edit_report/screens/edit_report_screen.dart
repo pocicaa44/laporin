@@ -167,7 +167,9 @@ class _EditReportFormState extends State<_EditReportForm> {
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
               children: [
                 // 1. Judul Laporan
                 TextFormField(
@@ -219,7 +221,10 @@ class _EditReportFormState extends State<_EditReportForm> {
                 TextFormField(
                   controller: _descriptionController,
                   validator: AppValidators.validateDescription,
-                  maxLines: 5,
+                  minLines: 4,
+                  maxLines: null,
+                  scrollPhysics: const NeverScrollableScrollPhysics(),
+                  textInputAction: TextInputAction.newline,
                   decoration: const InputDecoration(
                     labelText: 'Deskripsi Masalah *',
                     hintText:

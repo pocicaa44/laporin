@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isOnline = context.isOnline;
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.background,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -106,13 +106,6 @@ class _LoginScreenState extends State<LoginScreen> {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             appBar: AppBar(title: const Text('Masuk')),
@@ -133,7 +126,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 72,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            boxShadow: [AppColors.cardShadow],
                           ),
                           child: ClipOval(
                             child: Image.asset(
@@ -163,9 +155,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFDECEE),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.danger),
+                            color: AppColors.dangerSubtle,
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(8),
+                            ),
+                            border: Border.all(color: const Color(0xFFFECACA)),
                           ),
                           child: Text(
                             auth.errorMessage!,

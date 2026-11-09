@@ -368,6 +368,7 @@ void main() {
         );
         expect(success1, isTrue);
         expect(controller.comments.length, equals(1));
+        expect(controller.report?.commentsCount, equals(1));
         final rootCommentId = controller.comments.first.id;
 
         // Balas komentar utama dengan parentCommentId
@@ -380,6 +381,7 @@ void main() {
         );
         expect(success2, isTrue);
         expect(controller.comments.length, equals(2));
+        expect(controller.report?.commentsCount, equals(2));
         expect(controller.comments[1].parentCommentId, equals(rootCommentId));
 
         // Bangun thread dari komentar controller

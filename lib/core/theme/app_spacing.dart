@@ -1,0 +1,20 @@
+/// Modular spacing tokens based on DESIGN.md Section 3.5 (4px / 8px Grid)
+class AppSpacing {
+  AppSpacing._();
+
+  static const double space1 = 4.0;
+  static const double space2 = 8.0;
+  static const double space3 = 12.0;
+  static const double space4 = 16.0;
+  static const double space5 = 20.0;
+  static const double space6 = 24.0;
+  static const double space8 = 32.0;
+  static const double space10 = 40.0;
+
+  // Semantic Spacing
+  static const double cardGutter = 12.0;
+  static const double pageMargin = 16.0;
+  static const double cardPadding = 16.0;
+  static const double inputPaddingVertical = 14.0;
+  static const double inputPaddingHorizontal = 14.0;
+}

@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
@@ -33,9 +34,8 @@ class ReportCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [AppColors.cardShadow],
+        borderRadius: AppRadius.card, // 16px rounded
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,11 +44,11 @@ class ReportCard extends StatelessWidget {
           InkWell(
             onTap: onTap,
             mouseCursor: SystemMouseCursors.click,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Thumbnail if photos exist (safe web-rendering)
+                // Thumbnail if photos exist (rounded top per DESIGN.md Section 4.3)
                 if (report.photoUrls.isNotEmpty)
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
@@ -123,14 +123,16 @@ class ReportCard extends StatelessWidget {
                               if (timeLabel == 'Baru') {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
+                                    horizontal: 8,
+                                    vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(
-                                      alpha: 0.12,
+                                    color: AppColors.primarySubtle,
+                                    borderRadius: AppRadius.pill,
+                                    border: Border.all(
+                                      color: const Color(0xFFBFDBFE),
+                                      width: 1,
                                     ),
-                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
                                     'Baru',
@@ -159,19 +161,23 @@ class ReportCard extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
+                              horizontal: 10,
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primarySoft,
-                              borderRadius: BorderRadius.circular(6),
+                              color: AppColors.primarySubtle,
+                              borderRadius: AppRadius.pill,
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               report.category,
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primaryStrong,
+                                color: AppColors.primary,
                               ),
                             ),
                           ),
@@ -258,10 +264,10 @@ class ReportCard extends StatelessWidget {
                     InkWell(
                       onTap: onTap,
                       mouseCursor: SystemMouseCursors.click,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.pill,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 8,
                           vertical: 4,
                         ),
                         child: Opacity(
@@ -335,15 +341,15 @@ class _VoteButton extends StatelessWidget {
         mouseCursor: isEnabled
             ? SystemMouseCursors.click
             : SystemMouseCursors.basic,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.pill,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: isEnabled && isActive
                 ? activeColor.withValues(alpha: 0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.pill,
             border: Border.all(
               color: isEnabled && isActive
                   ? activeColor.withValues(alpha: 0.28)

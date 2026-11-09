@@ -124,7 +124,6 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
                             height: 120,
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              boxShadow: [AppColors.modalShadow],
                             ),
                             child: ClipOval(
                               child: Image.asset(

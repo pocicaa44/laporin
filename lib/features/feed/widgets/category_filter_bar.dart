@@ -49,9 +49,7 @@ class CategoryFilterBar extends StatelessWidget {
             side: BorderSide(
               color: isSelected ? AppColors.primary : AppColors.border,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
+            shape: const StadiumBorder(),
             showCheckmark: false,
             onSelected: (_) => onCategorySelected(cat),
           );

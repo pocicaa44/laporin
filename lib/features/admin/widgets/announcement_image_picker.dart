@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_image.dart';
 
@@ -89,9 +90,7 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
   void _showSourcePicker() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -144,9 +143,7 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
             style: BorderStyle.solid,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         ),
         icon: const Icon(Icons.add_photo_alternate_outlined),
         label: const Text(
@@ -160,7 +157,7 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -190,7 +187,7 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       icon: const Icon(

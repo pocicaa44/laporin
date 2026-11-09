@@ -78,12 +78,12 @@ void main() {
       },
     );
 
-    test('submitReport with location outside Central Java returns null and sets outsideArea error', () async {
+    test('submitReport with location outside Indonesia returns null and sets outsideIndonesia error', () async {
       controller.setLocation(
-        address: 'Jl. Malioboro, Yogyakarta',
-        lat: -7.7956,
-        lng: 110.3695,
-        areaName: 'D.I. Yogyakarta',
+        address: 'Orchard Road, Singapore',
+        lat: 1.3521,
+        lng: 103.8198,
+        areaName: 'Singapore',
       );
 
       final result = await controller.submitReport(
@@ -94,10 +94,10 @@ void main() {
       );
 
       expect(result, isNull);
-      expect(controller.errorMessage, contains('Jawa Tengah'));
+      expect(controller.errorMessage, contains('Indonesia'));
     });
 
-    test('submitReport with valid Central Java location successfully creates ReportModel', () async {
+    test('submitReport with valid Indonesia location successfully creates ReportModel', () async {
       controller.setLocation(
         address: 'Jl. Pahlawan No. 1, Semarang',
         lat: -6.9932,

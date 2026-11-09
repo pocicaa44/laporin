@@ -115,8 +115,10 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFDECEE),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.dangerSubtle,
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(8),
+                          ),
                           border: Border.all(color: AppColors.danger),
                         ),
                         child: Text(

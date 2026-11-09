@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/announcement_model.dart';
 import '../controllers/admin_announcement_controller.dart';
@@ -93,7 +94,7 @@ class _AdminEditAnnouncementDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         width: 540,
@@ -162,10 +163,13 @@ class _AdminEditAnnouncementDialogState
                           selected: isSelected,
                           selectedColor: AppColors.primary,
                           backgroundColor: AppColors.surface,
-                          side: BorderSide(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.border,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.pill,
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                            ),
                           ),
                           onSelected: _isUpdating
                               ? null
@@ -205,7 +209,7 @@ class _AdminEditAnnouncementDialogState
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.danger.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.sm,
                       border: Border.all(
                         color: AppColors.danger.withValues(alpha: 0.3),
                       ),
@@ -251,8 +255,8 @@ class _AdminEditAnnouncementDialogState
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.button,
                         ),
                       ),
                       onPressed: _isUpdating ? null : _handleUpdate,

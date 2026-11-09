@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
+import '../../data/services/supabase_service.dart';
+import '../config/map_config.dart';
 import 'boundary_service.dart';
 
 /// Exception thrown when device GPS toggle is turned off
@@ -30,6 +33,9 @@ class LocationResult {
     required this.longitude,
     required this.areaName,
     required this.isValidRegion,
+    this.provinceId,
+    this.provinceCode,
+    this.provinceName,
   });
 
   final String address;
@@ -37,6 +43,9 @@ class LocationResult {
   final double longitude;
   final String areaName;
   final bool isValidRegion;
+  final String? provinceId;
+  final String? provinceCode;
+  final String? provinceName;
 }
 
 /// Service handling GPS permissions, position acquisition, and reverse geocoding
@@ -44,7 +53,7 @@ class LocationService {
   LocationService._();
   static final LocationService instance = LocationService._();
 
-  /// Default fallback coordinate (Semarang, Central Java)
+  /// Default fallback coordinate (Semarang, Central Java / Indonesia)
   static const double defaultLat = BoundaryService.defaultLat;
   static const double defaultLng = BoundaryService.defaultLng;
   static const String defaultAreaName = BoundaryService.defaultAreaName;
@@ -55,14 +64,21 @@ class LocationService {
   /// Open application permission settings in device Settings
   Future<bool> openAppSettings() => Geolocator.openAppSettings();
 
+  /// Optional mock position for test environments to avoid hanging platform channels
+  static Position? mockPositionForTesting;
+
   /// Check GPS status and permissions, then return the current position.
-  /// Uses a resilient multi-tiered approach:
-  /// 1. Verifies GPS is active on the device.
-  /// 2. Requests/verifies location permissions.
-  /// 3. Obtains last-known position as candidate/fallback.
-  /// 4. Requests current position with balanced accuracy (Wi-Fi + Cellular + GPS) and strict timeout.
-  /// 5. Automatically falls back to last-known location if satellite lock takes too long indoors.
   Future<Position> getCurrentLocation() async {
+    if (mockPositionForTesting != null) {
+      return mockPositionForTesting!;
+    }
+
+    try {
+      if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+        throw const LocationServiceDisabledException();
+      }
+    } catch (_) {}
+
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw const LocationServiceDisabledException();
@@ -112,7 +128,7 @@ class LocationService {
         return lastKnown;
       }
 
-      // 4. Try low accuracy (cellular/Wi-Fi only) with short timeout as final attempt
+      // 4. Try low accuracy with short timeout as final attempt
       try {
         return await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
@@ -140,18 +156,49 @@ class LocationService {
       return _addressCache[cacheKey]!;
     }
 
-    final isValid = BoundaryService.instance.isInsideCentralJava(lat, lng);
+    final isValid = BoundaryService.instance.isInsideIndonesia(lat, lng);
 
-    // 1. Pada Web Browser: gunakan OpenStreetMap Nominatim langsung karena plugin geocoding native tidak mendukung web
+    // Attempt authoritative PostGIS detection via Supabase RPC if online
+    String? provId;
+    String? provCode;
+    String? provName;
+    try {
+      final client = SupabaseService.instance.client;
+      if (client != null) {
+        final rpcRes = await client
+            .rpc(
+              'detect_province_by_coordinates',
+              params: {'p_lat': lat, 'p_lng': lng},
+            )
+            .timeout(const Duration(seconds: 3));
+
+        if (rpcRes is Map) {
+          if (rpcRes['is_valid'] == true) {
+            provId = rpcRes['province_id']?.toString();
+            provCode = rpcRes['province_code']?.toString();
+            provName = rpcRes['province_name']?.toString();
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 1. Pada Web: gunakan OpenStreetMap Nominatim langsung
     if (kIsWeb) {
-      final nominatimResult = await _reverseGeocodeNominatim(lat, lng, isValid);
+      final nominatimResult = await _reverseGeocodeNominatim(
+        lat,
+        lng,
+        isValid,
+        provId: provId,
+        provCode: provCode,
+        provName: provName,
+      );
       if (nominatimResult != null) {
         if (_addressCache.length > 200) _addressCache.clear();
         _addressCache[cacheKey] = nominatimResult;
         return nominatimResult;
       }
     } else {
-      // 2. Pada Mobile (Android & iOS): gunakan native Geocoder dengan fallback ke Nominatim
+      // 2. Pada Mobile: gunakan native Geocoder dengan fallback ke Nominatim
       try {
         final placemarks = await placemarkFromCoordinates(
           lat,
@@ -183,29 +230,36 @@ class LocationService {
               ? parts.join(', ')
               : 'Titik Koordinat: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
 
-          final area = place.subAdministrativeArea?.trim().isNotEmpty == true
-              ? place.subAdministrativeArea!.trim()
-              : place.administrativeArea?.trim().isNotEmpty == true
-              ? place.administrativeArea!.trim()
-              : defaultAreaName;
+          final resolvedArea =
+              provName ??
+              (place.subAdministrativeArea?.trim().isNotEmpty == true
+                  ? place.subAdministrativeArea!.trim()
+                  : place.administrativeArea?.trim().isNotEmpty == true
+                  ? place.administrativeArea!.trim()
+                  : (isValid ? defaultAreaName : 'Di Luar Wilayah Indonesia'));
 
           final result = LocationResult(
             address: fullAddress,
             latitude: lat,
             longitude: lng,
-            areaName: area,
+            areaName: resolvedArea,
             isValidRegion: isValid,
+            provinceId: provId,
+            provinceCode: provCode,
+            provinceName: provName ?? place.administrativeArea,
           );
           if (_addressCache.length > 200) _addressCache.clear();
           _addressCache[cacheKey] = result;
           return result;
         }
       } catch (_) {
-        // Fallback ke Nominatim jika geocoder native perangkat gagal / offline
         final nominatimResult = await _reverseGeocodeNominatim(
           lat,
           lng,
           isValid,
+          provId: provId,
+          provCode: provCode,
+          provName: provName,
         );
         if (nominatimResult != null) {
           if (_addressCache.length > 200) _addressCache.clear();
@@ -220,8 +274,12 @@ class LocationService {
           'Koordinat (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})',
       latitude: lat,
       longitude: lng,
-      areaName: isValid ? defaultAreaName : 'Di Luar Jawa Tengah',
+      areaName:
+          provName ?? (isValid ? defaultAreaName : 'Di Luar Wilayah Indonesia'),
       isValidRegion: isValid,
+      provinceId: provId,
+      provinceCode: provCode,
+      provinceName: provName,
     );
     _addressCache[cacheKey] = fallback;
     return fallback;
@@ -231,8 +289,11 @@ class LocationService {
   Future<LocationResult?> _reverseGeocodeNominatim(
     double lat,
     double lng,
-    bool isValid,
-  ) async {
+    bool isValid, {
+    String? provId,
+    String? provCode,
+    String? provName,
+  }) async {
     try {
       final uri = Uri.parse(
         'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng&addressdetails=1',
@@ -241,7 +302,7 @@ class LocationService {
           .get(
             uri,
             headers: {
-              'User-Agent': 'LaporinApp/1.0 (laporin.jawatengah@gmail.com)',
+              'User-Agent': MapConfig.userAgent,
               'Accept': 'application/json',
             },
           )
@@ -285,9 +346,15 @@ class LocationService {
               : (data['display_name'] as String? ??
                     'Koordinat: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}');
 
-          final areaName = (city != null && city.toString().trim().isNotEmpty)
-              ? city.toString().trim()
-              : (isValid ? defaultAreaName : 'Di Luar Jawa Tengah');
+          final areaName =
+              provName ??
+              (city != null && city.toString().trim().isNotEmpty
+                  ? city.toString().trim()
+                  : (addressMap['state']?.toString().trim().isNotEmpty == true
+                        ? addressMap['state'].toString().trim()
+                        : (isValid
+                              ? defaultAreaName
+                              : 'Di Luar Wilayah Indonesia')));
 
           return LocationResult(
             address: fullAddress,
@@ -295,6 +362,9 @@ class LocationService {
             longitude: lng,
             areaName: areaName,
             isValidRegion: isValid,
+            provinceId: provId,
+            provinceCode: provCode,
+            provinceName: provName ?? addressMap['state']?.toString(),
           );
         }
       }

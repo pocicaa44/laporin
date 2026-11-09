@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../admin/screens/admin_navigation_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../create_report/screens/create_report_screen.dart';
@@ -84,7 +85,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     } catch (_) {}
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.background,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -93,13 +94,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             drawer: const AppDrawer(),
@@ -134,7 +128,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         onTap: () => _onTabTapped(1),
                       ),
 
-                      // Center prominent "+" action button (Buat Laporan)
+                      // Center prominent "+" action button (Buat Laporan) - Rounded modern per DESIGN.md
                       MouseRegion(
                         cursor: isOnline
                             ? SystemMouseCursors.click
@@ -142,32 +136,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         child: GestureDetector(
                           onTap: isOnline ? () => _onTabTapped(2) : null,
                           child: Container(
-                            width: 48,
-                            height: 48,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: isOnline
                                   ? AppColors.primary
                                   : AppColors.disabled,
                               shape: BoxShape.circle,
-                              boxShadow: isOnline
-                                  ? const [
-                                      BoxShadow(
-                                        color: Color.fromRGBO(
-                                          89,
-                                          108,
-                                          255,
-                                          0.35,
-                                        ),
-                                        offset: Offset(0, 4),
-                                        blurRadius: 10,
-                                      ),
-                                    ]
-                                  : null,
                             ),
                             child: const Center(
                               child: FaIcon(
                                 FontAwesomeIcons.plus,
-                                size: 20,
+                                size: 18,
                                 color: Colors.white,
                               ),
                             ),
@@ -222,7 +202,7 @@ class _NavBarItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       mouseCursor: SystemMouseCursors.click,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.button,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Column(

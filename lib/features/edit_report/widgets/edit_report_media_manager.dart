@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_image.dart';
 
@@ -29,9 +30,7 @@ class EditReportMediaManager extends StatelessWidget {
   Future<void> _showPickerBottomSheet(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -139,23 +138,16 @@ class EditReportMediaManager extends StatelessWidget {
       margin: const EdgeInsets.only(right: 10),
       child: Stack(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: 90,
-              height: 90,
-              child: _buildImageFromUrl(url),
-            ),
-          ),
+          SizedBox(width: 90, height: 90, child: _buildImageFromUrl(url)),
           Positioned(
             bottom: 4,
             left: 4,
             right: 4,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(4),
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                borderRadius: AppRadius.borderXs,
               ),
               child: const Text(
                 'Tersimpan',
@@ -202,7 +194,7 @@ class EditReportMediaManager extends StatelessWidget {
             fit: BoxFit.cover,
             memCacheWidth: 180,
             memCacheHeight: 180,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.input,
           ),
           Positioned(
             bottom: 4,
@@ -210,9 +202,9 @@ class EditReportMediaManager extends StatelessWidget {
             right: 4,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(4),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: AppRadius.borderXs,
               ),
               child: const Text(
                 'Foto Baru',
@@ -253,21 +245,21 @@ class EditReportMediaManager extends StatelessWidget {
       fit: BoxFit.cover,
       memCacheWidth: 180,
       memCacheHeight: 180,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.input,
     );
   }
 
   Widget _buildAddButton(BuildContext context) {
     return InkWell(
       onTap: () => _showPickerBottomSheet(context),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.input,
       child: Container(
         width: 90,
         height: 90,
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary),
+          color: AppColors.primarySubtle,
+          borderRadius: AppRadius.input,
+          border: Border.all(color: AppColors.primary, width: 1),
         ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,

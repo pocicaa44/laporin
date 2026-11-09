@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 import '../theme/app_text_styles.dart';
 import 'app_button.dart';
 
-/// Halaman standar untuk penolakan akses berdasarkan role per DESIGN.md & PRD.md
+/// Reusable Access Denied / 403 Forbidden screen matching DESIGN.md flat guidelines
 class AccessDeniedScreen extends StatelessWidget {
   const AccessDeniedScreen({
     super.key,
     this.title = 'Akses Ditolak',
-    required this.message,
+    this.message =
+        'Anda tidak memiliki izin yang cukup untuk mengakses halaman ini.',
     this.buttonText = 'Kembali',
     required this.onButtonPressed,
   });
@@ -23,7 +25,7 @@ class AccessDeniedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.background,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -32,13 +34,6 @@ class AccessDeniedScreen extends StatelessWidget {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             appBar: AppBar(
@@ -58,9 +53,8 @@ class AccessDeniedScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: const [AppColors.cardShadow],
+                    borderRadius: AppRadius.card,
+                    border: Border.all(color: AppColors.border, width: 1),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -69,8 +63,12 @@ class AccessDeniedScreen extends StatelessWidget {
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEECEB),
+                          color: AppColors.dangerSubtle,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFFECACA),
+                            width: 1,
+                          ),
                         ),
                         child: const Center(
                           child: FaIcon(

@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../feed/controllers/feed_controller.dart';
@@ -72,7 +73,7 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
     }
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.background,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -81,13 +82,6 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             drawer: const AppDrawer(),
@@ -170,7 +164,7 @@ class _AdminNavBarItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       mouseCursor: SystemMouseCursors.click,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.button,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         child: Column(

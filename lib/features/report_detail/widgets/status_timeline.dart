@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/report_model.dart';
 
@@ -16,9 +17,9 @@ class StatusTimeline extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFDECEE),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.danger.withValues(alpha: 0.5)),
+          color: AppColors.dangerSubtle,
+          borderRadius: AppRadius.borderSm,
+          border: Border.all(color: const Color(0xFFFECACA), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,8 +67,8 @@ class StatusTimeline extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.borderSubtle, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,54 +87,57 @@ class StatusTimeline extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Container(
-                            height: 3,
+                            height: 2,
                             color: index == 0
                                 ? Colors.transparent
                                 : (isPassed
                                       ? AppColors.primary
-                                      : AppColors.border),
+                                      : AppColors.borderSubtle),
                           ),
                         ),
+                        // Circular status node per DESIGN.md Section 5.4
                         Container(
-                          width: 28,
-                          height: 28,
+                          width: 26,
+                          height: 26,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
                             color: isPassed
                                 ? AppColors.primary
                                 : AppColors.surface,
+                            shape: BoxShape.circle,
                             border: Border.all(
                               color: isPassed
                                   ? AppColors.primary
                                   : AppColors.border,
-                              width: 2,
+                              width: 1.5,
                             ),
                           ),
                           child: Center(
                             child: isPassed
                                 ? const Icon(
                                     Icons.check,
-                                    size: 16,
+                                    size: 15,
                                     color: Colors.white,
                                   )
                                 : Text(
                                     '${index + 1}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
+                                    style: TextStyle(
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.textSecondary,
+                                      color: isPassed
+                                          ? Colors.white
+                                          : AppColors.textSecondary,
                                     ),
                                   ),
                           ),
                         ),
                         Expanded(
                           child: Container(
-                            height: 3,
+                            height: 2,
                             color: index == steps.length - 1
                                 ? Colors.transparent
                                 : (index < currentStepIndex
                                       ? AppColors.primary
-                                      : AppColors.border),
+                                      : AppColors.borderSubtle),
                           ),
                         ),
                       ],
@@ -165,8 +169,9 @@ class StatusTimeline extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F8F0),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.successSubtle,
+                borderRadius: AppRadius.button,
+                border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

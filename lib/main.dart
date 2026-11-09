@@ -151,6 +151,7 @@ class LaporinApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => FeedController(
             reportRepository: context.read<ReportRepository>(),
+            autoDetectGps: true,
           ),
         ),
         ChangeNotifierProvider(

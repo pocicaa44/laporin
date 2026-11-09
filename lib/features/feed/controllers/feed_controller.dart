@@ -1,14 +1,24 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/config/indonesia_regions.dart';
+import '../../../core/services/location_service.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 
-/// Controller for managing the public thread feed.
+/// Scope for public thread feed: National (all Indonesia) or Provincial.
+enum FeedScope { national, provincial }
+
+/// Controller for managing the public thread feed with provincial & national scopes.
 class FeedController extends ChangeNotifier {
-  FeedController({required this.reportRepository, this.currentUserId}) {
-    fetchFeed();
+  FeedController({
+    required this.reportRepository,
+    this.currentUserId,
+    bool autoDetectGps = false,
+  }) {
+    _initPreferenceAndFeed(autoDetectGps: autoDetectGps);
   }
 
   final ReportRepository reportRepository;
@@ -18,6 +28,31 @@ class FeedController extends ChangeNotifier {
   List<ReportModel> get reports => _reports;
 
   static const int pageSize = 10;
+
+  FeedScope _scope = FeedScope.national;
+  FeedScope get scope => _scope;
+  bool get isNational => _scope == FeedScope.national;
+
+  String? _selectedProvinceId;
+  String? get selectedProvinceId => _selectedProvinceId;
+
+  String? _selectedProvinceName;
+  String? get selectedProvinceName => _selectedProvinceName;
+
+  String? _detectedProvinceId;
+  String? get detectedProvinceId => _detectedProvinceId;
+
+  String? _detectedProvinceName;
+  String? get detectedProvinceName => _detectedProvinceName;
+
+  bool _isDetectingLocation = false;
+  bool get isDetectingLocation => _isDetectingLocation;
+
+  bool get hasDetectedProvince =>
+      _detectedProvinceId != null && _detectedProvinceName != null;
+
+  bool get isDetectedProvinceActive =>
+      !isNational && _selectedProvinceId == _detectedProvinceId;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -43,7 +78,6 @@ class FeedController extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // Set untuk mengunci request in-flight per reportId agar tidak terjadi race condition
   final Set<String> _votingReportIds = <String>{};
   bool isVoting(String reportId) => _votingReportIds.contains(reportId);
 
@@ -72,6 +106,148 @@ class FeedController extends ChangeNotifier {
     }
   }
 
+  Future<void> _initPreferenceAndFeed({bool autoDetectGps = true}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedId = prefs.getString('pref_province_id');
+      final savedName = prefs.getString('pref_province_name');
+      if (savedId != null && savedName != null) {
+        _scope = FeedScope.provincial;
+        _selectedProvinceId = savedId;
+        _selectedProvinceName = savedName;
+      }
+
+      final savedDetectedId = prefs.getString('detected_province_id');
+      final savedDetectedName = prefs.getString('detected_province_name');
+      if (savedDetectedId != null && savedDetectedName != null) {
+        _detectedProvinceId = savedDetectedId;
+        _detectedProvinceName = savedDetectedName;
+      }
+    } catch (_) {}
+    fetchFeed();
+
+    if (autoDetectGps) {
+      unawaited(autoDetectLocation());
+    }
+  }
+
+  Future<void> _savePreference(String? id, String? name) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (id != null && name != null) {
+        await prefs.setString('pref_province_id', id);
+        await prefs.setString('pref_province_name', name);
+      } else {
+        await prefs.remove('pref_province_id');
+        await prefs.remove('pref_province_name');
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveDetectedLocation(String id, String name) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('detected_province_id', id);
+      await prefs.setString('detected_province_name', name);
+    } catch (_) {}
+  }
+
+  void setNationalScope() {
+    if (_scope == FeedScope.national) return;
+    _scope = FeedScope.national;
+    _selectedProvinceId = null;
+    _selectedProvinceName = null;
+    _reports = [];
+    _hasMore = true;
+    _savePreference(null, null);
+    fetchFeed();
+  }
+
+  void setProvincialScope(String provinceId, String provinceName) {
+    if (_scope == FeedScope.provincial && _selectedProvinceId == provinceId) {
+      return;
+    }
+    _scope = FeedScope.provincial;
+    _selectedProvinceId = provinceId;
+    _selectedProvinceName = provinceName;
+    _reports = [];
+    _hasMore = true;
+    _savePreference(provinceId, provinceName);
+    fetchFeed();
+  }
+
+  void switchToAll() {
+    setNationalScope();
+  }
+
+  Future<bool> switchToDetectedProvince() async {
+    if (_detectedProvinceId != null && _detectedProvinceName != null) {
+      setProvincialScope(_detectedProvinceId!, _detectedProvinceName!);
+      return true;
+    } else {
+      return autoDetectLocation(setAsActiveScope: true);
+    }
+  }
+
+  @visibleForTesting
+  void setDetectedProvinceForTesting(String? id, String? name) {
+    _detectedProvinceId = id;
+    _detectedProvinceName = name;
+    notifyListeners();
+  }
+
+  Future<bool> autoDetectLocation({bool setAsActiveScope = false}) async {
+    if (_isDetectingLocation) return false;
+    _isDetectingLocation = true;
+    notifyListeners();
+
+    try {
+      final pos = await LocationService.instance.getCurrentLocation();
+      final res = await LocationService.instance.getAddressFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+
+      String? provId = res.provinceId;
+      String? provName = res.provinceName;
+
+      if ((provId == null || provName == null) &&
+          res.areaName.isNotEmpty &&
+          res.isValidRegion) {
+        final prov = IndonesiaRegions.findByName(res.areaName);
+        if (prov != null) {
+          provId = prov.id;
+          provName = prov.name;
+        }
+      }
+
+      if (provId != null && provName != null) {
+        _detectedProvinceId = provId;
+        _detectedProvinceName = provName;
+        await _saveDetectedLocation(provId, provName);
+
+        if (setAsActiveScope) {
+          setProvincialScope(provId, provName);
+        } else {
+          notifyListeners();
+        }
+        return true;
+      }
+    } catch (_) {
+      // Graceful fallback on permission denied, GPS disabled, or test environment
+    } finally {
+      if (!_isDisposed) {
+        _isDetectingLocation = false;
+        notifyListeners();
+      }
+    }
+    return false;
+  }
+
+  Future<bool> detectAndSetProvinceFromGps() async {
+    return autoDetectLocation(setAsActiveScope: true);
+  }
+
   Future<void> fetchFeed([String? userId, bool forceRefresh = true]) async {
     if (userId != null) currentUserId = userId;
     if (_reports.isEmpty) {
@@ -87,12 +263,13 @@ class FeedController extends ChangeNotifier {
         searchQuery: _searchQuery,
         sortBy: _sortBy,
         userId: currentUserId,
+        provinceId: _scope == FeedScope.provincial ? _selectedProvinceId : null,
         forceRefresh: forceRefresh,
         limit: pageSize,
         offset: 0,
       );
       if (_isDisposed) return;
-      _reports = result;
+      _reports = List<ReportModel>.from(result);
       _hasMore = result.length >= pageSize;
     } catch (_) {
     } finally {
@@ -116,6 +293,7 @@ class FeedController extends ChangeNotifier {
         searchQuery: _searchQuery,
         sortBy: _sortBy,
         userId: currentUserId,
+        provinceId: _scope == FeedScope.provincial ? _selectedProvinceId : null,
         forceRefresh: false,
         limit: pageSize,
         offset: _reports.length,
@@ -162,7 +340,6 @@ class FeedController extends ChangeNotifier {
     });
   }
 
-  /// Sinkronisasi laporan secara instan dari halaman detail / event eksternal
   void syncReport(ReportModel updatedReport) {
     final idx = _reports.indexWhere((r) => r.id == updatedReport.id);
     if (idx != -1) {
@@ -176,29 +353,20 @@ class FeedController extends ChangeNotifier {
   }
 
   Future<void> vote(String reportId, String userId, String voteType) async {
-    // 1. Pencegahan Race Condition: In-flight request lock per reportId
-    if (_votingReportIds.contains(reportId)) {
-      return;
-    }
+    if (_votingReportIds.contains(reportId)) return;
 
     final index = _reports.indexWhere((r) => r.id == reportId);
     if (index == -1) return;
 
     final currentReport = _reports[index];
+    if (!currentReport.isPubliclyVisible || currentReport.isTerminal) return;
 
-    // Invarian Produk: Laporan harus publik dan non-terminal
-    if (!currentReport.isPubliclyVisible || currentReport.isTerminal) {
-      return;
-    }
-
-    // 2. Optimistic UI Update: Terapkan perubahan seketika tanpa menunggu respon jaringan
     final previousReport = currentReport;
     final optimisticReport = currentReport.calculateOptimisticVote(voteType);
 
     _votingReportIds.add(reportId);
     _errorMessage = null;
 
-    // Jika downvote mencapai ambang batas dan status menjadi 'held', laporan wajib seketika lenyap dari feed
     if (!optimisticReport.isPubliclyVisible) {
       _reports.removeAt(index);
     } else {
@@ -206,14 +374,12 @@ class FeedController extends ChangeNotifier {
     }
     notifyListeners();
 
-    // 3. Eksekusi asynchronous request ke backend/repository
     try {
       final updated = await reportRepository.voteReport(
         reportId: reportId,
         userId: userId,
         voteType: voteType,
       );
-
       if (_isDisposed) return;
 
       if (!updated.isPubliclyVisible) {
@@ -227,8 +393,6 @@ class FeedController extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (_isDisposed) return;
-
-      // 4. Rollback State ke kondisi semula jika request gagal
       final currentIndex = _reports.indexWhere((r) => r.id == reportId);
       if (currentIndex != -1) {
         _reports[currentIndex] = previousReport;

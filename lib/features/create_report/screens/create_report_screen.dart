@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../../core/widgets/app_button.dart';
@@ -118,16 +119,19 @@ class _CreateReportFormState extends State<_CreateReportForm> {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.dialog,
+          side: BorderSide(color: AppColors.border, width: 1),
+        ),
         titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
         contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(8),
+                shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.send_rounded,
@@ -162,8 +166,8 @@ class _CreateReportFormState extends State<_CreateReportForm> {
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(46),
                 side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.button,
                 ),
                 foregroundColor: AppColors.primary,
               ),
@@ -181,8 +185,8 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                 minimumSize: const Size.fromHeight(46),
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.button,
                 ),
                 elevation: 0,
               ),
@@ -316,31 +320,23 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           Navigator.pop(context);
         }
       },
-      child: Container(
-        color: const Color(0xFFF0F2F5),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 720),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              border: Border.symmetric(
-                vertical: BorderSide(color: AppColors.border, width: 1),
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Buat Laporan Baru')),
+        body: SafeArea(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 720),
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                border: Border.symmetric(
+                  vertical: BorderSide(color: AppColors.border, width: 1),
+                ),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x0A000000),
-                  blurRadius: 24,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Scaffold(
-              appBar: AppBar(title: const Text('Buat Laporan Baru')),
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
-                ),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 48),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -349,6 +345,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                       TextFormField(
                         controller: _titleController,
                         maxLength: 100,
+                        textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
                           labelText: 'Judul Laporan *',
                           hintText: 'Contoh: Jalan Berlubang di Dekat Pasar',
@@ -378,7 +375,10 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
-                        maxLines: 4,
+                        minLines: 4,
+                        maxLines: null,
+                        scrollPhysics: const NeverScrollableScrollPhysics(),
+                        textInputAction: TextInputAction.newline,
                         decoration: InputDecoration(
                           labelText: 'Deskripsi Masalah *',
                           hintText: 'Jelaskan kondisi kerusakan secara rinci (kronologi, dampak, patokan terdekat)...',

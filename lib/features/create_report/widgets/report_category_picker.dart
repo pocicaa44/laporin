@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 /// Modular widget for selecting report category per skills.md (< 100 lines)
@@ -34,8 +35,8 @@ class ReportCategoryPicker extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            borderRadius: AppRadius.input,
+            border: Border.all(color: AppColors.border, width: 1),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -266,25 +267,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     horizontal: 16,
                     vertical: 10,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.surface,
-                    border: const Border(
-                      top: BorderSide(color: AppColors.border),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
+                    border: Border(top: BorderSide(color: AppColors.border)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Kiri bawah: "Pilih Semua"
                       InkWell(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.button,
                         onTap: () => _toggleSelectAll(controller.notifications),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -332,8 +324,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             horizontal: 20,
                             vertical: 10,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.button,
                           ),
                         ),
                         child: _isDeleting
@@ -421,7 +413,7 @@ class _NotificationItem extends StatelessWidget {
           ? AppColors.danger.withValues(alpha: 0.05)
           : (item.isRead ? AppColors.surface : const Color(0xFFF7F8FF)),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.button,
         side: BorderSide(
           color: isSelected
               ? AppColors.danger

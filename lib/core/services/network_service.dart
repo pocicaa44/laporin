@@ -171,8 +171,8 @@ class NetworkService extends ChangeNotifier {
           backgroundColor: const Color(0xFF23272F),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
         ),
       );
@@ -205,8 +205,8 @@ class NetworkService extends ChangeNotifier {
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
         ),
       );

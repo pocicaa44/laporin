@@ -171,7 +171,7 @@ void main() {
       },
     );
 
-    test('ReportRepository rejects report creation when location is outside Central Java', () async {
+    test('ReportRepository rejects report creation when location is outside Indonesia', () async {
       final repo = ReportRepository();
       expect(
         () => repo.createReport(
@@ -180,15 +180,15 @@ void main() {
           title: 'Lubang Jalan',
           description: 'Deskripsi jalan berlubang',
           category: 'Jalan & Infrastruktur',
-          latitude: -6.2088,
-          longitude: 106.8456,
-          locationAddress: 'Jl. Sudirman, Jakarta',
+          latitude: 1.3521,
+          longitude: 103.8198,
+          locationAddress: 'Orchard Road, Singapore',
         ),
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),
             'message',
-            contains('Jawa Tengah'),
+            contains('Indonesia'),
           ),
         ),
       );

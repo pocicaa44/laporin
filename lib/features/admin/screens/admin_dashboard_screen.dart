@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
@@ -130,13 +130,6 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             drawer: const AppDrawer(),
@@ -302,9 +295,7 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
                                       context: context,
                                       isScrollControlled: true,
                                       shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(20),
-                                        ),
+                                        borderRadius: AppRadius.sheet,
                                       ),
                                       builder: (_) => AdminStatusUpdateSheet(
                                         report: report,
@@ -341,9 +332,7 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
                                       context: context,
                                       isScrollControlled: true,
                                       shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(20),
-                                        ),
+                                        borderRadius: AppRadius.sheet,
                                       ),
                                       builder: (_) =>
                                           AdminResolveSheet(report: report),
@@ -420,24 +409,32 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.card,
           border: Border.all(color: AppColors.border),
-          boxShadow: const [AppColors.cardShadow],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: AppTextStyles.caption),
-            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMuted,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
             Text(
               value,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: color,
+                height: 1.1,
               ),
             ),
           ],
@@ -471,9 +468,7 @@ class _FilterChip extends StatelessWidget {
       selected: isSelected,
       selectedColor: AppColors.primary,
       backgroundColor: AppColors.surface,
-      side: BorderSide(
-        color: isSelected ? AppColors.primary : AppColors.border,
-      ),
+      shape: const StadiumBorder(),
       onSelected: (_) => onTap(),
       showCheckmark: false,
     );
@@ -518,18 +513,11 @@ class _AdminReportCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.card,
         border: Border.all(
-          color: isHeld ? AppColors.danger : const Color(0xFFE5E7EB),
+          color: isHeld ? AppColors.danger : AppColors.border,
           width: isHeld ? 1.5 : 1,
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,7 +547,7 @@ class _AdminReportCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppRadius.pill,
                         ),
                         child: const Text(
                           'Baru',
@@ -641,7 +629,7 @@ class _AdminReportCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF8E7),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
                 border: Border.all(color: const Color(0xFFFDD888)),
               ),
               child: Text(
@@ -660,7 +648,7 @@ class _AdminReportCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEE2E2),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.borderSm,
                 border: Border.all(color: const Color(0xFFFCA5A5)),
               ),
               child: const Row(
@@ -735,7 +723,7 @@ class _AdminReportCard extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: Color(0xFF9CA3AF), width: 1),
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         minimumSize: const Size(0, 34),
         textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
@@ -761,7 +749,7 @@ class _AdminReportCard extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: Color(0xFF9CA3AF), width: 1),
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         minimumSize: const Size(0, 34),
         textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
@@ -782,7 +770,7 @@ class _AdminReportCard extends StatelessWidget {
         backgroundColor: const Color(0xFF10B981),
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         minimumSize: const Size(0, 34),
         textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
@@ -802,7 +790,7 @@ class _AdminReportCard extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFFEF4444),
         side: const BorderSide(color: Color(0xFFFCA5A5), width: 1),
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         minimumSize: const Size(0, 34),
         textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
@@ -819,7 +807,7 @@ class _AdminReportCard extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         minimumSize: const Size(0, 34),
         textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),

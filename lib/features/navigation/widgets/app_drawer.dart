@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../announcements/controllers/announcement_controller.dart';
 import '../../announcements/screens/announcements_screen.dart';
@@ -94,16 +95,7 @@ class AppDrawer extends StatelessWidget {
                       Container(
                         width: 36,
                         height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: ClipOval(
                           child: Image.asset(
                             'assets/logo_laporin.png',
@@ -163,7 +155,7 @@ class AppDrawer extends StatelessWidget {
                                         color: Colors.white.withValues(
                                           alpha: 0.25,
                                         ),
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: AppRadius.pill,
                                       ),
                                       child: const Text(
                                         'ADMIN',
@@ -345,13 +337,13 @@ class _DrawerMenuItem extends StatelessWidget {
     final textWeight = isSelected ? FontWeight.w700 : FontWeight.w500;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Material(
         color: activeBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.button,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.button,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -376,7 +368,7 @@ class _DrawerMenuItem extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: badgeColor,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.pill,
                     ),
                     child: Text(
                       '$badgeCount',

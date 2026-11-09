@@ -111,6 +111,32 @@ class ReportRepository {
           }
         } catch (_) {}
 
+        // Batch enrich reports with actual comment counts from public.comments to self-heal
+        try {
+          final reportIds = list
+              .map((r) => r.id)
+              .where((id) => id.isNotEmpty)
+              .toList();
+          if (reportIds.isNotEmpty) {
+            final commentsData = await client
+                .from('comments')
+                .select('report_id')
+                .inFilter('report_id', reportIds)
+                .isFilter('deleted_at', null);
+            final countsMap = <String, int>{};
+            for (final c in (commentsData as List)) {
+              final rId = c['report_id']?.toString();
+              if (rId != null) {
+                countsMap[rId] = (countsMap[rId] ?? 0) + 1;
+              }
+            }
+            for (var i = 0; i < list.length; i++) {
+              final actualCount = countsMap[list[i].id] ?? 0;
+              list[i] = list[i].copyWith(commentsCount: actualCount);
+            }
+          }
+        } catch (_) {}
+
         _reports.clear();
         _reports.addAll(list);
         _hasFetchedFromSupabase = true;
@@ -222,6 +248,7 @@ class ReportRepository {
     String? searchQuery,
     String? sortBy, // 'newest', 'popular'
     String? userId,
+    String? provinceId,
     bool forceRefresh = false,
     int? limit,
     int? offset,
@@ -256,6 +283,7 @@ class ReportRepository {
         category: category,
         searchQuery: searchQuery,
         sortBy: sortBy,
+        provinceId: provinceId,
       );
     } else {
       // Heavy string searching, category filtering, and sorting offloaded to background isolate
@@ -265,6 +293,7 @@ class ReportRepository {
           category: category,
           searchQuery: searchQuery,
           sortBy: sortBy,
+          provinceId: provinceId,
         );
       });
     }
@@ -282,13 +311,125 @@ class ReportRepository {
     return filtered;
   }
 
+  /// Mengambil feed nasional dari Supabase RPC get_national_feed
+  Future<List<ReportModel>> fetchNationalFeed({
+    DateTime? cursorCreatedAt,
+    int limit = 20,
+    String? category,
+    String? status,
+    String? userId,
+  }) async {
+    final client = _service.client;
+    if (client != null) {
+      try {
+        final params = <String, dynamic>{
+          'p_limit': limit,
+          if (cursorCreatedAt != null)
+            'p_cursor_created_at': cursorCreatedAt.toUtc().toIso8601String(),
+          if (category != null && category.isNotEmpty && category != 'Semua')
+            'p_category': category,
+          if (status != null && status.isNotEmpty) 'p_status': status,
+        };
+        final res = await client.rpc('get_national_feed', params: params);
+        if (res is List) {
+          return await _parseReportsInIsolate(res);
+        }
+      } catch (_) {}
+    }
+    return getPublicFeed(category: category, limit: limit, userId: userId);
+  }
+
+  /// Mengambil feed provinsi tertentu dari Supabase RPC get_provincial_feed
+  Future<List<ReportModel>> fetchProvincialFeed({
+    required String provinceId,
+    DateTime? cursorCreatedAt,
+    int limit = 20,
+    String? category,
+    String? status,
+    String? userId,
+  }) async {
+    final client = _service.client;
+    if (client != null) {
+      try {
+        final params = <String, dynamic>{
+          'p_province_id': provinceId,
+          'p_limit': limit,
+          if (cursorCreatedAt != null)
+            'p_cursor_created_at': cursorCreatedAt.toUtc().toIso8601String(),
+          if (category != null && category.isNotEmpty && category != 'Semua')
+            'p_category': category,
+          if (status != null && status.isNotEmpty) 'p_status': status,
+        };
+        final res = await client.rpc('get_provincial_feed', params: params);
+        if (res is List) {
+          return await _parseReportsInIsolate(res);
+        }
+      } catch (_) {}
+    }
+    return getPublicFeed(
+      category: category,
+      provinceId: provinceId,
+      limit: limit,
+      userId: userId,
+    );
+  }
+
+  /// Mengambil laporan dalam bounding box viewport peta (ST_MakeEnvelope)
+  Future<List<ReportModel>> fetchReportsInViewport({
+    required double minLat,
+    required double minLng,
+    required double maxLat,
+    required double maxLng,
+    int limit = 100,
+  }) async {
+    final client = _service.client;
+    if (client != null) {
+      try {
+        final params = <String, dynamic>{
+          'p_min_lat': minLat,
+          'p_min_lng': minLng,
+          'p_max_lat': maxLat,
+          'p_max_lng': maxLng,
+          'p_limit': limit,
+        };
+        final res = await client.rpc('get_reports_in_viewport', params: params);
+        if (res is List) {
+          return await _parseReportsInIsolate(res);
+        }
+      } catch (_) {}
+    }
+    return _reports
+        .where(
+          (r) =>
+              r.isPubliclyVisible &&
+              r.latitude >= minLat &&
+              r.latitude <= maxLat &&
+              r.longitude >= minLng &&
+              r.longitude <= maxLng,
+        )
+        .take(limit)
+        .toList();
+  }
+
   static List<ReportModel> _filterAndSortFeed({
     required List<ReportModel> reports,
     String? category,
     String? searchQuery,
     String? sortBy,
+    String? provinceId,
   }) {
     var list = reports.where((r) => r.isPubliclyVisible).toList();
+
+    if (provinceId != null &&
+        provinceId.isNotEmpty &&
+        provinceId != 'all' &&
+        provinceId != 'national') {
+      list = list.where((r) {
+        if (r.provinceId == provinceId) return true;
+        if (r.areaId.contains(provinceId)) return true;
+        return false;
+      }).toList();
+    }
 
     if (category != null && category.isNotEmpty && category != 'Semua') {
       final cat = category.toLowerCase();
@@ -497,6 +638,19 @@ class ReportRepository {
               }
             }
           }
+
+          // Enrich with accurate comments_count from public.comments
+          try {
+            final commentsCountResp = await client
+                .from('comments')
+                .select('id')
+                .eq('report_id', id)
+                .isFilter('deleted_at', null);
+            fetched = fetched.copyWith(
+              commentsCount: (commentsCountResp as List).length,
+            );
+          } catch (_) {}
+
           updateReport(fetched);
           return fetched;
         }
@@ -532,6 +686,7 @@ class ReportRepository {
     required double longitude,
     required String locationAddress,
     String? areaName,
+    String? provinceId,
     List<String> photoUrls = const [],
     bool isCallerAdmin = false,
     bool isDraft = false,
@@ -552,9 +707,9 @@ class ReportRepository {
       }
     }
 
-    // Validasi aturan bisnis: lokasi wajib di dalam batas Provinsi Jawa Tengah
-    if (!BoundaryService.instance.isInsideCentralJava(latitude, longitude)) {
-      throw Exception(BoundaryService.outsideAreaErrorMessage);
+    // Validasi aturan bisnis: lokasi wajib di dalam batas wilayah Indonesia
+    if (!BoundaryService.instance.isInsideIndonesia(latitude, longitude)) {
+      throw Exception(BoundaryService.outsideIndonesiaErrorMessage);
     }
 
     final now = DateTime.now();
@@ -608,8 +763,9 @@ class ReportRepository {
       authorName: authorName,
       authorUsername: authorUsername,
       authorAvatarUrl: resolvedAuthorAvatar,
-      areaId: 'area-jateng',
+      areaId: provinceId != null ? 'area-$provinceId' : 'area-jateng',
       areaName: areaName ?? BoundaryService.defaultAreaName,
+      provinceId: provinceId,
       title: title.trim(),
       description: description.trim(),
       category: category,
@@ -1069,9 +1225,9 @@ class ReportRepository {
       );
     }
 
-    // Validasi aturan bisnis: Lokasi wajib berada di Provinsi Jawa Tengah
-    if (!BoundaryService.instance.isInsideCentralJava(latitude, longitude)) {
-      throw Exception(BoundaryService.outsideAreaErrorMessage);
+    // Validasi aturan bisnis: Lokasi wajib berada di wilayah Indonesia
+    if (!BoundaryService.instance.isInsideIndonesia(latitude, longitude)) {
+      throw Exception(BoundaryService.outsideIndonesiaErrorMessage);
     }
 
     final now = DateTime.now();
@@ -1148,7 +1304,7 @@ class ReportRepository {
       }
       if (!current.canAuthorDelete) {
         throw Exception(
-          'Hanya laporan yang sudah selesai, ditolak, atau dibatalkan yang dapat dihapus oleh pelapor.',
+          'Hanya laporan yang baru dipublikasikan, sudah selesai, ditolak, atau dibatalkan yang dapat dihapus oleh pelapor.',
         );
       }
     } else {
@@ -1157,7 +1313,7 @@ class ReportRepository {
       }
       if (!current.canAdminDelete) {
         throw Exception(
-          'Admin hanya dapat menghapus laporan yang sudah dihapus oleh pelapor, atau berstatus selesai, ditolak, dan dibatalkan.',
+          'Admin hanya dapat menghapus laporan yang baru dipublikasikan, sudah dihapus oleh pelapor, atau berstatus selesai, ditolak, dan dibatalkan.',
         );
       }
     }

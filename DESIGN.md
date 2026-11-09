@@ -1,775 +1,568 @@
-# Laporin --- UI/UX Design Specification
-
-> **Dokumen:** `DESIGN.md`\
-> **Produk:** Laporin --- platform pelaporan masalah lingkungan dan
-> fasilitas publik\
-> **Sumber desain:** UI showcase yang diberikan pengguna\
-> **Platform utama:** Aplikasi mobile (iOS/Android) dan dashboard admin
-> web\
-> **Status:** Spesifikasi desain awal yang diturunkan dari referensi
-> visual; nilai ukuran/warna yang tidak terbaca secara pasti ditetapkan
-> sebagai token rekomendasi dan dapat disesuaikan saat implementasi.
-
-## 1. Tujuan Desain
-
-Laporin membantu warga melaporkan masalah di lingkungan, mengikuti
-perkembangan laporan, berdiskusi, dan memberi dukungan pada laporan yang
-relevan. Admin atau petugas menggunakan dashboard untuk memoderasi
-laporan, memperbarui status, meninjau bukti, serta menerbitkan
-pengumuman.
-
-Prinsip desain:
-
-1.  **Mudah dipahami:** alur pelaporan dibuat bertahap dan label
-    menggunakan bahasa Indonesia yang jelas.
-2.  **Berbasis bukti dan lokasi:** foto, kategori, lokasi peta,
-    deskripsi, dan riwayat status menjadi informasi utama.
-3.  **Transparan:** pengguna dapat melihat status dan perkembangan
-    penanganan laporan.
-4.  **Partisipatif, tetap tertib:** upvote, komentar, dan thread
-    mendukung komunitas; tindakan moderasi harus memiliki alasan dan
-    jejak audit.
-5.  **Konsisten lintas platform:** aplikasi warga dan dashboard admin
-    memakai bahasa visual yang sama, dengan pola navigasi sesuai
-    konteks.
-
-## 2. Arsitektur Pengalaman
-
-### 2.1 Peran pengguna
-
-  -----------------------------------------------------------------------
-  Peran                   Kebutuhan utama         Area utama
-  ----------------------- ----------------------- -----------------------
-  Pengunjung              Memahami manfaat        Splash / Intro, Login
-                          aplikasi dan mulai      
-                          masuk/daftar            
-
-  Warga                   Menjelajah laporan,     Beranda, Detail
-                          membuat laporan,        Laporan, Buat Laporan,
-                          berinteraksi, memantau  Laporan Saya,
-                          laporan sendiri         Notifikasi, Pengumuman
-
-  Admin / petugas         Memeriksa laporan       Daftar Laporan Admin,
-                          masuk, mengubah status, Kelola Laporan,
-                          menolak dengan alasan,  Selesaikan Laporan,
-                          menyelesaikan dengan    Tolak Laporan,
-                          bukti, mengelola        Dashboard Web
-                          pengumuman              
+# Laporin — UI/UX Design Specification
 
-  Moderator               Meninjau laporan yang   Antrean moderasi dan
-                          memerlukan pemeriksaan  detail laporan (perlu
-                          dan menangani           disediakan sebagai
-                          penyalahgunaan          bagian dari
-                                                  implementasi)
-  -----------------------------------------------------------------------
+> **Dokumen:** `DESIGN.md`  
+> **Produk:** Laporin — Platform Pelaporan Masalah Fasilitas & Lingkungan Publik  
+> **Arah Desain:** Modern, Rounded & Flat UI Design (Zero Drop Shadow, Crisp Hairline Borders)  
+> **Platform Utama:** Mobile (Android & iOS) dan Web Admin Dashboard  
+> **Status:** Spesifikasi resmi UI/UX — panduan standar desain antarmuka modern dengan komponen rounded elegan, tampilan Flat UI murni (tanpa drop shadow / 0 elevation), garis tepi tegas (crisp hairline borders), dan tata letak yang bersih, intuitif, serta aksesibel.
 
-### 2.2 Navigasi aplikasi mobile
+---
 
-Navigasi utama menggunakan bottom navigation dengan lima item:
+## 1. Visi & Filosofi Desain
 
--   **Beranda** --- feed laporan publik.
--   **Laporan** --- daftar/penelusuran laporan.
--   **Tombol "+"** --- aksi utama untuk membuat laporan; dibuat lebih
-    menonjol dari item lain.
--   **Notifikasi** --- aktivitas dan pembaruan.
--   **Profil** --- identitas, pengaturan, serta akses ke laporan milik
-    pengguna.
+Laporin dirancang sebagai platform pelaporan publik yang menjembatani warga dengan pengelola fasilitas publik dan pemerintah daerah. Aplikasi ini menggabungkan **keandalan sistem pelaporan formal** dengan **pengalaman pengguna modern yang ramah, hangat, dan menyenangkan** (*approachable civic-tech*).
 
-Tombol tambah sebaiknya tetap mudah dijangkau dengan satu tangan. Pada
-halaman sekunder, gunakan tombol kembali di kiri atas dan judul halaman
-yang singkat.
+Filosofi desain Laporin berakar pada 5 pilar utama:
 
-### 2.3 Navigasi dashboard web
-
-Sidebar kiri berisi:
-
--   Dashboard
--   Laporan
--   Pengguna
--   Announcement / Pengumuman
--   Pengaturan
-
-Bagian konten menggunakan header halaman, kartu metrik, panel laporan
-terbanyak, dan aktivitas terbaru. Sidebar menandai menu aktif dengan
-latar biru-ungu muda.
-
-## 3. Bahasa Visual
-
-### 3.1 Karakter visual
-
--   Bersih, ramah, ringan, dan berorientasi pada komunitas.
--   Latar putih atau abu-abu kebiruan sangat muda.
--   Biru-ungu sebagai warna aksi utama.
--   Kartu dengan sudut membulat, garis pembatas halus, dan bayangan
-    lembut.
--   Ikon sederhana dengan label, bukan ikon tanpa keterangan untuk aksi
-    yang tidak umum.
--   Foto laporan ditampilkan cukup besar agar masalah dapat dikenali.
-
-### 3.2 Token warna
-
-Warna di bawah adalah **token rekomendasi** yang meniru karakter
-referensi, bukan hasil pengukuran piksel final.
-
-  ------------------------------------------------------------------------
-  Token                    Nilai                   Penggunaan
-  ------------------------ ----------------------- -----------------------
-  `color.primary`          `#596CFF`               Tombol utama, tab
-                                                   aktif, link utama
-
-  `color.primary-strong`   `#4858E8`               Tekan/hover tombol
-                                                   utama
-
-  `color.primary-soft`     `#EEF0FF`               Latar pilihan aktif,
-                                                   badge lembut
-
-  `color.accent`           `#8B70FF`               Aksen ilustrasi dan
-                                                   elemen sekunder
-
-  `color.success`          `#35B978`               Status selesai/berhasil
-
-  `color.warning`          `#F4B740`               Perlu perhatian atau
-                                                   status menunggu
-
-  `color.danger`           `#F05260`               Penolakan, laporan
-                                                   bermasalah, aksi
-                                                   destruktif
-
-  `color.info`             `#4F9BE8`               Informasi dan status
-                                                   netral
-
-  `color.text-primary`     `#172746`               Judul dan isi penting
-
-  `color.text-secondary`   `#6F7F9B`               Metadata, helper text
-
-  `color.border`           `#E2E8F2`               Border input, divider,
-                                                   kartu
-
-  `color.surface`          `#FFFFFF`               Kartu dan bidang konten
-
-  `color.background`       `#F5F7FC`               Latar halaman
-
-  `color.disabled`         `#B8C2D5`               Kontrol nonaktif
-  ------------------------------------------------------------------------
-
-**Aturan warna status:** warna tidak boleh menjadi satu-satunya penanda.
-Selalu tampilkan teks status dan, jika memungkinkan, ikon yang relevan.
-
-### 3.3 Tipografi
-
-Gunakan font sans-serif yang mudah dibaca. Rekomendasi implementasi:
-**Inter** atau font sistem yang setara.
-
-  ------------------------------------------------------------------------------
-  Token                     Ukuran rekomendasi Bobot            Penggunaan
-  ---------------------- --------------------- ---------------- ----------------
-  `type.display`                     30--34 px Bold             Judul intro /
-                                                                splash
-
-  `type.page-title`                  22--24 px Bold / Semibold  Judul halaman
-
-  `type.section-title`               16--18 px Semibold         Judul bagian dan
-                                                                kartu
-
-  `type.body`                        14--16 px Regular          Deskripsi dan
-                                                                isi
-
-  `type.label`                       12--14 px Medium           Label field dan
-                                                                tab
-
-  `type.caption`                     11--12 px Regular          Waktu, lokasi,
-                                                                jumlah interaksi
-
-  `type.button`                      14--16 px Semibold         Label tombol
-  ------------------------------------------------------------------------------
-
-Gunakan line-height sekitar 1,4--1,6 untuk isi. Hindari metadata yang
-terlalu kecil; teks penting tetap nyaman dibaca pada layar ponsel.
-
-### 3.4 Spasi dan layout
-
-Gunakan skala berbasis 4 px:
-
-`space-1: 4` · `space-2: 8` · `space-3: 12` · `space-4: 16` ·
-`space-5: 20` · `space-6: 24` · `space-8: 32` · `space-10: 40`
-
--   Padding layar mobile: sekitar 20--24 px.
--   Jarak antarbagian: 20--24 px.
--   Padding kartu: 12--16 px.
--   Jarak antarkartu: 10--14 px.
--   Dashboard web: gunakan grid fleksibel dengan ruang antarkartu yang
-    konsisten.
-
-### 3.5 Radius, border, dan elevasi
-
-  ------------------------------------------------------------------------
-  Token                            Nilai rekomendasi Penggunaan
-  --------------------- ---------------------------- ---------------------
-  `radius.sm`                                   8 px Badge kecil, chip
-
-  `radius.md`                                  12 px Input, thumbnail,
-                                                     tombol sekunder
-
-  `radius.lg`                                  16 px Kartu laporan
-
-  `radius.xl`                              22--24 px Panel besar dan modal
-
-  `radius.pill`                               999 px Chip dan tombol
-                                                     kapsul
-
-  `border.default`              1 px solid `#E2E8F2` Input dan kartu
-
-  `shadow.card`         0 4px 18px rgba(34, 56, 100, Kartu yang terangkat
-                                               0.06) 
-
-  `shadow.modal`            0 12px 32px rgba(34, 56, Modal / popover
-                                          100, 0.14) 
-  ------------------------------------------------------------------------
-
-Gunakan bayangan secara halus. Struktur harus tetap terbaca ketika
-bayangan tidak terlihat.
-
-## 4. Komponen UI
-
-### 4.1 Tombol
-
--   **Primary:** latar `color.primary`, teks putih, radius pill atau 12
-    px. Untuk aksi utama seperti Masuk, Kirim Laporan, Simpan,
-    Selesaikan, dan Tolak Laporan.
--   **Secondary:** latar putih, border lembut, teks utama.
--   **Tertiary / Text:** tanpa latar, untuk aksi sekunder seperti Lupa
-    password.
--   **Destructive:** warna danger dan konfirmasi tambahan jika aksi
-    sulit dibatalkan.
--   **Disabled / Loading:** tampilkan state yang jelas; cegah submit
-    ganda ketika request sedang diproses.
-
-Tinggi target tombol utama: 48--52 px pada mobile.
-
-### 4.2 Input dan form
-
--   Label field berada di atas input.
--   Field wajib memakai tanda `*` dan validasi teks yang jelas.
--   Placeholder memberi contoh format, bukan menggantikan label.
--   Password memiliki kontrol tampil/sembunyi.
--   Error muncul dekat field yang bermasalah.
--   Saat submit gagal, pertahankan data yang sudah diisi.
--   Gunakan dropdown untuk kategori dan pemilih lokasi/peta untuk
-    koordinat.
-
-### 4.3 Kartu laporan
-
-Setiap kartu laporan pada feed dan daftar admin dapat menampilkan:
-
-1.  Thumbnail foto (jika tersedia).
-2.  Judul laporan maksimal sekitar 2 baris.
-3.  Kategori sebagai chip.
-4.  Lokasi ringkas.
-5.  Waktu relatif (mis. "2 jam lalu").
-6.  Status publikasi/penanganan jika relevan.
-7.  Jumlah upvote dan komentar.
-
-Thumbnail menggunakan rasio konsisten dan `cover`; gambar gagal dimuat
-harus memiliki placeholder. Area kartu dapat dibuka untuk melihat
-detail, tetapi kontrol upvote dan komentar harus memiliki target sentuh
-sendiri.
-
-### 4.4 Badge, chip, dan tab
-
--   Chip kategori memakai latar pastel dan teks kontras.
--   Status menggunakan warna yang konsisten dengan statusnya.
--   Tab aktif memakai latar lembut atau garis indikator yang jelas.
--   Filter "Semua", "Baru", "Diproses", dan "Selesai" mempertahankan
-    pilihan selama pengguna masih berada pada konteks daftar yang sama.
-
-### 4.5 Komponen tambahan
-
--   **Avatar:** ukuran konsisten; gunakan inisial sebagai fallback.
--   **Timeline status:** node dan garis vertikal dengan status saat ini
-    yang menonjol.
--   **Photo picker:** tombol tambah foto, thumbnail, dan aksi hapus/atur
-    ulang.
--   **Map picker:** peta, pin lokasi terpilih, dan aksi gunakan lokasi
-    saat ini.
--   **Comment composer:** input ringkas dengan tombol kirim; state
-    kosong dan loading.
--   **Notification item:** ikon/avatarnya, ringkasan aktivitas, waktu,
-    serta indikator belum dibaca.
--   **Empty state:** ilustrasi/ikon sederhana, penjelasan singkat, dan
-    satu aksi yang relevan.
--   **Skeleton/loading:** bentuk mendekati konten akhir untuk mengurangi
-    pergeseran layout.
-
-## 5. Spesifikasi Layar Mobile
-
-### 5.1 Splash / Intro
-
-**Tujuan:** memperkenalkan manfaat Laporin dan mengarahkan pengguna
-untuk masuk.
-
-Elemen: - Ilustrasi kota/lingkungan pada bagian atas. - Logo dan nama
-Laporin. - Headline singkat tentang pelaporan masalah lingkungan. -
-Penjelasan manfaat dalam 2--3 baris. - Tombol utama "Mulai". - Link
-"Masuk" untuk pengguna yang sudah memiliki akun.
-
-Perilaku: - "Mulai" menuju alur login/registrasi. - Ilustrasi dekoratif
-tidak boleh menghalangi konten pada layar pendek. - Gunakan safe area
-untuk notch dan home indicator.
-
-### 5.2 Login
-
-Elemen: - Logo/ikon Laporin. - Field email atau nomor telepon. - Field
-password dengan tombol tampil/sembunyi. - Tombol Masuk. - Pemisah
-"atau". - Tombol Masuk dengan Google. - Link Lupa password dan Daftar.
-
-State yang perlu dirancang: - Default, field fokus, validasi gagal,
-kredensial salah, loading, dan berhasil. - Berikan pesan yang tidak
-membocorkan apakah suatu akun terdaftar jika kebijakan keamanan
-mengharuskannya. - OAuth Google harus menunjukkan state proses dan
-kegagalan.
-
-### 5.3 Beranda / Feed
-
-Elemen: - Pemilih wilayah di header dan akses profil. - Search bar untuk
-kata kunci, kategori, atau lokasi. - Chip kategori (misalnya Jalan &
-Infrastruktur, Fasilitas Umum, Kebersihan, Lainnya). - Filter feed:
-Terbaru, Populer, Terdekat. - Daftar kartu laporan. - Bottom navigation.
-
-Perilaku: - Search dan filter dapat digunakan bersama dengan aturan yang
-konsisten. - State kosong menjelaskan bahwa belum ada laporan yang
-cocok. - Feed menggunakan pagination atau infinite scroll dengan
-indikator loading. - Feed populer harus memperhitungkan mekanisme
-dukungan dan moderasi yang ditetapkan produk, bukan hanya jumlah mentah
-tanpa konteks.
-
-### 5.4 Detail Laporan / Thread
-
-Elemen: - Tombol kembali. - Kategori, judul, lokasi, waktu. - Foto utama
-dan galeri thumbnail. - Upvote, komentar, simpan, dan bagikan. -
-Deskripsi laporan. - Tag kategori/lokasi. - Daftar komentar dan
-composer.
-
-Perilaku: - Upvote memiliki state aktif/nonaktif dan jumlah yang
-diperbarui secara optimistis hanya jika aman untuk dilakukan. - Cegah
-interaksi ganda yang tidak valid pada upvote. - Galeri foto dapat dibuka
-dalam tampilan lebih besar. - Komentar menampilkan identitas publik yang
-sesuai, waktu, dan tindakan yang tersedia. - Konten yang sedang ditinjau
-atau tidak dipublikasikan harus mengikuti kebijakan visibilitas, bukan
-otomatis ditampilkan pada feed publik.
-
-### 5.5 Buat Laporan
-
-Field: 1. **Judul laporan** --- wajib. 2. **Kategori** --- wajib. 3.
-**Lokasi** --- wajib, melalui peta/pemilihan lokasi. 4. **Deskripsi**
---- wajib, dengan helper text yang mengarahkan pengguna menulis fakta
-spesifik. 5. **Lampiran foto** --- opsional, beberapa foto sesuai batas
-produk. 6. Tombol **Kirim Laporan**.
-
-Validasi dan UX: - Tampilkan jumlah karakter jika ada batas
-judul/deskripsi. - Validasi tipe file dan ukuran sebelum upload;
-jelaskan kesalahan secara spesifik. - Tampilkan thumbnail, progres
-upload, retry, dan hapus foto. - Minta izin lokasi hanya ketika fitur
-lokasi digunakan; sediakan pemilihan manual. - Konfirmasi sebelum
-meninggalkan form yang sudah berubah. - Setelah berhasil, tampilkan
-konfirmasi dan arahkan ke detail laporan atau Laporan Saya. - Jangan
-menganggap laporan langsung tampil ke publik sebelum status publikasinya
-menyatakan demikian.
-
-### 5.6 Laporan Saya / Detail status
-
-Elemen: - Ringkasan laporan milik pengguna. - Badge status. - Timeline:
-Diterima → Diproses → Dalam Penanganan → Selesai (sesuaikan dengan state
-resmi produk). - Detail laporan dan komentar. - Bukti penyelesaian bila
-tersedia. - Aksi yang tersedia untuk laporan tersebut.
-
-Perilaku: - Timeline hanya menandai tahapan yang benar-benar tercatat. -
-Setiap perubahan status menampilkan waktu dan keterangan bila
-tersedia. - Aksi edit hanya ditampilkan selama laporan memenuhi
-kebijakan edit terbatas. - Bila laporan diarsipkan, tampilkan status
-arsip dan jelaskan dampaknya terhadap interaksi.
-
-### 5.7 Daftar Laporan Admin (mobile / compact)
-
-Elemen: - Tab Semua, Baru, Diproses, Selesai. - Kartu laporan dengan
-thumbnail, judul, kategori, lokasi, waktu, status, dan metrik
-interaksi. - Filter dan pencarian bila diperlukan.
-
-Perilaku: - Bedakan status penanganan dari status moderasi/publikasi. -
-Tampilkan penanda bahwa laporan memerlukan review. - Jangan menyamakan
-"belum ditangani" dengan "belum layak dipublikasikan".
-
-### 5.8 Kelola Laporan --- Update Status
-
-Elemen: - Ringkasan laporan dan status saat ini. - Pilihan status yang
-sah. - Catatan opsional atau wajib sesuai transisi. - Tombol Simpan.
-
-Perilaku: - Hanya tampilkan transisi yang diizinkan oleh state
-machine. - Tampilkan konfirmasi untuk transisi yang berdampak besar. -
-Catat pelaku, waktu, status sebelum/sesudah, dan alasan pada audit
-log. - Pesan sukses atau gagal harus jelas dan tidak menghilangkan data
-input.
-
-### 5.9 Selesaikan Laporan
-
-Elemen: - Ringkasan laporan. - Upload bukti penyelesaian. - Deskripsi
-hasil penanganan. - Tombol Selesai.
-
-Perilaku: - Minta bukti sesuai kebijakan operasional; bila bukti wajib,
-tombol tidak aktif sebelum bukti valid. - Tampilkan progres upload dan
-penanganan kegagalan. - Setelah berhasil, timeline dan notifikasi
-pengguna diperbarui.
-
-### 5.10 Tolak Laporan
-
-Elemen: - Penjelasan bahwa laporan akan ditolak. - Field alasan
-penolakan. - Tombol Tolak Laporan.
-
-Perilaku: - Alasan harus cukup spesifik dan sopan; hindari pesan yang
-menyalahkan pelapor. - Tampilkan dialog konfirmasi sebelum tindakan
-final. - Simpan alasan pada catatan moderasi/audit. - Pisahkan penolakan
-publikasi dari penolakan penanganan jika kedua konsep ada di domain
-produk.
-
-### 5.11 Thread / Komentar
-
-Elemen: - Header laporan. - Komentar dengan avatar, nama tampilan, isi,
-waktu, dan jumlah upvote bila tersedia. - Composer di bagian bawah.
-
-Perilaku: - Urutkan komentar dengan aturan yang transparan. - Sediakan
-loading, gagal kirim, komentar kosong, dan pagination. - Terapkan
-pelaporan komentar serta moderasi bila fitur ini diaktifkan. - Jangan
-mengandalkan warna saja untuk menandai komentar admin atau komentar
-baru.
-
-### 5.12 Notifikasi
-
-Kategori contoh: - Admin menanggapi laporan. - Ada komentar baru. -
-Status laporan berubah. - Ada upvote pada laporan. - Pengumuman baru.
-
-Perilaku: - Bedakan sudah/belum dibaca secara visual dan semantik. -
-Ketika diketuk, arahkan ke konteks yang tepat. - Notifikasi push dan
-in-app harus konsisten; izin push diminta setelah pengguna memahami
-manfaatnya. - Sediakan empty state dan penanganan tautan ke konten yang
-tidak lagi tersedia.
-
-### 5.13 Pengumuman
-
-Elemen: - Feed pengumuman. - Chip kategori/jenis pengumuman. - Judul,
-ringkasan, tanggal, dan isi lengkap. - Bottom navigation.
-
-Perilaku: - Pengumuman penting dapat diprioritaskan, tetapi jangan
-membuat seluruh daftar terasa seperti peringatan. - Tampilkan tanggal
-yang jelas dan sumber/penerbit. - Konten lama tetap memiliki konteks
-tanggal.
+1. **Modern, Rounded & Human-Centric:**
+   - Menggunakan kurvatura sudut yang lembut dan proporsional (*rounded corners* mulai dari 8px, 12px, 16px hingga pill/stadium 999px).
+   - Menghilangkan kesan kaku, birokratis, atau intimidatif; menghadirkan antarmuka yang ramah, kontemporer, dan mengundang partisipasi aktif masyarakat.
+2. **Kejelasan Visual & Hirarki Bernapas (Visual Clarity & Generous Whitespace):**
+   - Struktur informasi tertata dengan ritme vertikal yang lapang dan seimbang.
+   - Informasi disajikan dalam kartu-kartu konten terisolasi rapi dengan kontras teks tajam dan tipografi yang nyaman dibaca.
+3. **Flat UI Design & Garis Tepi Tegas (Zero Drop Shadow & Crisp Hairline Borders):**
+   - Mengadopsi prinsip Flat UI murni tanpa drop shadow atau elevasi blur (`elevation: 0`, `boxShadow: []`).
+   - Pemisahan visual antar elemen dibangun melalui kontras permukaan (`#FFFFFF` terhadap kanvas latar `#F8FAFC`) dan garis tepi mikro tegas (*hairline borders* 1 px `#E2E8F0`).
+   - Memberikan tampilan yang sangat bersih, modern, tajam, dan performan tanpa distorsi bayangan.
+4. **Berbasis Bukti Nyata & Konteks Geospasial:**
+   - Dokumentasi foto/video bukti, peta lokasi interaktif, dan riwayat status penanganan transparan merupakan inti dari setiap layar.
+   - Peta dan visual media disajikan dalam bingkai melengkung modern (*rounded media containers*).
+5. **Aksesibilitas & Keterbacaan Universal (WCAG 2.2 AA Compliance):**
+   - Rasio kontras warna tinggi di atas 4.5:1 untuk teks biasa dan 3:1 untuk teks besar serta komponen UI interaktif.
+   - Status penanganan tidak pernah hanya diwakili oleh warna, melainkan selalu dilengkapi teks semantik dan ikonografi yang deskriptif.
+   - Target sentuh minimum 48x48 dp pada seluruh tombol dan kontrol interaktif.
+
+---
+
+## 2. Arsitektur Informasi & Pengalaman Pengguna
+
+### 2.1 Peran Pengguna & Kebutuhan Antarmuka
+
+| Peran | Kebutuhan Utama | Karakter UI & Area Fokus |
+| :--- | :--- | :--- |
+| **Warga / Pelapor** | Melaporkan masalah dengan cepat (< 1 menit), memantau progres, berdiskusi di thread publik, dan memberikan upvote/downvote. | Mobile-first, kartu laporan dengan sudut membulat 16px, pill filter chips, navigasi jempol yang ergonomis, formulir bertahap terpandu. |
+| **Petugas Lapangan** | Meninjau laporan yang ditugaskan, memvalidasi lokasi kejadian di peta, memperbarui status pengerjaan, dan mengunggah foto bukti selesai. | Mobile responsive & web compact, tombol aksi rounded dengan target sentuh besar, dialog status berbasis gesture, formulir bukti yang efisien. |
+| **Admin / Moderator** | Triage laporan baru, moderasi konten/komentar, delegasi tugas, penyelesaian/penolakan berbasis alasan, publikasi pengumuman, audit log. | Web Dashboard modern, kartu KPI rounded dengan micro-elevation, tabel data terorganisasi rapi, split-pane layout dengan sudut modern. |
+
+### 2.2 Navigasi Mobile (Modern Floating/Docked Navigation Bar)
+
+Navigasi bawah (*Bottom Navigation Bar*) didesain modern dengan sudut atas membulat halus (`BorderRadius.vertical(top: Radius.circular(20))`) atau docked melayang dengan soft shadow:
+- **Beranda:** Feed publik laporan warga (Tab Nasional & Tab Provinsi) dengan filter kategori berbentuk *rounded pills*.
+- **Peta / Eksplorasi:** Penelusuran laporan berbasis peta OpenStreetMap interaktif dalam kontainer rounded.
+- **Tombol Lapor (+):** Tombol aksi utama (FAB / Center Action Button) berbentuk lingkaran sempurna atau *rounded squircle* (radius 16px) dengan warna `color.primary` kontras dan bayangan ambient berpendar lembut (*glow shadow*).
+- **Notifikasi:** Indikator pembaruan status laporan dan interaksi dengan badge pill unread.
+- **Profil:** Ringkasan akun, daftar "Laporan Saya", avatar pengguna melingkar, dan pengaturan preferensi.
+
+### 2.3 Navigasi Web Admin (Modern Curved Sidebar & Header)
+
+- **Sidebar Kiri (Lebar 260px):** Latar belakang putih bersih atau slate gelap, dengan item menu berbentuk pill/rounded rectangle (radius 12px) yang memiliki transisi hover halus.
+- **Header Atas Melayang:** Menampilkan indikator provinsi aktif, breadcrumb rounded chip, pencarian cepat dengan sudut 12px, dan profil admin.
+- **Kartu Metrik KPI:** 4 kartu metrik utama di bagian atas dengan radius 16px, background putih bersih, dan soft ambient shadow.
+
+---
+
+## 3. Sistem Desain: Bahasa Visual Modern & Rounded
+
+### 3.1 Skala Radius Modern (The Rounded System)
+
+Sistem kurvatura sudut dirancang konsisten menggunakan skala modular yang harmonis:
+
+| Token Token | Nilai | Implementasi Flutter | Penggunaan Komponen |
+| :--- | :---: | :--- | :--- |
+| `AppRadius.xs` | **4 px** | `BorderRadius.circular(4)` | Indikator mikro, garis aksen, handle bar kecil, tooltip. |
+| `AppRadius.sm` | **8 px** | `BorderRadius.circular(8)` | Thumbnail foto kecil, badge status kotak rounded, inner container, filter chip mini. |
+| `AppRadius.md` | **12 px** | `BorderRadius.circular(12)` | Tombol utama (`AppButton`), Input Text Field, Dropdown, Menu popup, List tile card. |
+| `AppRadius.lg` | **16 px** | `BorderRadius.circular(16)` | Kartu laporan (`ReportCard`), Modal dialog konfirmasi, Kotak peta mini, Container uploader media. |
+| `AppRadius.xl` | **20 px** | `BorderRadius.circular(20)` | Header banner, Floating action card, Dialog besar. |
+| `AppRadius.xxl` | **24 px** | `BorderRadius.circular(24)` | Sudut atas Bottom Sheet (`BorderRadius.vertical(top: Radius.circular(24))`), Hero banner. |
+| `AppRadius.pill` / `full` | **999 px** | `BorderRadius.circular(999)` / `StadiumBorder()` | Category filter chips, Pill status badges, Search bar rounded, Tag wilayah, Floating pill buttons. |
+| `AppRadius.circle` | **Lingkaran** | `BoxShape.circle` / `CircleAvatar` | Foto profil pengguna (`UserAvatar`), Ikon tombol aksi cepat melingkar, Logo brand. |
+
+---
+
+### 3.2 Sistem Flat UI & Garis Tepi Bersih (Zero Drop Shadow Design)
+
+Seluruh komponen antarmuka menganut prinsip **Flat UI Design** yang konsisten: meniadakan seluruh *drop shadow*, *elevation shadow*, dan *glow shadow* (`elevation: 0`). Struktur spasial dan hierarki visual dipertegas menggunakan **crisp hairline borders (1 px solid #E2E8F0)** serta kontras permukaan yang bersih (*surface contrast*):
+
+```dart
+class AppShadows {
+  AppShadows._();
+
+  /// Flat UI: No drop shadow
+  static const List<BoxShadow> none = [];
+
+  /// Flat UI: Card tanpa drop shadow
+  static const List<BoxShadow> card = [];
+
+  /// Flat UI: Komponen floating tanpa drop shadow
+  static const List<BoxShadow> floating = [];
+
+  /// Flat UI: Modal dan dialog tanpa drop shadow
+  static const List<BoxShadow> modal = [];
+
+  /// Flat UI: Tombol primary tanpa glow shadow
+  static const List<BoxShadow> primaryGlow = [];
+}
+```
+
+---
+
+### 3.3 Palet Warna Fungsional & Semantik
+
+Palet warna mempertahankan identitas profesional yang dapat dipercaya, dipadukan dengan warna latar *soft pastel* untuk chip dan badge agar antarmuka terasa segar dan ramah:
+
+| Kategori Token | Token | Kode Hex | Peran & Penggunaan |
+| :--- | :--- | :--- | :--- |
+| **Brand Primary** | `color.primary` | `#2563EB` | Warna identitas utama, tombol aksi submit, link aktif, border fokus formulir. |
+| | `color.primary-dark` | `#1D4ED8` | State hover/pressed pada tombol utama. |
+| | `color.primary-light` | `#3B82F6` | Aksen sekunder, gradien halus, indikator progres aktif. |
+| | `color.primary-subtle` | `#EFF6FF` | Latar pill chip terpilih, latar belakang seleksi aktif. |
+| **Netral & Teks** | `color.text-title` | `#0F172A` | Judul layar utama, heading kartu laporan, label field input (Slate 900). |
+| | `color.text-body` | `#334155` | Teks isi laporan, isi komentar, pesan panduan (Slate 700). |
+| | `color.text-muted` | `#64748B` | Waktu relatif, caption lokasi, placeholder text (Slate 500). |
+| | `color.border` | `#E2E8F0` | Garis pembatas kartu, separator list, border default input (Slate 200). |
+| | `color.border-subtle` | `#F1F5F9` | Garis pemisah internal antar elemen sekunder (Slate 100). |
+| | `color.surface` | `#FFFFFF` | Latar kartu laporan, container dialog, permukaan modal, navbar. |
+| | `color.background` | `#F8FAFC` | Latar belakang seluruh layar aplikasi (Slate 50). |
+| **Status Semantik** | `color.success` | `#16A34A` | Status "Selesai", verifikasi disetujui, badge sukses (Emerald 600). |
+| | `color.success-subtle` | `#DCFCE7` | Latar badge pill status selesai (Emerald 100). |
+| | `color.success-text` | `#15803D` | Teks badge status selesai (Emerald 700). |
+| | `color.warning` | `#D97706` | Status "Dalam Penanganan", laporan dalam antrean review (Amber 600). |
+| | `color.warning-subtle` | `#FEF3C7` | Latar badge pill status dalam penanganan (Amber 100). |
+| | `color.warning-text` | `#B45309` | Teks badge status dalam penanganan (Amber 700). |
+| | `color.danger` | `#DC2626` | Status "Ditolak/Dibatalkan", tombol aksi destruktif, alert validasi error (Red 600). |
+| | `color.danger-subtle` | `#FEE2E2` | Latar badge pill status ditolak/dibatalkan (Red 100). |
+| | `color.danger-text` | `#B91C1C` | Teks badge status ditolak/dibatalkan (Red 700). |
+| | `color.info` | `#0284C7` | Status "Baru" / "Diterima", pengumuman resmi administrator (Sky 600). |
+| | `color.info-subtle` | `#E0F2FE` | Latar badge pill status baru/info (Sky 100). |
+| | `color.info-text` | `#0369A1` | Teks badge status baru/info (Sky 700). |
+
+---
+
+### 3.4 Tipografi Fungsional & Hirarki Modern
+
+Tipografi mengutamakan font modern sans-serif (**Plus Jakarta Sans**, **Inter**, atau **Roboto**) dengan ritme vertikal yang proporsional:
+
+| Token | Ukuran | Weight | Line Height | Penggunaan |
+| :--- | :---: | :---: | :---: | :--- |
+| `type.h1` | 24 px | Bold (700) | 1.25 | Judul layar utama, angka besar metrik dashboard admin. |
+| `type.h2` | 18 px | SemiBold (600) | 1.30 | Judul kartu laporan, heading section formulir. |
+| `type.h3` | 16 px | SemiBold (600) | 1.35 | Sub-judul detail, nama pengguna pada komentar dan profil. |
+| `type.body-large` | 15 px | Regular (400) | 1.50 | Deskripsi detail laporan, isi pengumuman penting. |
+| `type.body-regular` | 14 px | Regular (400) | 1.50 | Deskripsi singkat di kartu feed, isi komentar umum. |
+| `type.body-medium` | 14 px | Medium (500) | 1.40 | Nilai field input formulir, teks tombol utama. |
+| `type.label` | 12 px | SemiBold (600) | 1.20 | Label field formulir (*clear & readable*), teks chip kategori. |
+| `type.badge` | 11 px | SemiBold (600) | 1.20 | Teks di dalam pill badge status penanganan. |
+| `type.caption` | 11 px | Regular (400) | 1.30 | Waktu relatif ("20 menit lalu"), koordinat GPS, metadata audit. |
+
+---
+
+### 3.5 Spasi & Grid Modular (8 px System)
+
+Menggunakan skala modular berbasis 4 px / 8 px untuk konsistensi ritme tata letak:
+- `AppSpacing.xs`: 4 px | `AppSpacing.sm`: 8 px | `AppSpacing.md`: 12 px | `AppSpacing.lg`: 16 px
+- `AppSpacing.xl`: 20 px | `AppSpacing.xxl`: 24 px | `AppSpacing.xxxl`: 32 px
+- **Margin Tepi Layar Mobile:** 16 px (standar) atau 20 px (tablet/layar lebar).
+- **Gutter Antar Kartu Feed:** 14 px – 16 px dengan padding internal kartu 16 px.
+
+---
+
+## 4. Spesifikasi Komponen UI (Rounded & Modern Components)
+
+### 4.1 Tombol Modern (`AppButton`)
+
+Tombol dirancang ergonomis dengan sudut membulat 12 px (`AppRadius.md`) atau bentuk pill penuh (`StadiumBorder`) untuk tombol floating:
+
+1. **Primary Button:**
+   - **Bentuk:** Rounded rectangle dengan sudut `12 px` (`BorderRadius.circular(12)`).
+   - **Latar:** Solid `color.primary` (`#2563EB`).
+   - **Teks:** Putih bersih (`#FFFFFF`), `type.body-medium` (Font Weight 600).
+   - **Elevasi & Shadow:** Flat UI (`elevation: 0`, tanpa drop shadow).
+   - **Target Sentuh:** Tinggi 48 px untuk mobile, padding horizontal 20 px.
+   - **State Tekan/Hover:** Transisi warna halus ke `#1D4ED8`.
+2. **Secondary / Outlined Button:**
+   - **Bentuk:** Rounded rectangle `12 px`.
+   - **Latar:** `#FFFFFF` murni.
+   - **Border:** `1.5 px solid #E2E8F0` (berubah menjadi `color.primary` saat hover/fokus).
+   - **Teks:** `#0F172A` (SemiBold).
+   - **Elevasi:** Flat UI (`elevation: 0`, tanpa drop shadow).
+3. **Pill Action Button:**
+   - **Bentuk:** Stadium Border (`BorderRadius.circular(999)`).
+   - Digunakan untuk tombol cepat seperti "Lihat di Peta", "Filter", atau Floating Action Button.
+4. **Destructive Button:**
+   - **Bentuk:** Rounded rectangle `12 px`.
+   - **Latar:** `#DC2626` (Solid Danger) dengan teks putih, atau latar `#FEE2E2` dengan teks `#B91C1C`.
+
+```dart
+// Contoh Implementasi AppButton di Flutter:
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    elevation: 0,
+    backgroundColor: AppColors.primary,
+    foregroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12), // Modern rounded corner
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+  ),
+  onPressed: onPressed,
+  child: Text(label, style: AppTextStyles.buttonMedium),
+)
+```
+
+---
+
+### 4.2 Formulir & Input Data (Rounded Form Controls)
+
+Formulir dirancang agar pengguna merasa nyaman, jelas, dan percaya diri saat menginput data laporan:
+
+1. **Text Field & Multi-Line Area:**
+   - **Bentuk:** Rounded rectangle dengan sudut `12 px` (`BorderRadius.circular(12)`).
+   - **Latar Belakang:** `#FFFFFF` (atau `#F8FAFC` dengan transisi ke putih saat fokus).
+   - **Border Default:** `1 px solid #CBD5E1`.
+   - **Border Fokus:** `1.5 px solid #2563EB` dengan soft ambient glow (`0 0 0 3px rgba(37,99,235,0.12)`).
+   - **Border Error:** `1.5 px solid #DC2626` dengan pesan error berwarna merah di bawah field.
+   - **Label Field:** Diletakkan rapi di atas kotak input dengan teks `type.label` berwarna `#0F172A` dan tanda bintang merah `*` untuk kolom wajib.
+   - **Padding Internal:** `EdgeInsets.symmetric(horizontal: 16, vertical: 14)`.
+2. **Dropdown Selection:**
+   - Kotak rounded `12 px` dengan ikon chevron yang halus dan menu popup melayang beradius `12 px` + soft shadow.
+3. **Map Location Picker Container:**
+   - Kontainer peta mini dengan sudut melengkung `16 px` (`BorderRadius.circular(16)`), di-clip menggunakan `ClipRRect`.
+   - Dilengkapi hairline border `1 px solid #E2E8F0`, pin lokasi modern, dan tombol pill rounded "Ubah Titik Lokasi".
+4. **Media Uploader Container:**
+   - Kotak uploader foto/video beradius `16 px` dengan garis tepi putus-putus (*dashed border*) bertekstur halus dan latar `#F8FAFC`.
+   - Thumbnail foto hasil unggahan ditampilkan dalam rasio 1:1 atau 16:9 dengan sudut rounded `12 px` (`ClipRRect(borderRadius: BorderRadius.circular(12))`) dan tombol hapus berbentuk lingkaran di sudut kanan atas.
+
+---
+
+### 4.3 Kartu Laporan Modern (`ReportCard`)
+
+Kartu laporan pada feed publik dan daftar laporan pengguna menyajikan data dengan estetika kontemporer yang rapi:
+
+- **Bentuk & Permukaan:**
+  - Latar: `#FFFFFF` murni.
+  - Sudut: **`16 px` (`BorderRadius.circular(16)`)**.
+  - Garis Tepi: `1 px solid #E2E8F0` (tegas dan bersih).
+  - Bayangan: Flat UI (tanpa drop shadow).
+  - Margin Antar Kartu: `EdgeInsets.symmetric(horizontal: 16, vertical: 8)`.
+  - Padding Konten: `16 px`.
+- **Tata Letak & Hierarki:**
+  1. **Header Baris Atas:**
+     - Kiri: Avatar pelapor berbentuk lingkaran (`BoxShape.circle`, 36x36 dp) + Nama Pelapor + Waktu Relatif.
+     - Kanan: Badge Status Penanganan berbentuk **Pill Kapsul** (`AppRadius.pill`).
+  2. **Judul & Kategori:**
+     - Tag Kategori berbentuk chip pill mungil (misal: "Jalan & Jembatan", "Sampah").
+     - Judul Laporan: 16 px SemiBold (`#0F172A`), maksimal 2 baris dengan pemotongan teks elegan.
+  3. **Media Gambar / Thumbnail:**
+     - Rasio 16:9, lebar penuh di dalam padding kartu.
+     - Sudut gambar melengkung halus: **`12 px` (`ClipRRect(borderRadius: BorderRadius.circular(12))`)**.
+     - Indikator jumlah foto (misal: "+3 Foto") berbentuk pill gelap transparan di sudut kanan bawah foto.
+  4. **Lokasi Kejadian:**
+     - Ikon pin lokasi berwarna `color.primary` dan teks alamat ringkas yang terpotong rapi.
+  5. **Footer Bar Interaksi:**
+     - Tombol Upvote & Downvote: Pill container rounded (`BorderRadius.circular(999)`) dengan angka vote yang jelas. State aktif diberi warna aksen terang.
+     - Tombol Komentar: Ikon chat rounded dengan counter jumlah diskusi warga.
+     - Tombol Share / Menu Aksi: Ikon tombol melingkar yang halus.
+
+---
+
+### 4.4 Badge Status, Kategori & Filter Bar (Rounded Pills & Stadium Shapes)
+
+Menggunakan bentuk kapsul/pill membulat penuh yang modern (*stadium shape* / `BorderRadius.circular(999)`):
+
+- **Badge Status Penanganan (Handling Status Pill):**
+  - **Bentuk:** `StadiumBorder()` / `BorderRadius.circular(999)`.
+  - **Padding:** `5 px vertical, 12 px horizontal`.
+  - **Tipografi:** `11 px SemiBold`.
+  - **Varian Semantik:**
+    - *Baru / Diterima:* Latar `#E0F2FE`, Teks `#0369A1`, Border `1 px solid #BAE6FD`.
+    - *Dalam Penanganan:* Latar `#FEF3C7`, Teks `#B45309`, Border `1 px solid #FDE68A`.
+    - *Selesai:* Latar `#DCFCE7`, Teks `#15803D`, Border `1 px solid #BBF7D0`.
+    - *Ditolak / Dibatalkan:* Latar `#FEE2E2`, Teks `#B91C1C`, Border `1 px solid #FECACA`.
+- **Filter Chips Bar (Kategori & Wilayah):**
+  - Baris horizontal yang dapat digeser (*horizontal scrollable chip list*).
+  - **Bentuk:** Pill kapsul membulat penuh (`BorderRadius.circular(999)`).
+  - **State Tidak Aktif:** Latar `#FFFFFF`, Border `1 px solid #E2E8F0`, Teks `#475569`, Flat (tanpa shadow).
+  - **State Aktif:** Latar `#2563EB` (Primary), Border `1.5 px solid #2563EB`, Teks `#FFFFFF`, Flat.
+
+---
+
+### 4.5 Modals, Dialog Konfirmasi & Bottom Sheet (Rounded Surfaces)
+
+- **Dialog Konfirmasi (misal: Hapus Laporan, Tolak Laporan, Konfirmasi Selesai):**
+  - **Bentuk:** Rounded rectangle dengan sudut **`20 px` (`BorderRadius.circular(20)`)**.
+  - **Latar:** `#FFFFFF` murni dengan border tegas `1 px solid #E2E8F0` (Flat UI, tanpa drop shadow).
+  - **Ikon Ilustrasi:** Berada di dalam lingkaran background warna lembut (48x48 dp) di bagian atas dialog.
+  - **Tombol Aksi:** Tombol batal (outlined 12 px) dan tombol konfirmasi (solid 12 px) diletakkan bersisian secara proporsional.
+- **Bottom Sheet (Mobile):**
+  - **Bentuk:** Sudut atas melengkung anggun **`24 px` (`BorderRadius.vertical(top: Radius.circular(24))`)**.
+  - **Drag Handle:** Batang indikator sentuh berbentuk pill di bagian tengah atas (`width: 40 px`, `height: 4 px`, `color: #CBD5E1`, `borderRadius: circular(4)`).
+  - **Latar:** `#FFFFFF` murni.
+
+---
+
+### 4.6 Peta & Elemen Visual Geospasial
+
+- **Peta Interaktif (OpenStreetMap via `flutter_map`):**
+  - Ditampilkan dalam kartu melengkung dengan sudut **`16 px` (`ClipRRect(borderRadius: BorderRadius.circular(16))`)**.
+  - Pin penanda (*custom marker*) berbentuk pin tegak lurus konsisten, menampilkan ikon kategori di tengahnya.
+  - Floating map controls (tombol reset kompas, tombol lokasi saya) berbentuk lingkaran sempurna (`BoxShape.circle`) dengan latar putih, 0 elevation, dan border 1 px tegas.
+
+---
+
+### 4.7 Avatar Pengguna & Elemen Identitas
+
+- **Foto Profil Pengguna (`UserAvatar`):**
+  - Selalu berbentuk **lingkaran sempurna (`BoxShape.circle` / `CircleAvatar`)**.
+  - Dilengkapi border halus `1.5 px solid #FFFFFF` saat berada di atas gambar atau background kontras.
+  - Jika foto tidak tersedia, menampilkan inisial pengguna di atas latar belakang warna pastel dengan teks kontras tinggi.
+- **Logo Brand Laporin:**
+  - Lingkaran atau squircle membulat (radius 16px) dengan lambang grafis yang ramah dan tepercaya.
+
+---
+
+## 5. Spesifikasi Layar Mobile (User Flow)
+
+### 5.1 Layar Masuk / Login & Registrasi
+- **Header:** Logo Laporin melingkar dengan teks sambutan hangat "Selamat Datang di Laporin".
+- **Formulir:** Input Email dan Password beradius 12 px dengan ikon awalan (*prefix icon*) monokrom yang elegan.
+- **Tombol Masuk:** Tombol Primary lebar penuh, sudut 12 px, dengan efek pendaran biru halus.
+- **Pemisah:** Garis tipis bergradasi dengan teks "atau lanjutkan dengan".
+- **Social Login:** Tombol "Masuk dengan Google" rounded 12 px berlatar putih dengan border `1 px solid #E2E8F0` dan logo resmi Google.
+
+### 5.2 Beranda / Feed Publik
+- **Top Bar:** Header melengkung halus berisi pemilih provinsi (pill chip rounded dengan ikon lokasi), tombol notifikasi ber-badge, dan avatar profil.
+- **Tab Bar Navigasi Feed:** Tab pill rounded ("Nasional" dan nama provinsi aktif, misal "DKI Jakarta").
+- **Kategori Filter:** Baris chip horizontal berbentuk pill kapsul yang interaktif.
+- **Feed List:** Daftar kartu laporan beradius 16 px dengan transisi visual yang mulus saat scroll.
+- **Empty State:** Ilustrasi modern bergaya ramah dengan pesan bersahabat dan tombol pill rounded "Buat Laporan Pertama".
+
+### 5.3 Layar Buat Laporan (Form Pelaporan Cepat)
+- **Progres Bertahap:** Indikator langkah berupa garis pill membulat.
+- **Media Upload:** Kotak upload media dengan sudut rounded 16 px dan tombol kamera/galeri rounded.
+- **Input Judul & Deskripsi:** Field input rounded 12 px yang nyaman untuk pengetikan panjang.
+- **Kategori:** Grid kartu kecil beradius 12 px dengan ikon ilustratif dan teks kategori yang jelas.
+- **Lokasi:** Peta mini rounded 16 px yang langsung mendeteksi koordinat GPS pengguna dengan akurasi tinggi.
+- **Bottom Action:** Tombol "Kirim Laporan" rounded 12 px yang terkunci otomatis saat perangkat offline (dilengkapi banner offline rounded).
+
+### 5.4 Layar Detail Laporan & Thread Diskusi
+- **Hero Image:** Galeri foto bukti dengan sudut rounded bawah 20 px atau kartu foto melayang 16 px.
+- **Status Timeline:** Garis alur vertikal yang menghubungkan node status berbentuk lingkaran berikon status dan kotak catatan petugas beradius 12 px.
+- **Interaksi Warga:** Baris voting pill dan tombol share.
+- **Thread Komentar:** Kartu komentar beradius 12 px dengan avatar melingkar pelapor/warga dan badge khusus "Petugas/Admin".
+- **Composer Komentar:** Input bar rounded menempel di atas keyboard dengan tombol kirim berbentuk lingkaran.
+
+---
 
 ## 6. Spesifikasi Dashboard Web Admin
 
-### 6.1 Kerangka layout
+- **Layout Berbasis Kartu Modern:** Seluruh container data menggunakan sudut membulat 16 px dengan background putih bersih dan soft shadow.
+- **Tabel Data:** Baris tabel dengan hover effect beradius halus (8 px), sel dengan padding ergonomis, dan badge status berbentuk pill.
+- **Modal Tindakan Petugas:**
+  - *Modal Selesai:* Mengharuskan lampiran foto bukti penyelesaian dalam uploader rounded 12 px sebelum tombol "Konfirmasi Selesai" aktif.
+  - *Modal Tolak:* Pilihan alasan terstruktur dalam dropdown rounded 12 px dan konfirmasi tombol merah rounded 12 px.
 
--   Sidebar tetap di kiri pada layar lebar.
--   Header konten menampilkan judul halaman, identitas admin, dan menu
-    akun.
--   Area konten menggunakan grid responsif.
--   Pada viewport sempit, sidebar dapat berubah menjadi drawer.
--   Tabel/daftar laporan harus tetap dapat dipakai pada layar kecil;
-    prioritaskan kolom inti dan pindahkan detail ke halaman detail.
+---
 
-### 6.2 Dashboard
+## 7. Invarian Sistem & Visibilitas Publik (Tetap Terlindungi)
 
-Kartu metrik yang terlihat pada referensi: - Total Laporan - Selesai -
-Dalam Proses
+Pembaruan desain visual ke arah **Modern & Rounded** ini **TIDAK MENGUBAH** satu pun aturan keamanan, kontrol akses data, maupun *state machine* backend yang telah ditetapkan dalam `PRD.md` dan `AGENTS.md`:
 
-Panel pendukung: - Laporan Terbanyak berdasarkan kategori. - Aktivitas
-Terbaru, misalnya laporan baru, status berubah, dan komentar baru.
+1. **Dua State Machine Terpisah:**
+   - Status Penanganan (`handling_status`): `new`, `accepted`, `in_progress`, `completed`, `rejected`, `cancelled`.
+   - Status Publikasi (`publication_state`): `pending_review`, `published`, `held`, `archived`.
+   - Keduanya tetap ditampilkan terpisah melalui pill badge semantik yang sesuai.
+2. **Aturan Visibilitas Publik:**
+   - Laporan HANYA tampil secara publik jika:
+     ```sql
+     publication_state = 'published' AND handling_status NOT IN ('rejected', 'cancelled')
+     ```
+3. **Threshold Downvote Otomatis:**
+   - Ambang batas downvote aktif (≥70%) secara atomik memindahkan publikasi ke status `held` dan membuat tiket di antrean moderasi admin.
+4. **Pencabutan Akses Seketika Saat Terminal:**
+   - Laporan yang berstatus `rejected` atau `cancelled` seketika dicabut dari akses publik dan dinonaktifkan seluruh interaksinya (voting/komentar).
+5. **Wajib Bukti Foto Penyelesaian:**
+   - Perubahan status ke `completed` mutlak membutuhkan bukti foto valid yang diunggah oleh petugas ke Supabase Storage.
+6. **Keamanan Role Server-Managed:**
+   - Hak istimewa admin dikelola dari sisi server melalui database RLS; client tidak dapat mengubah rolenya sendiri.
 
-Panduan: - Sertakan rentang waktu dan definisi metrik. - Persentase
-naik/turun harus memiliki pembanding yang jelas. - Gunakan label teks
-dan angka; warna tren hanya sebagai penguat. - Hindari grafik dekoratif
-tanpa tindakan yang dapat diambil.
+---
 
-### 6.3 Manajemen laporan
+## 8. Panduan Teknis Implementasi Flutter (Code Guidelines)
 
-Daftar admin idealnya menyediakan: - Pencarian judul/ID. - Filter
-kategori, wilayah, tanggal, status penanganan, dan status moderasi. -
-Sorting berdasarkan terbaru, prioritas, atau aktivitas. - Akses ke
-detail, bukti, histori perubahan, dan tindakan yang diizinkan. - Bulk
-action hanya jika ada konfirmasi dan ringkasan dampak.
+### 8.1 Standar Token Radius (`lib/core/theme/app_radius.dart`)
 
-### 6.4 Pengguna, pengumuman, dan pengaturan
+```dart
+import 'package:flutter/material.dart';
 
--   **Pengguna:** pencarian, peran, status akun, dan tindakan
-    administratif dengan konfirmasi.
--   **Pengumuman:** buat/edit, preview, jadwalkan atau publikasikan,
-    arsipkan.
--   **Pengaturan:** konfigurasi kategori, wilayah, batas unggahan, dan
-    kebijakan yang memang dapat dikonfigurasi.
--   Perubahan hak akses dan pengaturan kritis harus dicatat pada audit
-    log.
+class AppRadius {
+  AppRadius._();
 
-## 7. Status, Moderasi, dan Visibilitas
+  /// 4 px - Indikator mikro, handle bar kecil, tooltip
+  static const double xs = 4.0;
+  static const Radius radiusXs = Radius.circular(xs);
+  static const BorderRadius borderXs = BorderRadius.all(radiusXs);
 
-Desain harus memisahkan **status penanganan laporan** dari **status
-moderasi/publikasi**. Jangan memakai satu badge untuk mewakili keduanya.
+  /// 8 px - Thumbnail kecil, inner card, badge kotak rounded
+  static const double sm = 8.0;
+  static const Radius radiusSm = Radius.circular(sm);
+  static const BorderRadius borderSm = BorderRadius.all(radiusSm);
 
-### 7.1 Status penanganan
+  /// 12 px - Tombol standar, text field input, dropdown
+  static const double md = 12.0;
+  static const Radius radiusMd = Radius.circular(md);
+  static const BorderRadius borderMd = BorderRadius.all(radiusMd);
 
-Status yang dapat ditampilkan, mengikuti transisi resmi backend:
+  /// 16 px - Kartu laporan, dialog konfirmasi, container uploader media
+  static const double lg = 16.0;
+  static const Radius radiusLg = Radius.circular(lg);
+  static const BorderRadius borderLg = BorderRadius.all(radiusLg);
 
--   **Diterima** --- laporan tercatat.
--   **Diproses** --- laporan sedang ditinjau atau ditindaklanjuti.
--   **Dalam Penanganan** --- pekerjaan penanganan sedang berlangsung.
--   **Selesai** --- tindakan dinyatakan selesai.
--   **Ditolak** --- laporan tidak diterima untuk proses penanganan,
-    dengan alasan.
--   **Diarsipkan** --- laporan masuk arsip sesuai kebijakan retensi.
+  /// 20 px - Floating banner, action card besar
+  static const double xl = 20.0;
+  static const Radius radiusXl = Radius.circular(xl);
+  static const BorderRadius borderXl = BorderRadius.all(radiusXl);
 
-Nama dan transisi final wajib mengikuti state machine produk. UI tidak
-boleh mengizinkan transisi yang tidak sah.
+  /// 24 px - Sudut atas Bottom Sheet
+  static const double xxl = 24.0;
+  static const Radius radiusXxl = Radius.circular(xxl);
+  static const BorderRadius borderXxl = BorderRadius.all(radiusXxl);
 
-### 7.2 Status moderasi/publikasi
+  /// 999 px - Filter chip, pill badge status, pill search bar
+  static const double pill = 999.0;
+  static const Radius radiusPill = Radius.circular(pill);
+  static const BorderRadius borderPill = BorderRadius.all(radiusPill);
 
-Status terpisah yang disarankan:
+  /// Stadium border untuk tombol & chip pill
+  static const OutlinedBorder stadium = StadiumBorder();
+}
+```
 
--   **Menunggu Review**
--   **Dipublikasikan**
--   **Ditinjau / Perlu Perbaikan**
--   **Ditolak Publikasi**
--   **Diarsipkan**
+---
 
-Bila laporan mencapai ambang downvote berbasis persentase, desain harus
-menampilkan status **Perlu Review**, bukan otomatis menghapus laporan.
-Tampilkan alasan atau indikator review hanya kepada peran yang berhak;
-hindari mendorong brigading dengan memperlihatkan ambang internal secara
-gamblang kepada publik.
+### 8.2 Konfigurasi Global Theme (`lib/core/theme/app_theme.dart`)
 
-### 7.3 Prinsip UX moderasi
+```dart
+ThemeData get appTheme {
+  const borderSide = BorderSide(color: Color(0xFFE2E8F0), width: 1.0);
 
--   Perubahan moderasi memiliki alasan, pelaku, waktu, dan hasil.
--   Pengguna mendapat pesan yang sopan dan sesuai tingkat detail yang
-    aman untuk dibagikan.
--   Laporan yang sedang direview memiliki tampilan konsisten di semua
-    permukaan.
--   Kebijakan arsip setelah 24 jam harus diimplementasikan dengan aturan
-    backend yang jelas; UI menampilkan status arsip ketika berlaku dan
-    tidak menyiratkan penghapusan permanen jika data sebenarnya tetap
-    tersimpan.
--   Pengeditan laporan terbatas: UI hanya menampilkan aksi edit saat
-    diizinkan dan menjelaskan bila laporan tidak lagi dapat diedit.
--   Audit log tidak dapat diubah melalui antarmuka pengguna biasa.
+  return ThemeData(
+    useMaterial3: true,
+    scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+    
+    // Card Theme: Sudut membulat 16px, background putih bersih, hairline border
+    cardTheme: CardThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: borderSide,
+      ),
+      margin: EdgeInsets.zero,
+      color: Colors.white,
+    ),
 
-## 8. Alur Pengguna Utama
+    // Elevated & Filled Button Theme: Sudut membulat 12px
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      ),
+    ),
 
-### 8.1 Membuat laporan
+    // Outlined Button Theme: Sudut membulat 12px
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        side: borderSide,
+        foregroundColor: const Color(0xFF0F172A),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      ),
+    ),
 
-1.  Warga mengetuk tombol `+`.
-2.  Mengisi judul, kategori, lokasi, dan deskripsi.
-3.  Menambahkan foto bila diperlukan.
-4.  Meninjau validasi dan mengetuk Kirim Laporan.
-5.  Aplikasi menampilkan hasil submit dan status laporan.
-6.  Pengguna dapat membuka detail dan mengikuti perubahan.
+    // Input Decoration Theme: Sudut membulat 12px
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: borderSide,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: borderSide,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    ),
 
-### 8.2 Mendukung dan berdiskusi
+    // Dialog Theme: Sudut membulat 20px
+    dialogTheme: DialogThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: borderSide,
+      ),
+      backgroundColor: Colors.white,
+    ),
 
-1.  Warga membuka kartu laporan.
-2.  Membaca foto, lokasi, deskripsi, dan status.
-3.  Memberi upvote atau menulis komentar.
-4.  Melihat jumlah interaksi dan balasan yang diperbarui.
-5.  Jika laporan masuk review, UI mengikuti status publikasi yang
-    ditetapkan sistem.
+    // Bottom Sheet Theme: Sudut atas membulat 24px
+    bottomSheetTheme: const BottomSheetThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+    ),
+  );
+}
+```
 
-### 8.3 Penanganan oleh admin
+---
 
-1.  Admin membuka daftar laporan.
-2.  Memfilter laporan baru atau yang memerlukan review.
-3.  Memeriksa detail, lokasi, foto, dan histori.
-4.  Memilih transisi status yang sah atau melakukan tindakan moderasi.
-5.  Mengisi alasan/catatan dan melampirkan bukti bila dibutuhkan.
-6.  Menyimpan perubahan; sistem mencatat audit log dan mengirim
-    notifikasi yang relevan.
+## 9. Prompt Standar Eksekusi Kode untuk AI Coding Agent / Developer
 
-## 9. Responsivitas
+Gunakan prompt berikut saat menerapkan desain modern rounded ini ke dalam kode sumber aplikasi:
 
-### Mobile
+```markdown
+### INSTRUKSI REFACTOR UI: Modern, Rounded & Professional Civic-Tech Design
 
--   Desain utama untuk lebar sekitar 360--430 px.
--   Satu kolom untuk feed dan form.
--   Bottom navigation tetap di area aman bawah.
--   Tombol dan kontrol utama memiliki target sentuh ideal sekitar 44 ×
-    44 px atau lebih.
--   Konten panjang dapat scroll tanpa mengunci tombol submit secara
-    tidak sengaja.
+Kamu adalah Senior Flutter UI/UX Engineer. Tugasmu adalah mengimplementasikan gaya desain MODERN & ROUNDED pada antarmuka aplikasi Flutter "Laporin", mengacu penuh pada panduan resmi di DESIGN.md.
 
-### Tablet
+#### 1. Tujuan & Karakter Visual
+- Terapkan estetika antarmuka yang modern, ramah, dan profesional dengan sudut membulat proporsional (*rounded components*) dan gaya Flat UI murni (tanpa drop shadow, 0 elevation).
+- Ganti sudut siku-siku kaku (0 px) dengan skala radius modern:
+  - Tombol standar (`AppButton`, `ElevatedButton`, `OutlinedButton`): `BorderRadius.circular(12)`.
+  - Formulir (`TextFormField`, `InputDecorationTheme`, Dropdown): `BorderRadius.circular(12)`.
+  - Kartu laporan (`ReportCard`), Modal dialog, Container peta: `BorderRadius.circular(16)`.
+  - Badge status & Tag kategori: Bentuk Pill membulat penuh (`BorderRadius.circular(999)` / `StadiumBorder`).
+  - Bottom Sheet: Sudut atas membulat `BorderRadius.vertical(top: Radius.circular(24))` dengan drag handle berbentuk pill.
+  - Avatar pengguna: Tetap berbentuk lingkaran sempurna (`BoxShape.circle`).
 
--   Gunakan margin lebih besar dan, jika sesuai, dua kolom untuk panel
-    non-form.
--   Form tetap berurutan satu kolom agar mudah dipahami.
--   Bottom navigation atau navigation rail dipilih secara konsisten.
+#### 2. Kualitas Visual & Finishing
+- Gunakan hairline borders tegas (`1px solid #E2E8F0`) untuk batas kartu dan container tanpa menggunakan drop shadow.
+- Pastikan seluruh foto thumbnail di dalam kartu di-clip rapi dengan `ClipRRect(borderRadius: BorderRadius.circular(12))`.
+- Jaga target tap minimal 48x48 dp pada layar sentuh mobile.
 
-### Web desktop
+#### 3. Batasan Mutlak
+- JANGAN mengubah aturan bisnis, alur kerja navigasi, query geospasial Supabase, atau invariant status produk.
+- JANGAN menimbulkan error layout overflow (`RenderFlex overflowed`).
+- Jalankan `dart format`, `flutter analyze`, dan `flutter test` setelah perubahan untuk memastikan 0 error dan semua pengujian lulus.
+```
 
--   Sidebar dan konten utama menggunakan grid fleksibel.
--   Dashboard dapat memakai beberapa kolom kartu.
--   Batas lebar konten diterapkan agar teks tidak terlalu panjang.
--   Tabel mendukung scroll horizontal atau tampilan ringkas saat ruang
-    terbatas.
-
-## 10. Aksesibilitas dan Usability
-
--   Targetkan WCAG 2.2 AA untuk kontras dan interaksi web.
--   Pastikan kontras teks normal minimal 4.5:1; teks besar minimal 3:1.
--   Semua input memiliki label yang terlihat dan dapat diakses pembaca
-    layar.
--   Ikon aksi memiliki accessible label; jangan hanya mengandalkan
-    tooltip.
--   Urutan fokus keyboard pada dashboard mengikuti urutan visual.
--   Status dan error disampaikan melalui teks, bukan warna saja.
--   Hormati safe area perangkat dan ukuran teks sistem.
--   Foto laporan yang informatif memiliki deskripsi alternatif yang
-    sesuai; gambar dekoratif menggunakan alt kosong.
--   Berikan feedback pada aksi sukses, gagal, loading, dan perubahan
-    status.
--   Hindari animasi yang tidak perlu; hormati preferensi reduced motion.
-
-## 11. Konten dan Microcopy
-
-Gunakan bahasa Indonesia yang ringkas, spesifik, dan tidak menyalahkan
-pengguna.
-
-Contoh: - Label tombol: **Kirim Laporan**, **Simpan**, **Selesaikan**,
-**Tolak Laporan**. - Validasi: "Judul laporan wajib diisi." - Lokasi:
-"Pilih lokasi di peta atau gunakan lokasi saat ini." - Upload gagal:
-"Foto belum berhasil diunggah. Periksa koneksi lalu coba lagi." - Status
-review: "Laporan sedang ditinjau sebelum ditampilkan ke publik." -
-Penolakan: "Laporan belum dapat dipublikasikan karena \[alasan\].
-Periksa kembali informasi yang diperlukan." - Empty state: "Belum ada
-laporan di sini. Coba ubah filter atau buat laporan baru."
-
-Hindari menjanjikan waktu penyelesaian kecuali sistem memiliki SLA yang
-benar-benar berlaku.
-
-## 12. State yang Wajib Dirancang
-
-Setiap layar relevan harus mencakup:
-
--   Default / data berhasil dimuat.
--   Loading atau skeleton.
--   Empty state.
--   Error jaringan dan retry.
--   Validasi form.
--   Tidak memiliki izin / izin ditolak.
--   Upload berjalan, gagal, dan berhasil.
--   Konten tidak ditemukan atau tidak lagi dapat diakses.
--   Akses ditolak berdasarkan peran.
--   State disabled.
--   Konfirmasi aksi destruktif.
--   Perubahan status yang berhasil dan gagal.
--   Status review/arsip bila relevan.
-
-## 13. Panduan Implementasi Flutter
-
--   Bangun token warna, tipografi, radius, dan spacing sebagai
-    `ThemeData` serta konstanta desain terpusat.
--   Buat komponen reusable: `PrimaryButton`, `AppTextField`,
-    `StatusChip`, `ReportCard`, `CategoryChip`, `PhotoPicker`,
-    `LocationPicker`, `StatusTimeline`, `CommentTile`, dan `EmptyState`.
--   Pisahkan widget presentasi dari state management dan akses data.
--   Gunakan `SafeArea`, dukung ukuran teks dinamis, dan hindari tinggi
-    tetap untuk konten yang dapat membesar.
--   Model status sebagai enum/tipe domain, bukan string bebas yang
-    tersebar di widget.
--   Gunakan komponen berbeda untuk status penanganan dan status
-    moderasi.
--   Tampilkan loading dan error berdasarkan state request yang nyata.
--   Optimalkan thumbnail untuk feed dan muat gambar resolusi besar hanya
-    pada detail.
--   Validasi tipe dan ukuran file di klien, lalu validasi ulang di
-    backend.
--   Jangan menyimpan kredensial atau mengandalkan validasi klien sebagai
-    kontrol keamanan.
-
-## 14. Panduan Implementasi Dashboard Web
-
--   Gunakan token visual yang sama dengan aplikasi mobile.
--   Gunakan komponen konsisten untuk sidebar, header, KPI card, filter,
-    table/list, status chip, dialog konfirmasi, dan toast.
--   Pastikan semua aksi admin bisa dilakukan dengan keyboard.
--   Tampilkan konteks dan dampak sebelum perubahan status atau moderasi.
--   Batasi akses berdasarkan peran di backend; menyembunyikan tombol di
-    UI bukan mekanisme otorisasi.
--   Jangan tampilkan data pribadi yang tidak diperlukan untuk tugas
-    admin.
-
-## 15. Acceptance Criteria Desain
-
-### Konsistensi visual
-
--   [ ] Semua halaman memakai token warna, tipografi, spacing, radius,
-    dan state komponen yang konsisten.
--   [ ] Status penanganan dan moderasi dibedakan secara visual dan
-    semantik.
--   [ ] Semua kartu laporan memiliki hierarki informasi yang konsisten.
-
-### Pelaporan
-
--   [ ] Field wajib terlihat jelas dan memiliki validasi yang mudah
-    dipahami.
--   [ ] Pengguna dapat memilih lokasi manual jika izin lokasi tidak
-    diberikan.
--   [ ] Upload foto menunjukkan progres, kegagalan, dan opsi mencoba
-    ulang.
--   [ ] Setelah submit, pengguna mendapat konfirmasi dan dapat memeriksa
-    status laporan.
-
-### Interaksi dan status
-
--   [ ] Upvote dan komentar memiliki state aktif/loading/error yang
-    sesuai.
--   [ ] Timeline hanya menampilkan peristiwa status yang tercatat.
--   [ ] Aksi edit hanya muncul ketika kebijakan mengizinkan.
--   [ ] Laporan yang memerlukan review tidak otomatis ditampilkan seolah
-    sudah dipublikasikan.
-
-### Admin dan moderasi
-
--   [ ] Admin hanya dapat memilih transisi status yang sah.
--   [ ] Penolakan memiliki alasan dan konfirmasi yang jelas.
--   [ ] Penyelesaian menampilkan kebutuhan bukti sesuai aturan produk.
--   [ ] Perubahan status dan moderasi memiliki jejak audit di backend.
--   [ ] Dashboard menampilkan definisi metrik dan filter yang jelas.
-
-### Aksesibilitas dan ketahanan
-
--   [ ] Kontras teks memenuhi target WCAG 2.2 AA.
--   [ ] Target sentuh mobile nyaman digunakan.
--   [ ] Semua layar penting memiliki loading, empty, error, dan success
-    state.
--   [ ] Layout tetap terbaca pada layar kecil dan saat ukuran teks
-    diperbesar.
-
-## 16. Catatan dan Keputusan yang Masih Perlu Divalidasi
-
-1.  Nilai token warna dan ukuran pada dokumen ini adalah baseline
-    rekomendasi; validasikan dengan file desain final atau pengukuran
-    screenshot.
-2.  Tetapkan batas jumlah, ukuran, dan tipe foto pada produk.
-3.  Tetapkan kategori dan struktur wilayah yang berlaku.
-4.  Finalisasi nama status dan transisi berdasarkan state machine
-    backend.
-5.  Definisikan dengan tepat bagaimana kebijakan arsip 24 jam bekerja,
-    termasuk apakah yang diarsipkan adalah laporan baru, laporan yang
-    tidak aktif, atau objek tertentu.
-6.  Tentukan apakah ambang downvote berbasis persentase dihitung
-    terhadap total suara dan pada minimum jumlah suara tertentu.
-7.  Tentukan visibilitas komentar, laporan yang ditinjau, alasan
-    penolakan, dan histori status bagi warga, admin, dan publik.
-8.  Tentukan apakah dashboard web memakai desain tabel penuh, daftar
-    kartu, atau kombinasi sesuai volume data.
-9.  Verifikasi perilaku autentikasi Google, pemulihan akun, dan
-    kebijakan izin lokasi.
-
-------------------------------------------------------------------------
-
-**Prinsip penutup:** desain harus membuat warga mudah menyampaikan
-masalah dan mudah memahami tindak lanjutnya, sementara admin mendapat
-alat yang jelas, aman, dan dapat diaudit untuk memproses laporan.
+---
+*Dokumen `DESIGN.md` ini berlaku sebagai acuan desain resmi untuk seluruh pengembang, desainer, dan coding agent pada proyek Laporin.*

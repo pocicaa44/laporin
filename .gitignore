@@ -13,6 +13,7 @@ assets/.env
 assets/env
 !.env.example
 !.env.*.example
+.mcp.json
 
 # Android Keystore & Signing Secrets
 *.keystore

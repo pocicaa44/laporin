@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
@@ -119,8 +120,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         margin: const EdgeInsets.only(top: 48),
         decoration: const BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [AppColors.modalShadow],
+          borderRadius: AppRadius.sheet,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -149,9 +149,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       horizontal: 10,
                       vertical: 4,
                     ),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.pill,
                     ),
                     child: Text(
                       announcement.category,
@@ -218,7 +218,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       imageSource: announcement.imageUrl!,
                       height: 220,
                       width: double.infinity,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.card,
                       fit: BoxFit.cover,
                     ),
                   ],
@@ -227,7 +227,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.background,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.card,
                       border: Border.all(color: AppColors.border),
                     ),
                     child: SelectableText(
@@ -242,8 +242,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.button,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -324,14 +324,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEEF0FF), Color(0xFFE4E7FF)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.primarySoft,
+                      borderRadius: AppRadius.card,
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: AppColors.primary.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
@@ -405,13 +401,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                   : FontWeight.w500,
                               fontSize: 12,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.border,
-                              ),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.pill,
+                              side: BorderSide.none,
                             ),
                           ),
                         );
@@ -498,14 +490,13 @@ class _AnnouncementCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.card,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.card,
           border: Border.all(color: AppColors.border),
-          boxShadow: const [AppColors.cardShadow],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,7 +511,7 @@ class _AnnouncementCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: catColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.pill,
                   ),
                   child: Text(
                     announcement.category,
@@ -546,7 +537,7 @@ class _AnnouncementCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: onEdit,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: AppRadius.pill,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -554,7 +545,7 @@ class _AnnouncementCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: AppRadius.pill,
                         border: Border.all(
                           color: AppColors.primary.withValues(alpha: 0.3),
                         ),
@@ -609,7 +600,7 @@ class _AnnouncementCard extends StatelessWidget {
                 imageSource: announcement.imageUrl!,
                 height: 150,
                 width: double.infinity,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.button,
                 fit: BoxFit.cover,
               ),
             ],

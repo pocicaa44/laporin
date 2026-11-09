@@ -3,8 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../core/services/fcm_service.dart';
@@ -14,6 +14,7 @@ import '../../auth/screens/set_username_screen.dart';
 import '../../my_reports/screens/my_reports_screen.dart';
 import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
+import '../widgets/profile_photo_detail_dialog.dart';
 import 'edit_profile_screen.dart';
 
 /// Profile & Settings screen with role indicator, username display, and avatar preview detail
@@ -21,60 +22,7 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   void _showAvatarDetail(BuildContext context, UserProfileModel? user) {
-    final avatarUrl = user?.avatarUrl?.trim();
-    final hasCustomAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      builder: (ctx) {
-        final screenWidth = MediaQuery.of(ctx).size.width;
-        final size = (screenWidth * 0.8).clamp(220.0, 320.0);
-
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          insetPadding: const EdgeInsets.all(24),
-          child: Center(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(ctx),
-              child: ClipRRect(
-                child: Container(
-                  width: size,
-                  height: size,
-                  color: Colors.white,
-                  child: hasCustomAvatar
-                      ? AppImage(
-                          imageSource: avatarUrl,
-                          width: size,
-                          height: size,
-                          fit: BoxFit.cover,
-                          placeholder: Image.asset(
-                            UserAvatar.defaultAvatarAsset,
-                            width: size,
-                            height: size,
-                            fit: BoxFit.cover,
-                          ),
-                          errorWidget: Image.asset(
-                            UserAvatar.defaultAvatarAsset,
-                            width: size,
-                            height: size,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Image.asset(
-                          UserAvatar.defaultAvatarAsset,
-                          width: size,
-                          height: size,
-                          fit: BoxFit.cover,
-                        ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    ProfilePhotoDetailDialog.show(context: context, avatarUrl: user?.avatarUrl);
   }
 
   Future<void> _handleLogout(BuildContext context, AuthController auth) async {
@@ -92,9 +40,7 @@ class ProfileScreen extends StatelessWidget {
         canPop: false,
         child: Dialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 28, horizontal: 24),
             child: Column(
@@ -171,9 +117,8 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadius.card,
                 border: Border.all(color: AppColors.border),
-                boxShadow: const [AppColors.cardShadow],
               ),
               child: Row(
                 children: [
@@ -292,7 +237,7 @@ class ProfileScreen extends StatelessWidget {
                                 color: auth.isAdmin
                                     ? const Color(0xFFFEF8E7)
                                     : AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: AppRadius.pill,
                               ),
                               child: Text(
                                 auth.isAdmin
@@ -426,12 +371,12 @@ class _ProfileMenuItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.button,
         border: Border.all(color: AppColors.border),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.button,
         child: ListTile(
           onTap: isEnabled ? onTap : null,
           leading: FaIcon(icon, color: effectiveIconColor, size: 18),

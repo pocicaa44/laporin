@@ -144,7 +144,7 @@ void main() {
     });
 
     testWidgets(
-      'Clicking avatar on ProfileScreen opens avatar dialog containing ONLY photo without zoom or other widgets',
+      'Clicking avatar on ProfileScreen opens minimalist photo overlay without buttons, border, or text',
       (tester) async {
         await tester.pumpWidget(createTestApp());
         await tester.pumpAndSettle();
@@ -178,16 +178,12 @@ void main() {
           findsOneWidget,
         );
 
-        // Verify cannot be zoomed in/out (no InteractiveViewer)
-        expect(
-          find.descendant(
-            of: dialogFinder,
-            matching: find.byType(InteractiveViewer),
-          ),
-          findsNothing,
-        );
+        // Verify Dialog has NO border
+        final dialogWidget = tester.widget<Dialog>(dialogFinder);
+        final shape = dialogWidget.shape as RoundedRectangleBorder?;
+        expect(shape?.side, equals(BorderSide.none));
 
-        // Tapping the dialog photo closes the dialog
+        // Tapping the dialog photo closes the overlay
         await tester.tap(dialogFinder);
         await tester.pumpAndSettle();
 

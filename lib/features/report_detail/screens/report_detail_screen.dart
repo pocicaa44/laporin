@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
@@ -19,6 +20,7 @@ import '../../admin/screens/admin_resolve_sheet.dart';
 import '../../admin/screens/admin_status_update_sheet.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../edit_report/screens/edit_report_screen.dart';
+import 'report_map_viewer_screen.dart';
 import '../controllers/report_detail_controller.dart';
 import '../widgets/comment_tile.dart';
 import '../widgets/delete_report_dialog.dart';
@@ -458,9 +460,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final res = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (_) => AdminStatusUpdateSheet(report: currentReport),
     );
 
@@ -500,9 +500,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final res = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (_) => AdminResolveSheet(report: currentReport),
     );
 
@@ -627,7 +625,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
         report.handlingStatus == HandlingStatus.rejected;
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.background,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -636,13 +634,6 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
             border: Border.symmetric(
               vertical: BorderSide(color: AppColors.border, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Scaffold(
             appBar: AppBar(
@@ -838,10 +829,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEF8E7),
-                              borderRadius: BorderRadius.circular(12),
+                              color: const Color(0xFFFFFBEB),
+                              borderRadius: AppRadius.borderSm,
                               border: Border.all(
-                                color: const Color(0xFFFDD888),
+                                color: const Color(0xFFFDE68A),
                               ),
                             ),
                             child: Column(
@@ -851,7 +842,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                   children: [
                                     Icon(
                                       Icons.edit_note_rounded,
-                                      color: Color(0xFFD98205),
+                                      color: Color(0xFFB45309),
                                       size: 20,
                                     ),
                                     SizedBox(width: 8),
@@ -881,8 +872,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       minimumSize: const Size.fromHeight(38),
                                       backgroundColor: AppColors.primary,
                                       foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: AppRadius.button,
                                       ),
                                       elevation: 0,
                                     ),
@@ -912,10 +903,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2),
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppColors.dangerSubtle,
+                              borderRadius: AppRadius.borderSm,
                               border: Border.all(
-                                color: const Color(0xFFFCA5A5),
+                                color: const Color(0xFFFECACA),
                               ),
                             ),
                             child: Column(
@@ -954,8 +945,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                     minimumSize: const Size.fromHeight(38),
                                     backgroundColor: AppColors.danger,
                                     foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: AppRadius.button,
                                     ),
                                     elevation: 0,
                                   ),
@@ -986,7 +977,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.card,
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
@@ -1023,15 +1014,19 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primarySoft,
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: AppColors.primarySubtle,
+                                  borderRadius: AppRadius.pill,
+                                  border: Border.all(
+                                    color: const Color(0xFFBFDBFE),
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Text(
                                   report.category,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primaryStrong,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -1045,23 +1040,46 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                         const SizedBox(height: 8),
 
                         // Location row
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                report.locationAddress,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
+                        InkWell(
+                          borderRadius: AppRadius.borderSm,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ReportMapViewerScreen(report: report),
                               ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    report.locationAddress,
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.primaryStrong,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.open_in_new,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 16),
 
@@ -1076,7 +1094,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: AppRadius.card,
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Column(
@@ -1106,8 +1124,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF5F5F5),
-                                borderRadius: BorderRadius.circular(12),
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: AppRadius.card,
                                 border: Border.all(color: AppColors.border),
                               ),
                               child: Row(
@@ -1141,7 +1159,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                         color: Color(0xFFFCA5A5),
                                         width: 1,
                                       ),
-                                      shape: const StadiumBorder(),
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: AppRadius.button,
+                                      ),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 14,
                                         vertical: 0,
@@ -1165,10 +1185,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEF8E7),
-                                borderRadius: BorderRadius.circular(12),
+                                color: const Color(0xFFFFFBEB),
+                                borderRadius: AppRadius.card,
                                 border: Border.all(
-                                  color: const Color(0xFFFDD835),
+                                  color: const Color(0xFFFDE68A),
                                 ),
                               ),
                               child: Column(
@@ -1209,7 +1229,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                               color: Color(0xFF9CA3AF),
                                               width: 1,
                                             ),
-                                            shape: const StadiumBorder(),
+                                            shape: const RoundedRectangleBorder(
+                                              borderRadius: AppRadius.button,
+                                            ),
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 12,
                                               vertical: 0,
@@ -1242,7 +1264,11 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                               ),
                                               foregroundColor: Colors.white,
                                               elevation: 0,
-                                              shape: const StadiumBorder(),
+                                              shape:
+                                                  const RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        AppRadius.button,
+                                                  ),
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                     horizontal: 12,
@@ -1278,10 +1304,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             key: const Key('completion_resolution_card'),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F8F0),
-                              borderRadius: BorderRadius.circular(16),
+                              color: AppColors.successSubtle,
+                              borderRadius: AppRadius.card,
                               border: Border.all(
-                                color: AppColors.success.withValues(alpha: 0.5),
+                                color: const Color(0xFFBBF7D0),
                               ),
                             ),
                             child: Column(
@@ -1294,7 +1320,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       color: AppColors.success,
                                       size: 20,
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     const Text(
                                       'Penyelesaian Pekerjaan',
                                       style: AppTextStyles.sectionTitle,
@@ -1302,12 +1328,12 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                     const Spacer(),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
+                                        horizontal: 10,
+                                        vertical: 4,
                                       ),
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         color: AppColors.success,
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius: AppRadius.pill,
                                       ),
                                       child: const Text(
                                         'Selesai',
@@ -1332,11 +1358,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: AppRadius.button,
                                       border: Border.all(
-                                        color: AppColors.success.withValues(
-                                          alpha: 0.25,
-                                        ),
+                                        color: const Color(0xFFBBF7D0),
                                       ),
                                     ),
                                     child: Column(
@@ -1398,7 +1422,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       title: 'Bukti Penyelesaian',
                                     ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: AppRadius.input,
                                       child: AspectRatio(
                                         aspectRatio: 16 / 9,
                                         child: Stack(
@@ -1416,10 +1440,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                                       horizontal: 8,
                                                       vertical: 4,
                                                     ),
-                                                decoration: BoxDecoration(
+                                                decoration: const BoxDecoration(
                                                   color: Colors.black54,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
+                                                  borderRadius: AppRadius.pill,
                                                 ),
                                                 child: const Row(
                                                   mainAxisSize:
@@ -1561,38 +1584,59 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                               controller.comments,
                             );
 
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (int i = 0; i < threads.length; i++) ...[
-                                  if (i > 0) const SizedBox(height: 18),
-                                  CommentThreadTile(
-                                    thread: threads[i],
-                                    reportAuthorId: report.authorId,
-                                    isExpanded: _expandedThreadIds.contains(
-                                      threads[i].root.id,
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: AppRadius.card,
+                                border: Border.all(
+                                  color: AppColors.border,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (int i = 0; i < threads.length; i++) ...[
+                                    if (i > 0)
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        child: Divider(
+                                          color: AppColors.borderSubtle,
+                                          height: 1,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                    CommentThreadTile(
+                                      thread: threads[i],
+                                      reportAuthorId: report.authorId,
+                                      isExpanded: _expandedThreadIds.contains(
+                                        threads[i].root.id,
+                                      ),
+                                      onToggleExpanded: () {
+                                        setState(() {
+                                          if (_expandedThreadIds.contains(
+                                            threads[i].root.id,
+                                          )) {
+                                            _expandedThreadIds.remove(
+                                              threads[i].root.id,
+                                            );
+                                          } else {
+                                            _expandedThreadIds.add(
+                                              threads[i].root.id,
+                                            );
+                                          }
+                                        });
+                                      },
+                                      onReply: _startReply,
+                                      currentUserId: auth.currentUser?.id,
+                                      onDelete: _handleDeleteComment,
                                     ),
-                                    onToggleExpanded: () {
-                                      setState(() {
-                                        if (_expandedThreadIds.contains(
-                                          threads[i].root.id,
-                                        )) {
-                                          _expandedThreadIds.remove(
-                                            threads[i].root.id,
-                                          );
-                                        } else {
-                                          _expandedThreadIds.add(
-                                            threads[i].root.id,
-                                          );
-                                        }
-                                      });
-                                    },
-                                    onReply: _startReply,
-                                    currentUserId: auth.currentUser?.id,
-                                    onDelete: _handleDeleteComment,
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             );
                           },
                         ),
@@ -1667,9 +1711,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                         ),
                                         InkWell(
                                           onTap: _cancelReply,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
+                                          borderRadius: AppRadius.borderSm,
                                           child: const Padding(
                                             padding: EdgeInsets.all(4),
                                             child: Icon(
@@ -1718,28 +1760,27 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                                   horizontal: 14,
                                                   vertical: 10,
                                                 ),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              borderSide: const BorderSide(
+                                            border: const OutlineInputBorder(
+                                              borderRadius: AppRadius.input,
+                                              borderSide: BorderSide(
                                                 color: AppColors.border,
                                               ),
                                             ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              borderSide: const BorderSide(
-                                                color: AppColors.border,
-                                              ),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              borderSide: const BorderSide(
-                                                color: AppColors.primary,
-                                                width: 1.5,
-                                              ),
-                                            ),
+                                            enabledBorder:
+                                                const OutlineInputBorder(
+                                                  borderRadius: AppRadius.input,
+                                                  borderSide: BorderSide(
+                                                    color: AppColors.border,
+                                                  ),
+                                                ),
+                                            focusedBorder:
+                                                const OutlineInputBorder(
+                                                  borderRadius: AppRadius.input,
+                                                  borderSide: BorderSide(
+                                                    color: AppColors.primary,
+                                                    width: 1.5,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -1828,7 +1869,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
       return GestureDetector(
         onTap: () => _openPhotoViewer(urls, 0),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.card,
           child: Stack(
             children: [
               AspectRatio(aspectRatio: 16 / 9, child: _buildPhoto(urls.first)),
@@ -1840,9 +1881,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.pill,
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1880,7 +1921,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
               return GestureDetector(
                 onTap: () => _openPhotoViewer(urls, index),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.input,
                   child: AspectRatio(
                     aspectRatio: 4 / 3,
                     child: Stack(

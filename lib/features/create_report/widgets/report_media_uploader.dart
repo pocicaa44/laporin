@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_image.dart';
 
@@ -41,9 +42,7 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
   Future<void> _showPickerBottomSheet(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -116,6 +115,7 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
         SizedBox(
           height: 94,
           child: ListView.separated(
+            physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,
             itemCount: photos.length + (photos.length < 5 ? 1 : 0),
             separatorBuilder: (_, _) => const SizedBox(width: 10),
@@ -134,14 +134,14 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
   Widget _buildAddButton(BuildContext context) {
     return InkWell(
       onTap: () => _showPickerBottomSheet(context),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.input,
       child: Container(
         width: 90,
         height: 90,
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary),
+          color: AppColors.primarySubtle,
+          borderRadius: AppRadius.input,
+          border: Border.all(color: AppColors.primary, width: 1),
         ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -172,7 +172,7 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
           fit: BoxFit.cover,
           memCacheWidth: 180,
           memCacheHeight: 180,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.input,
         ),
         Positioned(
           top: 4,

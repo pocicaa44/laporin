@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../data/models/report_model.dart';
 
 /// Action bar for upvoting, downvoting, and community engagement
@@ -28,9 +29,9 @@ class VoteActionBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isEnabled ? AppColors.surface : const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: isEnabled ? AppColors.surface : AppColors.background,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.borderSubtle, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -113,7 +114,7 @@ class _ActionButton extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadius.pill,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -121,7 +122,7 @@ class _ActionButton extends StatelessWidget {
           color: isEnabled && isActive
               ? activeColor.withValues(alpha: 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.pill,
           border: Border.all(
             color: isEnabled && isActive
                 ? activeColor.withValues(alpha: 0.28)

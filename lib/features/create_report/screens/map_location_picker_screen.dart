@@ -1,17 +1,20 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/config/map_config.dart';
 import '../../../core/services/boundary_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 
-/// Interactive map screen with strict Central Java boundary enforcement
+/// Interactive map screen with strict Indonesia territorial boundary enforcement.
 class MapLocationPickerScreen extends StatefulWidget {
   const MapLocationPickerScreen({
     super.key,
@@ -33,30 +36,32 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   LocationResult? _currentResult;
   bool _isLoadingGps = false;
   bool _isResolvingAddress = false;
-  bool _isInsideJateng = true;
+  bool _isInsideIndonesia = true;
   Timer? _addressDebounceTimer;
   int _addressRequestId = 0;
+  double _currentRotation = 0.0;
+  late final ValueNotifier<double> _rotationNotifier;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+    _rotationNotifier = ValueNotifier<double>(_currentRotation);
 
-    // Default to initial coordinates or Semarang if initial is invalid
-    final initInJateng = BoundaryService.instance.isInsideCentralJava(
+    final initInIndo = BoundaryService.instance.isInsideIndonesia(
       widget.initialLat,
       widget.initialLng,
     );
 
-    if (initInJateng) {
+    if (initInIndo) {
       _selectedPoint = LatLng(widget.initialLat, widget.initialLng);
-      _isInsideJateng = true;
+      _isInsideIndonesia = true;
     } else {
       _selectedPoint = const LatLng(
         BoundaryService.defaultLat,
         BoundaryService.defaultLng,
       );
-      _isInsideJateng = true;
+      _isInsideIndonesia = true;
     }
 
     _scheduleResolveAddress(_selectedPoint.latitude, _selectedPoint.longitude);
@@ -74,11 +79,11 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   @override
   void dispose() {
     _addressDebounceTimer?.cancel();
+    _rotationNotifier.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
-  /// Debounces reverse geocoding to prevent firing multiple rapid network calls on map gestures
   void _scheduleResolveAddress(double lat, double lng) {
     _addressDebounceTimer?.cancel();
     _addressRequestId++;
@@ -109,13 +114,13 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   }
 
   void _onTapMap(TapPosition tapPosition, LatLng point) {
-    final inJateng = BoundaryService.instance.isInsideCentralJava(
+    final inIndo = BoundaryService.instance.isInsideIndonesia(
       point.latitude,
       point.longitude,
     );
     setState(() {
       _selectedPoint = point;
-      _isInsideJateng = inJateng;
+      _isInsideIndonesia = inIndo;
     });
     _scheduleResolveAddress(point.latitude, point.longitude);
   }
@@ -125,24 +130,24 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     try {
       final pos = await LocationService.instance.getCurrentLocation();
       final newPoint = LatLng(pos.latitude, pos.longitude);
-      final inJateng = BoundaryService.instance.isInsideCentralJava(
+      final inIndo = BoundaryService.instance.isInsideIndonesia(
         pos.latitude,
         pos.longitude,
       );
 
       setState(() {
         _selectedPoint = newPoint;
-        _isInsideJateng = inJateng;
+        _isInsideIndonesia = inIndo;
         _isLoadingGps = false;
       });
 
       _mapController.move(newPoint, 15.0);
       _scheduleResolveAddress(pos.latitude, pos.longitude);
 
-      if (!inJateng && mounted) {
+      if (!inIndo && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(BoundaryService.gpsOutsideAreaMessage),
+            content: Text(BoundaryService.gpsOutsideIndonesiaMessage),
             backgroundColor: AppColors.warning,
             duration: Duration(seconds: 4),
           ),
@@ -209,23 +214,53 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _selectedPoint,
-              initialZoom: 14.0,
+              initialZoom: MapConfig.locationPickerZoom,
+              minZoom: MapConfig.minZoom,
+              maxZoom: MapConfig.maxZoom,
+              cameraConstraint: CameraConstraint.containCenter(
+                bounds: MapConfig.indonesiaBounds,
+              ),
+              interactionOptions: const InteractionOptions(
+                enableMultiFingerGestureRace: true,
+                rotationThreshold: 20.0,
+              ),
               onTap: _onTapMap,
+              onPositionChanged: (camera, hasGesture) {
+                if ((camera.rotation - _rotationNotifier.value).abs() > 0.5) {
+                  _rotationNotifier.value = camera.rotation;
+                  _currentRotation = camera.rotation;
+                }
+              },
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.laporin.app',
+                urlTemplate: MapConfig.osmTileUrl,
+                userAgentPackageName: MapConfig.userAgentPackageName,
+                maxNativeZoom: MapConfig.maxNativeZoom,
+                maxZoom: MapConfig.maxZoom,
+                minZoom: MapConfig.minZoom,
+                panBuffer: MapConfig.tilePanBuffer,
+                keepBuffer: MapConfig.tileKeepBuffer,
+                tileDisplay: const TileDisplay.instantaneous(),
+                tileUpdateTransformer: TileUpdateTransformers.throttle(
+                  MapConfig.tileThrottleDuration,
+                ),
+                tileBounds: MapConfig.indonesiaBounds,
+                tileProvider: NetworkTileProvider(silenceExceptions: true),
               ),
               MarkerLayer(
+                rotate: true,
+                alignment: Alignment.topCenter,
                 markers: [
                   Marker(
                     point: _selectedPoint,
                     width: 44,
                     height: 44,
+                    rotate: true,
+                    alignment: Alignment.topCenter,
                     child: FaIcon(
                       FontAwesomeIcons.locationDot,
-                      color: _isInsideJateng
+                      color: _isInsideIndonesia
                           ? AppColors.danger
                           : AppColors.disabled,
                       size: 38,
@@ -233,24 +268,97 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                   ),
                 ],
               ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 210, right: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    borderRadius: AppRadius.borderXs,
+                  ),
+                  child: const Text(
+                    MapConfig.osmAttribution,
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          Positioned(
-            right: 16,
-            top: 16,
-            child: FloatingActionButton.small(
-              heroTag: 'btn-my-loc',
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.primary,
-              onPressed: _isLoadingGps ? null : _useCurrentGps,
-              child: _isLoadingGps
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const FaIcon(FontAwesomeIcons.locationCrosshairs, size: 16),
-            ),
+          ValueListenableBuilder<double>(
+            valueListenable: _rotationNotifier,
+            builder: (context, rotation, _) {
+              final isRotated = rotation.abs() > 1.0;
+              return Stack(
+                children: [
+                  if (isRotated)
+                    Positioned(
+                      right: 16,
+                      top: 16,
+                      child: FloatingActionButton.small(
+                        heroTag: 'btn-reset-north',
+                        backgroundColor: AppColors.surface,
+                        foregroundColor: AppColors.danger,
+                        elevation: 0,
+                        focusElevation: 0,
+                        hoverElevation: 0,
+                        highlightElevation: 0,
+                        shape: const CircleBorder(
+                          side: BorderSide(color: AppColors.border, width: 1),
+                        ),
+                        tooltip: 'Reset Arah Utara (Tegak)',
+                        onPressed: () {
+                          _mapController.rotate(0);
+                          _rotationNotifier.value = 0.0;
+                          _currentRotation = 0.0;
+                        },
+                        child: Transform.rotate(
+                          angle: -rotation * (math.pi / 180),
+                          child: const FaIcon(
+                            FontAwesomeIcons.compass,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    right: 16,
+                    top: isRotated ? 68 : 16,
+                    child: FloatingActionButton.small(
+                      heroTag: 'btn-my-loc',
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.primary,
+                      elevation: 0,
+                      focusElevation: 0,
+                      hoverElevation: 0,
+                      highlightElevation: 0,
+                      shape: const CircleBorder(
+                        side: BorderSide(color: AppColors.border, width: 1),
+                      ),
+                      tooltip: 'Lokasi Saya',
+                      onPressed: _isLoadingGps ? null : _useCurrentGps,
+                      child: _isLoadingGps
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const FaIcon(
+                              FontAwesomeIcons.locationCrosshairs,
+                              size: 16,
+                            ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           Positioned(
             left: 16,
@@ -268,14 +376,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -284,20 +386,22 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
           Row(
             children: [
               FaIcon(
-                _isInsideJateng
+                _isInsideIndonesia
                     ? FontAwesomeIcons.circleCheck
                     : FontAwesomeIcons.circleExclamation,
-                color: _isInsideJateng ? AppColors.success : AppColors.danger,
+                color: _isInsideIndonesia
+                    ? AppColors.success
+                    : AppColors.danger,
                 size: 16,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _isInsideJateng
-                      ? (_currentResult?.areaName ?? 'Provinsi Jawa Tengah')
-                      : 'Di Luar Wilayah Layanan',
+                  _isInsideIndonesia
+                      ? (_currentResult?.areaName ?? 'Indonesia')
+                      : 'Di Luar Wilayah Indonesia',
                   style: AppTextStyles.label.copyWith(
-                    color: _isInsideJateng
+                    color: _isInsideIndonesia
                         ? AppColors.success
                         : AppColors.danger,
                     fontWeight: FontWeight.bold,
@@ -313,18 +417,16 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          if (!_isInsideJateng) ...[
+          if (!_isInsideIndonesia) ...[
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.danger.withValues(alpha: 0.3),
-                ),
+                color: AppColors.dangerSubtle,
+                borderRadius: const BorderRadius.all(Radius.circular(8)),
+                border: Border.all(color: const Color(0xFFFECACA)),
               ),
               child: const Text(
-                BoundaryService.outsideAreaErrorMessage,
+                BoundaryService.outsideIndonesiaErrorMessage,
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.danger,
@@ -353,10 +455,10 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
           ),
           const SizedBox(height: 14),
           AppButton(
-            text: _isInsideJateng
+            text: _isInsideIndonesia
                 ? 'Konfirmasi Lokasi Ini'
                 : 'Lokasi Tidak Dapat Digunakan',
-            onPressed: _isInsideJateng
+            onPressed: _isInsideIndonesia
                 ? () {
                     final result =
                         _currentResult ??
@@ -365,7 +467,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                               'Koordinat ${_selectedPoint.latitude.toStringAsFixed(4)}, ${_selectedPoint.longitude.toStringAsFixed(4)}',
                           latitude: _selectedPoint.latitude,
                           longitude: _selectedPoint.longitude,
-                          areaName: BoundaryService.defaultAreaName,
+                          areaName: BoundaryService.countryName,
                           isValidRegion: true,
                         );
                     Navigator.pop(context, result);

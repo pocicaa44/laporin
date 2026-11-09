@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/media_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/app_button.dart';
@@ -79,9 +80,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
   Future<void> _showImageSourcePicker(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -250,7 +249,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                 InkWell(
                   key: const Key('admin_proof_picker_button'),
                   onTap: () => _showImageSourcePicker(context),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.card,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -261,7 +260,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                       color: _proofError != null
                           ? const Color(0xFFFDECEE)
                           : AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.card,
                       border: Border.all(
                         color: _proofError != null
                             ? AppColors.danger
@@ -306,7 +305,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                 )
               else
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.card,
                   child: Stack(
                     children: [
                       AspectRatio(
@@ -368,9 +367,9 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                             horizontal: 10,
                             vertical: 4,
                           ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xBF000000),
-                            borderRadius: BorderRadius.circular(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xBF000000),
+                            borderRadius: AppRadius.pill,
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -430,7 +429,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                   return InkWell(
                     key: Key('template_chip_$template'),
                     onTap: () => _applyTemplate(template),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: AppRadius.pill,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -440,7 +439,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                         color: isSelected
                             ? AppColors.primary
                             : AppColors.surface,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: AppRadius.pill,
                         border: Border.all(
                           color: isSelected
                               ? AppColors.primary

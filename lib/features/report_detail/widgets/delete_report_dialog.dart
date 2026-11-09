@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 /// Dialog konfirmasi soft-delete laporan per DESIGN.md & PRD Bagian 7 (< 120 lines)
@@ -56,14 +57,18 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(
+        borderRadius: AppRadius.dialog,
+        side: BorderSide(color: AppColors.border, width: 1),
+      ),
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.dangerSubtle,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFFECACA), width: 1),
             ),
             child: const Icon(
               Icons.warning_amber_rounded,
@@ -95,8 +100,9 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.dangerSubtle,
+                borderRadius: AppRadius.borderSm,
+                border: Border.all(color: const Color(0xFFFECACA), width: 1),
               ),
               child: Text(
                 _errorMessage!,
@@ -120,9 +126,7 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
             backgroundColor: AppColors.danger,
             foregroundColor: Colors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
           ),
           onPressed: _isLoading ? null : _handleDelete,
           child: _isLoading

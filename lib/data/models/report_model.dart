@@ -79,6 +79,7 @@ class ReportModel {
     this.completionNotes,
     this.isDiscussionActive = true,
     this.isDraft = false,
+    this.provinceId,
   });
 
   final String id;
@@ -89,6 +90,7 @@ class ReportModel {
   final String? authorAvatarUrl;
   final String areaId;
   final String areaName;
+  final String? provinceId;
   final String title;
   final String description;
   final String category;
@@ -185,35 +187,36 @@ class ReportModel {
       handlingStatus != HandlingStatus.cancelled &&
       isDiscussionActive;
 
-  /// Aturan penghapusan laporan oleh pemilik (author):
+  /// Aturan penghapusan laporan oleh pemilik (author/user):
   /// - Jika sudah dihapus oleh user (atau deletedAt sudah terisi): TIDAK DAPAT dihapus lagi.
   /// - Jika sudah dihapus oleh admin: BISA dihapus untuk menyelesaikan penghapusan permanen dua pihak.
-  /// - Status baru / pending review: BISA hapus dengan confirmation dialog.
-  /// - Status ditolak, selesai, atau dibatalkan: BISA hapus dengan confirmation dialog.
+  /// - Status baru dipublikasikan (newReport): BISA dihapus oleh pelapor.
+  /// - Status draft: BISA dihapus oleh pelapor.
+  /// - Status ditolak, selesai, atau dibatalkan: BISA dihapus dengan confirmation dialog.
   /// - Status diterima / dilihat (accepted) atau sedang diproses (in_progress): TIDAK DAPAT dihapus.
-  /// Aturan penghapusan laporan oleh pemilik (author/user):
-  /// Sesuai aturan: Selain laporan yang sudah selesai (completed), ditolak (rejected),
-  /// atau batal (cancelled), baik admin ataupun user TIDAK BISA menghapus laporan.
-  /// (Dapat dihapus jika admin telah menghapusnya terlebih dahulu untuk menyelesaikan dual-party deletion).
   bool get canAuthorDelete {
     if (deletedByUser) return false;
     if (deletedAt != null && !deletedByAdmin) return false;
     if (deletedByAdmin) return true;
     if (isDraft) return true;
-    return handlingStatus == HandlingStatus.completed ||
+    return handlingStatus == HandlingStatus.newReport ||
+        handlingStatus == HandlingStatus.completed ||
         handlingStatus == HandlingStatus.rejected ||
         handlingStatus == HandlingStatus.cancelled;
   }
 
   /// Aturan penghapusan laporan oleh admin:
-  /// Sesuai aturan: Selain laporan yang dihapus oleh user (deletedByUser),
-  /// yang sudah selesai (completed), ditolak (rejected), atau batal (cancelled),
-  /// baik admin ataupun user TIDAK BISA menghapus laporan.
+  /// - Jika sudah dihapus oleh admin: TIDAK DAPAT dihapus lagi.
+  /// - Jika sudah dihapus oleh user (deletedByUser): BISA dihapus untuk menyelesaikan dual-party deletion.
+  /// - Status baru dipublikasikan (newReport) atau draft: BISA dihapus.
+  /// - Status yang sudah selesai (completed), ditolak (rejected), atau batal (cancelled): BISA dihapus.
+  /// - Status yang sedang diproses (in_progress) atau diterima (accepted): TIDAK DAPAT dihapus langsung.
   bool get canAdminDelete {
     if (deletedByAdmin) return false;
     if (deletedByUser) return true;
     if (isDraft) return true;
-    return handlingStatus == HandlingStatus.completed ||
+    return handlingStatus == HandlingStatus.newReport ||
+        handlingStatus == HandlingStatus.completed ||
         handlingStatus == HandlingStatus.rejected ||
         handlingStatus == HandlingStatus.cancelled;
   }
@@ -330,6 +333,7 @@ class ReportModel {
     bool clearCompletionNotes = false,
     bool? isDiscussionActive,
     bool? isDraft,
+    String? provinceId,
   }) {
     return ReportModel(
       id: id ?? this.id,
@@ -378,6 +382,7 @@ class ReportModel {
           : (completionNotes ?? this.completionNotes),
       isDiscussionActive: isDiscussionActive ?? this.isDiscussionActive,
       isDraft: isDraft ?? this.isDraft,
+      provinceId: provinceId ?? this.provinceId,
     );
   }
 
@@ -391,6 +396,7 @@ class ReportModel {
       'author_avatar_url': authorAvatarUrl,
       'area_id': areaId,
       'area_name': areaName,
+      'province_id': provinceId,
       'title': title,
       'description': description,
       'category': category,
@@ -517,6 +523,7 @@ class ReportModel {
       completionNotes: json['completion_notes'] as String?,
       isDiscussionActive: parsedDiscussionActive,
       isDraft: (json['is_draft'] as bool?) ?? false,
+      provinceId: json['province_id']?.toString(),
     );
   }
 }

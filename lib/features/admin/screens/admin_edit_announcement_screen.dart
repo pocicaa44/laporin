@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/announcement_model.dart';
@@ -135,9 +136,8 @@ class _AdminEditAnnouncementScreenState
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppRadius.card,
                       border: Border.all(color: AppColors.border),
-                      boxShadow: const [AppColors.cardShadow],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -201,10 +201,13 @@ class _AdminEditAnnouncementScreenState
                                   selected: isSelected,
                                   selectedColor: AppColors.primary,
                                   backgroundColor: AppColors.surface,
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.border,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: AppRadius.pill,
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.border,
+                                    ),
                                   ),
                                   onSelected: _isUpdating
                                       ? null
@@ -271,7 +274,7 @@ class _AdminEditAnnouncementScreenState
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.danger.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppRadius.input,
                               border: Border.all(
                                 color: AppColors.danger.withValues(alpha: 0.3),
                               ),

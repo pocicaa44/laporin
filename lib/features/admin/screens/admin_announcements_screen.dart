@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/access_denied_screen.dart';
@@ -142,6 +143,11 @@ class _AdminAnnouncementsViewState extends State<_AdminAnnouncementsView> {
         onPressed: () => _handleCreate(context, controller),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        shape: const CircleBorder(),
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
         tooltip: 'Tambah Pengumuman',
         child: const Icon(Icons.add),
       ),
@@ -257,19 +263,18 @@ class _AnnouncementCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.card,
         border: Border.all(
           color: isEmergency ? AppColors.danger : AppColors.border,
           width: isEmergency ? 1.5 : 1,
         ),
-        boxShadow: const [AppColors.cardShadow],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.card,
         child: InkWell(
           onTap: () => _handleEdit(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.card,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -280,14 +285,14 @@ class _AnnouncementCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: isEmergency
                             ? const Color(0xFFFEECEB)
                             : AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: AppRadius.pill,
                       ),
                       child: Text(
                         announcement.category,
@@ -314,8 +319,8 @@ class _AnnouncementCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     PopupMenuButton<String>(
                       tooltip: 'Opsi Pengumuman',
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.button,
                       ),
                       onSelected: (value) async {
                         if (value == 'edit') {
@@ -387,7 +392,7 @@ class _AnnouncementCard extends StatelessWidget {
                     imageSource: announcement.imageUrl!,
                     height: 180,
                     width: double.infinity,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.button,
                     fit: BoxFit.cover,
                   ),
                 ],

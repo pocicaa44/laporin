@@ -203,7 +203,7 @@ class ReportDetailController extends ChangeNotifier {
 
       _comments.add(comment);
       if (_report != null) {
-        _report = _report!.copyWith(commentsCount: _report!.commentsCount + 1);
+        _report = _report!.copyWith(commentsCount: _comments.length);
         reportRepository.updateReport(_report!);
       } else {
         reportRepository.updateReportCommentsCount(reportId, _comments.length);
@@ -213,7 +213,9 @@ class ReportDetailController extends ChangeNotifier {
       return true;
     } catch (e) {
       _isSendingComment = false;
-      _errorMessage = 'Gagal mengirim komentar: ${e.toString()}';
+      debugPrint('Error submitComment: $e');
+      _errorMessage =
+          'Gagal mengirim komentar. Silakan periksa koneksi dan coba lagi.';
       notifyListeners();
       return false;
     }

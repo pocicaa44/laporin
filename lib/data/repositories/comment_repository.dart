@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/comment_model.dart';
@@ -115,7 +117,15 @@ class CommentRepository {
 
     if (client != null) {
       try {
+        final now = DateTime.now();
+        final randomSuffix = Random()
+            .nextInt(999999)
+            .toString()
+            .padLeft(6, '0');
+        final commentId = 'com-${now.millisecondsSinceEpoch}-$randomSuffix';
+
         final commentData = <String, dynamic>{
+          'id': commentId,
           'report_id': reportId,
           'author_id': authorId,
           'author_name': authorName,

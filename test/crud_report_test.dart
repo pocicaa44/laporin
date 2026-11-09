@@ -138,7 +138,7 @@ void main() {
       );
     });
 
-    test('updateReportDetails rejects location outside Central Java', () async {
+    test('updateReportDetails rejects location outside Indonesia', () async {
       expect(
         () => repo.updateReportDetails(
           reportId: initialReport.id,
@@ -146,15 +146,16 @@ void main() {
           title: 'Judul Baru yang Valid',
           description: 'Deskripsi baru yang sah dan panjang.',
           category: 'Jalan & Infrastruktur',
-          latitude: -6.2088, // Jakarta (Di luar Jawa Tengah)
-          longitude: 106.8456,
-          locationAddress: 'Monas, Jakarta',
+          latitude: 35.6762, // Tokyo (Di luar wilayah Indonesia)
+          longitude: 139.6503,
+          locationAddress: 'Tokyo, Japan',
           photoUrls: [],
         ),
         throwsA(
           predicate(
-            (e) =>
-                e.toString().contains(BoundaryService.outsideAreaErrorMessage),
+            (e) => e.toString().contains(
+              BoundaryService.outsideIndonesiaErrorMessage,
+            ),
           ),
         ),
       );

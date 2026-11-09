@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 /// Dialog konfirmasi penghapusan pengumuman resmi oleh admin
@@ -56,14 +57,14 @@ class _AdminDeleteAnnouncementDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.danger.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.warning_amber_rounded,
@@ -96,7 +97,7 @@ class _AdminDeleteAnnouncementDialogState
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.danger.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.sm,
               ),
               child: Text(
                 _errorMessage!,
@@ -120,9 +121,7 @@ class _AdminDeleteAnnouncementDialogState
             backgroundColor: AppColors.danger,
             foregroundColor: Colors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
           ),
           onPressed: _isLoading ? null : _handleDelete,
           child: _isLoading
