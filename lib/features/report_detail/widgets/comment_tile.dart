@@ -120,28 +120,28 @@ class CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Header: Avatar + Author + To @target + · Pencipta + Petugas Badge
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            UserAvatar(
-              name: comment.authorName,
-              username: comment.authorName,
-              avatarUrl: comment.authorAvatarUrl,
-              radius: isReply ? 15 : 17,
-              backgroundColor: comment.isStaff
-                  ? AppColors.primary
-                  : AppColors.primarySoft,
-              foregroundColor: comment.isStaff
-                  ? Colors.white
-                  : AppColors.primaryStrong,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Wrap(
+        UserAvatar(
+          name: comment.authorName,
+          username: comment.authorName,
+          avatarUrl: comment.authorAvatarUrl,
+          radius: isReply ? 14 : 16,
+          backgroundColor: comment.isStaff
+              ? AppColors.primary
+              : AppColors.primarySoft,
+          foregroundColor: comment.isStaff
+              ? Colors.white
+              : AppColors.primaryStrong,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header: Author + To @target + · Pencipta + Petugas Badge
+              Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
@@ -214,67 +214,76 @@ class CommentTile extends StatelessWidget {
                   ],
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
+              const SizedBox(height: 4),
 
-        // 2. Body Text (flush sejajar kiri sesuai screenshot design)
-        Text(
-          comment.body,
-          style: const TextStyle(
-            fontSize: 13.5,
-            height: 1.45,
-            color: Color(0xFF1F2937),
+              // 2. Body Text (offset ke dalam / kanan dari profil avatar)
+              Text(
+                comment.body,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 6),
+
+              // 3. Footer: Timestamp ringkas & tombol Balas & tombol Hapus
+              Row(
+                children: [
+                  Text(
+                    comment.createdAt.toShortRelativeTime(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                  ),
+                  if (onReply != null) ...[
+                    const SizedBox(width: 14),
+                    InkWell(
+                      onTap: onReply,
+                      borderRadius: AppRadius.borderSm,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          'Balas',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4B5563),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (_canDelete) ...[
+                    const SizedBox(width: 14),
+                    InkWell(
+                      key: Key('delete_comment_${comment.id}'),
+                      onTap: onDelete,
+                      borderRadius: AppRadius.borderSm,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          'Hapus',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4B5563),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 6),
-
-        // 3. Footer: Timestamp ringkas & tombol Balas & tombol Hapus
-        Row(
-          children: [
-            Text(
-              comment.createdAt.toShortRelativeTime(),
-              style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
-            ),
-            if (onReply != null) ...[
-              const SizedBox(width: 14),
-              InkWell(
-                onTap: onReply,
-                borderRadius: AppRadius.borderSm,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Text(
-                    'Balas',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4B5563),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            if (_canDelete) ...[
-              const SizedBox(width: 14),
-              InkWell(
-                key: Key('delete_comment_${comment.id}'),
-                onTap: onDelete,
-                borderRadius: AppRadius.borderSm,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Text(
-                    'Hapus',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4B5563),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
         ),
       ],
     );
@@ -283,7 +292,7 @@ class CommentTile extends StatelessWidget {
 
 /// Widget untuk merender satu thread komentar:
 /// - Komentar utama (root)
-/// - Daftar balasan (indented 36px) jika expanded
+/// - Daftar balasan (indented 28px) jika expanded
 /// - Tombol "—— Lihat X balasan v" jika collapsed
 /// - Tombol "—— Sembunyikan ^" jika expanded
 class CommentThreadTile extends StatelessWidget {
@@ -321,104 +330,110 @@ class CommentThreadTile extends StatelessWidget {
           onDelete: onDelete != null ? () => onDelete!(thread.root) : null,
         ),
 
-        // 2. Daftar Balasan jika expanded
+        // 2. Daftar Balasan jika expanded (offset ke dalam / kanan dari komentar utama)
         if (isExpanded && thread.replies.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < thread.replies.length; i++) ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(
-                    color: AppColors.borderSubtle,
-                    height: 1,
-                    thickness: 1,
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (int i = 0; i < thread.replies.length; i++) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(
+                      color: AppColors.borderSubtle,
+                      height: 1,
+                      thickness: 1,
+                    ),
                   ),
-                ),
-                CommentTile(
-                  comment: thread.replies[i].comment,
-                  isCreator:
-                      thread.replies[i].comment.authorId == reportAuthorId,
-                  replyToAuthor: thread.replies[i].replyToAuthorName,
-                  onReply: () => onReply(thread.replies[i].comment),
-                  isReply: true,
-                  currentUserId: currentUserId,
-                  onDelete: onDelete != null
-                      ? () => onDelete!(thread.replies[i].comment)
-                      : null,
-                ),
-              ],
-              const SizedBox(height: 10),
-              // Tombol "—— Sembunyikan ^"
-              InkWell(
-                onTap: onToggleExpanded,
-                borderRadius: AppRadius.borderSm,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 1.5,
-                        color: const Color(0xFFD1D5DB),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Sembunyikan',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                  CommentTile(
+                    comment: thread.replies[i].comment,
+                    isCreator:
+                        thread.replies[i].comment.authorId == reportAuthorId,
+                    replyToAuthor: thread.replies[i].replyToAuthorName,
+                    onReply: () => onReply(thread.replies[i].comment),
+                    isReply: true,
+                    currentUserId: currentUserId,
+                    onDelete: onDelete != null
+                        ? () => onDelete!(thread.replies[i].comment)
+                        : null,
+                  ),
+                ],
+                const SizedBox(height: 10),
+                // Tombol "—— Sembunyikan ^"
+                InkWell(
+                  onTap: onToggleExpanded,
+                  borderRadius: AppRadius.borderSm,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 1.5,
+                          color: const Color(0xFFD1D5DB),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Sembunyikan',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF4B5563),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          size: 18,
                           color: Color(0xFF4B5563),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.keyboard_arrow_up_rounded,
-                        size: 18,
-                        color: Color(0xFF4B5563),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
 
-        // 3. Tombol "—— Lihat X balasan v" jika collapsed
+        // 3. Tombol "—— Lihat X balasan v" jika collapsed (offset sejajar ke dalam / kanan)
         if (!isExpanded && thread.replies.isNotEmpty) ...[
           const SizedBox(height: 8),
-          InkWell(
-            onTap: onToggleExpanded,
-            borderRadius: AppRadius.borderSm,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 24,
-                    height: 1.5,
-                    color: const Color(0xFFD1D5DB),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Lihat ${thread.replies.length} balasan',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: InkWell(
+              onTap: onToggleExpanded,
+              borderRadius: AppRadius.borderSm,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 1.5,
+                      color: const Color(0xFFD1D5DB),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Lihat ${thread.replies.length} balasan',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4B5563),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
                       color: Color(0xFF4B5563),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 18,
-                    color: Color(0xFF4B5563),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
