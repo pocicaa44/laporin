@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/config/indonesia_regions.dart';
 import '../../core/services/boundary_service.dart';
 import '../../core/services/media_service.dart';
 import '../models/report_model.dart';
@@ -511,25 +512,50 @@ class ReportRepository {
   /// Mengambil semua laporan untuk portal Admin (termasuk yang 'held', 'pending_review', 'rejected')
   Future<List<ReportModel>> getAdminReports({
     String? filterStatus,
+    String? provinceId,
     bool forceRefresh = false,
   }) async {
     await _fetchFromSupabaseIfAvailable(force: forceRefresh);
     final reportsSnapshot = List<ReportModel>.from(_reports);
 
     if (kIsWeb || reportsSnapshot.length < 25) {
-      return _filterAdminReports(reportsSnapshot, filterStatus);
+      return _filterAdminReports(reportsSnapshot, filterStatus, provinceId);
     }
 
     return await Isolate.run<List<ReportModel>>(() {
-      return _filterAdminReports(reportsSnapshot, filterStatus);
+      return _filterAdminReports(reportsSnapshot, filterStatus, provinceId);
     });
   }
 
   static List<ReportModel> _filterAdminReports(
     List<ReportModel> reports,
-    String? filterStatus,
-  ) {
+    String? filterStatus, [
+    String? provinceId,
+  ]) {
     var list = reports.where((r) => !r.deletedByAdmin && !r.isDraft).toList();
+
+    if (provinceId != null &&
+        provinceId.isNotEmpty &&
+        provinceId != 'all' &&
+        provinceId != 'national') {
+      list = list.where((r) {
+        if (r.provinceId == provinceId) return true;
+        if (r.areaId.contains(provinceId)) return true;
+        final provItem = IndonesiaRegions.findById(provinceId);
+        if (provItem != null) {
+          if (r.areaId.toLowerCase().contains(provItem.name.toLowerCase())) {
+            return true;
+          }
+          if (r.areaId.toLowerCase().contains(provItem.code.toLowerCase())) {
+            return true;
+          }
+          if (r.areaName.toLowerCase().contains(provItem.name.toLowerCase())) {
+            return true;
+          }
+        }
+        return false;
+      }).toList();
+    }
 
     if (filterStatus == 'deleted_by_user') {
       list = list.where((r) => r.deletedByUser).toList();
@@ -552,6 +578,10 @@ class ReportRepository {
     } else if (filterStatus == 'completed') {
       list = list
           .where((r) => r.handlingStatus == HandlingStatus.completed)
+          .toList();
+    } else if (filterStatus == 'rejected') {
+      list = list
+          .where((r) => r.handlingStatus == HandlingStatus.rejected)
           .toList();
     }
 
@@ -1218,10 +1248,10 @@ class ReportRepository {
       throw Exception('Laporan yang sudah dihapus tidak dapat diedit.');
     }
 
-    // Integritas: Laporan yang berstatus terminal tidak boleh diedit
-    if (current.isTerminal) {
+    // Integritas: Laporan yang berstatus selesai atau ditolak bersifat immutable (Task 1)
+    if (!current.canEdit) {
       throw Exception(
-        'Laporan dengan status final/terminal tidak dapat diedit.',
+        'Akses ditolak: ${current.cannotEditReason ?? "Laporan dengan status final tidak dapat diedit."}',
       );
     }
 
@@ -1313,7 +1343,7 @@ class ReportRepository {
       }
       if (!current.canAdminDelete) {
         throw Exception(
-          'Admin hanya dapat menghapus laporan yang baru dipublikasikan, sudah dihapus oleh pelapor, atau berstatus selesai, ditolak, dan dibatalkan.',
+          'Akses ditolak: Admin hanya dapat menghapus laporan yang sudah dihapus oleh pelapor terlebih dahulu.',
         );
       }
     }

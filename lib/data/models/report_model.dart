@@ -187,6 +187,35 @@ class ReportModel {
       handlingStatus != HandlingStatus.cancelled &&
       isDiscussionActive;
 
+  /// Aturan pengeditan laporan oleh pemilik (author/user):
+  /// - Laporan berstatus 'completed' (selesai) atau 'rejected' (ditolak) bersifat IMMUTABLE.
+  /// - Laporan yang sudah dihapus (isDeleted) atau dibatalkan (cancelled) juga tidak dapat diedit.
+  /// - Hanya laporan aktif berstatus newReport, accepted, atau inProgress yang dapat diedit.
+  bool get canEdit {
+    if (isDeleted) return false;
+    if (handlingStatus == HandlingStatus.completed ||
+        handlingStatus == HandlingStatus.rejected ||
+        handlingStatus == HandlingStatus.cancelled) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Alasan/keterangan mengapa laporan tidak dapat diedit
+  String? get cannotEditReason {
+    if (isDeleted) return 'Laporan yang sudah dihapus tidak dapat diedit.';
+    if (handlingStatus == HandlingStatus.completed) {
+      return 'Laporan berstatus selesai tidak dapat diedit.';
+    }
+    if (handlingStatus == HandlingStatus.rejected) {
+      return 'Laporan yang ditolak tidak dapat diedit.';
+    }
+    if (handlingStatus == HandlingStatus.cancelled) {
+      return 'Laporan yang dibatalkan tidak dapat diedit.';
+    }
+    return null;
+  }
+
   /// Aturan penghapusan laporan oleh pemilik (author/user):
   /// - Jika sudah dihapus oleh user (atau deletedAt sudah terisi): TIDAK DAPAT dihapus lagi.
   /// - Jika sudah dihapus oleh admin: BISA dihapus untuk menyelesaikan penghapusan permanen dua pihak.
@@ -205,20 +234,19 @@ class ReportModel {
         handlingStatus == HandlingStatus.cancelled;
   }
 
-  /// Aturan penghapusan laporan oleh admin:
+  /// Aturan penghapusan laporan oleh admin (Task 2):
+  /// - Admin HANYA dapat menghapus laporan jika pelapor (warga) telah menghapusnya (deletedByUser == true).
   /// - Jika sudah dihapus oleh admin: TIDAK DAPAT dihapus lagi.
-  /// - Jika sudah dihapus oleh user (deletedByUser): BISA dihapus untuk menyelesaikan dual-party deletion.
-  /// - Status baru dipublikasikan (newReport) atau draft: BISA dihapus.
-  /// - Status yang sudah selesai (completed), ditolak (rejected), atau batal (cancelled): BISA dihapus.
-  /// - Status yang sedang diproses (in_progress) atau diterima (accepted): TIDAK DAPAT dihapus langsung.
   bool get canAdminDelete {
     if (deletedByAdmin) return false;
-    if (deletedByUser) return true;
-    if (isDraft) return true;
-    return handlingStatus == HandlingStatus.newReport ||
-        handlingStatus == HandlingStatus.completed ||
-        handlingStatus == HandlingStatus.rejected ||
-        handlingStatus == HandlingStatus.cancelled;
+    return deletedByUser;
+  }
+
+  /// Alasan mengapa admin belum dapat menghapus laporan
+  String? get cannotAdminDeleteReason {
+    if (deletedByAdmin) return 'Laporan sudah dihapus oleh admin.';
+    if (!deletedByUser) return 'Laporan belum dihapus oleh pelapor.';
+    return null;
   }
 
   /// Persentase downvote aktif (PRD 4.4 & AGENTS.md 3.3)

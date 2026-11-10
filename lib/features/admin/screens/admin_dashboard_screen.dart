@@ -17,6 +17,7 @@ import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
 import '../../report_detail/widgets/delete_report_dialog.dart';
 import '../controllers/admin_report_controller.dart';
+import '../widgets/admin_province_filter_dropdown.dart';
 import 'admin_resolve_sheet.dart';
 import 'admin_status_update_sheet.dart';
 
@@ -153,6 +154,10 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       children: [
+                        // Dropdown Filter Wilayah Provinsi (Task 3)
+                        AdminProvinceFilterDropdown(controller: controller),
+                        const SizedBox(height: 12),
+
                         // KPI Metric Cards
                         Row(
                           children: [
@@ -686,8 +691,11 @@ class _AdminReportCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _buildDetailButton(context, controller),
-                if (onDelete != null && report.canAdminDelete)
-                  _buildDeleteButton(isDeletedByUser: report.deletedByUser),
+                if (onDelete != null && !report.deletedByAdmin)
+                  _buildDeleteButton(
+                    isDeletedByUser: report.deletedByUser,
+                    canDelete: report.canAdminDelete,
+                  ),
               ],
             )
           else
@@ -700,8 +708,11 @@ class _AdminReportCard extends StatelessWidget {
                 if (report.handlingStatus != HandlingStatus.completed)
                   _buildResolveButton(),
                 if (isHeld) _buildRestorePublicationButton(),
-                if (onDelete != null && report.canAdminDelete)
-                  _buildDeleteButton(isDeletedByUser: report.deletedByUser),
+                if (onDelete != null && !report.deletedByAdmin)
+                  _buildDeleteButton(
+                    isDeletedByUser: report.deletedByUser,
+                    canDelete: report.canAdminDelete,
+                  ),
               ],
             ),
         ],
@@ -779,23 +790,43 @@ class _AdminReportCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDeleteButton({bool isDeletedByUser = false}) {
-    return OutlinedButton.icon(
-      icon: const Icon(
-        Icons.delete_outline_rounded,
-        size: 15,
-        color: Color(0xFFEF4444),
+  Widget _buildDeleteButton({
+    bool isDeletedByUser = false,
+    bool canDelete = true,
+  }) {
+    final tooltip = canDelete
+        ? (isDeletedByUser ? 'Hapus Permanen Laporan' : 'Hapus Laporan')
+        : (report.cannotAdminDeleteReason ??
+            'Laporan belum dihapus oleh pelapor');
+
+    return Tooltip(
+      message: tooltip,
+      child: OutlinedButton.icon(
+        icon: Icon(
+          isDeletedByUser
+              ? Icons.delete_forever_rounded
+              : Icons.delete_outline_rounded,
+          size: 15,
+          color: canDelete ? const Color(0xFFEF4444) : const Color(0xFF9CA3AF),
+        ),
+        label: Text(isDeletedByUser ? 'Hapus Permanen' : 'Hapus'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: canDelete
+              ? const Color(0xFFEF4444)
+              : const Color(0xFF9CA3AF),
+          side: BorderSide(
+            color:
+                canDelete ? const Color(0xFFFCA5A5) : const Color(0xFFD1D5DB),
+            width: 1,
+          ),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+          minimumSize: const Size(0, 34),
+          textStyle:
+              const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+        ),
+        onPressed: canDelete ? onDelete : null,
       ),
-      label: Text(isDeletedByUser ? 'Hapus Permanen' : 'Hapus'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFFEF4444),
-        side: const BorderSide(color: Color(0xFFFCA5A5), width: 1),
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-        minimumSize: const Size(0, 34),
-        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-      ),
-      onPressed: onDelete,
     );
   }
 

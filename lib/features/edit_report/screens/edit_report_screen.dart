@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../data/models/report_model.dart';
@@ -171,6 +172,40 @@ class _EditReportFormState extends State<_EditReportForm> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
               children: [
+                // Banner Peringatan jika Laporan Immutable (Selesai/Ditolak)
+                if (!widget.originalReport.canEdit) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: AppRadius.card,
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.danger,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.originalReport.cannotEditReason ??
+                                'Laporan ini bersifat permanen dan tidak dapat diedit.',
+                            style: const TextStyle(
+                              color: AppColors.danger,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // 1. Judul Laporan
                 TextFormField(
                   controller: _titleController,
@@ -235,10 +270,20 @@ class _EditReportFormState extends State<_EditReportForm> {
                 const SizedBox(height: 24),
 
                 // 6. Tombol Simpan
-                AppButton(
-                  text: 'Simpan Perubahan',
-                  isLoading: controller.isLoading,
-                  onPressed: isOnline && !controller.isLoading ? _submit : null,
+                Tooltip(
+                  message: !widget.originalReport.canEdit
+                      ? (widget.originalReport.cannotEditReason ??
+                          'Laporan tidak dapat diedit')
+                      : '',
+                  child: AppButton(
+                    text: 'Simpan Perubahan',
+                    isLoading: controller.isLoading,
+                    onPressed: isOnline &&
+                            !controller.isLoading &&
+                            widget.originalReport.canEdit
+                        ? _submit
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],

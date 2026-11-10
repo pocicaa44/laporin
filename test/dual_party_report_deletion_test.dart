@@ -105,37 +105,24 @@ void main() {
       expect(inDb, isNotNull);
     });
 
-    test('Admin soft-deletes report: hidden from admin and public, but still in user myReports', () async {
+    test('Admin CANNOT delete report before user deletes (Soft Delete Dependency)', () async {
       final report = createTestReport(id: 'rep-002', authorId: 'user-002');
       repository.updateReport(report);
 
-      // Admin menghapus laporan
-      final updated = await repository.softDeleteReport(
-        reportId: 'rep-002',
-        currentUserId: 'admin-001',
-        isCallerAdmin: true,
+      // Admin mencoba menghapus laporan yang belum dihapus warga -> HARUS DITOLAK
+      expect(
+        () => repository.softDeleteReport(
+          reportId: 'rep-002',
+          currentUserId: 'admin-001',
+          isCallerAdmin: true,
+        ),
+        throwsA(predicate((e) => e.toString().contains('sudah dihapus oleh pelapor'))),
       );
 
-      expect(updated.deletedByAdmin, isTrue);
-      expect(updated.deletedByUser, isFalse);
-      expect(updated.isDeleted, isTrue);
-      expect(updated.isPermanentlyDeleted, isFalse);
-
-      // 1. Tidak tampil di Panel Admin
-      final adminReports = await repository.getAdminReports();
-      expect(adminReports.any((r) => r.id == 'rep-002'), isFalse);
-
-      // 2. Tidak tampil di Feed Publik
-      final feed = await repository.getPublicFeed();
-      expect(feed.any((r) => r.id == 'rep-002'), isFalse);
-
-      // 3. MASIH tampil di Laporan Saya pengguna (dengan status dibatalkan/dihapus oleh admin)
-      final myReports = await repository.getMyReports('user-002');
-      expect(myReports.any((r) => r.id == 'rep-002'), isTrue);
-
-      // 4. Laporan MASIH tersimpan di database
+      // Laporan MASIH tersimpan dan tidak terhapus
       final inDb = await repository.getReportById('rep-002');
       expect(inDb, isNotNull);
+      expect(inDb!.deletedByAdmin, isFalse);
     });
 
     test('User deletes FIRST, then Admin deletes -> HARD DELETED permanently from database', () async {
@@ -184,7 +171,7 @@ void main() {
       expect(await repository.getPublicFeed(), isEmpty);
     });
 
-    test('Admin deletes FIRST, then User deletes -> HARD DELETED permanently from database', () async {
+    test('Admin delete requires user deletion first -> HARD DELETED permanently after both delete', () async {
       final report = createTestReport(
         id: 'rep-004',
         authorId: 'user-004',
@@ -192,29 +179,34 @@ void main() {
       );
       repository.updateReport(report);
 
-      // Step 1: Admin menghapus laporan
-      final adminDeleted = await repository.softDeleteReport(
-        reportId: 'rep-004',
-        currentUserId: 'admin-001',
-        isCallerAdmin: true,
+      // Step 1: Admin mencoba menghapus duluan -> Gagal
+      expect(
+        () => repository.softDeleteReport(
+          reportId: 'rep-004',
+          currentUserId: 'admin-001',
+          isCallerAdmin: true,
+        ),
+        throwsA(predicate((e) => e.toString().contains('sudah dihapus oleh pelapor'))),
       );
-      expect(adminDeleted.deletedByAdmin, isTrue);
-      expect(adminDeleted.deletedByUser, isFalse);
-      expect(adminDeleted.isPermanentlyDeleted, isFalse);
 
-      // Laporan masih ada di database
-      expect(await repository.getReportById('rep-004'), isNotNull);
-
-      // Step 2: User menghapus laporan juga (KEDUA BELAH PIHAK)
+      // Step 2: User menghapus laporan terlebih dahulu -> Berhasil
       final userDeleted = await repository.softDeleteReport(
         reportId: 'rep-004',
         currentUserId: 'user-004',
         isCallerAdmin: false,
       );
-
       expect(userDeleted.deletedByUser, isTrue);
-      expect(userDeleted.deletedByAdmin, isTrue);
-      expect(userDeleted.isPermanentlyDeleted, isTrue);
+      expect(userDeleted.deletedByAdmin, isFalse);
+
+      // Step 3: Admin sekarang dapat menghapus laporan -> Sukses & Hard Deleted
+      final adminDeleted = await repository.softDeleteReport(
+        reportId: 'rep-004',
+        currentUserId: 'admin-001',
+        isCallerAdmin: true,
+      );
+      expect(adminDeleted.deletedByUser, isTrue);
+      expect(adminDeleted.deletedByAdmin, isTrue);
+      expect(adminDeleted.isPermanentlyDeleted, isTrue);
 
       // Laporan sudah TERHAPUS PERMANEN dari database repository!
       final inDbAfterBoth = await repository.getReportById('rep-004');

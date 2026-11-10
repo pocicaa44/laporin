@@ -1,0 +1,178 @@
+# Project Context — Laporin
+
+## 1. Project Overview
+**Laporin** is a civic tech issue reporting and community discussion application built with Flutter (mobile and web) and Supabase. The platform empowers citizens to report public infrastructure and service issues within officially supported Indonesian geographic boundaries, monitor handling progress in real time, and interact through a public community discussion thread. Admins and government officials validate reports, update handling statuses with verifiable completion proof, moderate content, broadcast official announcements, and manage dual-party deletion workflows.
+
+Key product invariants:
+- **Single Source of Truth:** A report record serves dual perspectives: the author's private progress tracker ("Laporan Saya") and the public discussion thread ("Feed Publik").
+- **Two Distinct State Machines:**
+  - `handling_status`: `newReport`, `accepted`, `inProgress`, `completed`, `rejected`, `cancelled`
+  - `publication_state`: `pendingReview`, `published`, `held`, `archived`
+- **Immutability of Terminal Reports:** Reports marked as `completed` (Selesai) or `rejected` (Ditolak) are permanently immutable by citizens and cannot be edited.
+- **Dual-Party Deletion Protocol:** Reports can only be permanently removed from storage and database when both parties agree: the citizen must soft-delete the report first (`deletedByUser`), allowing the admin to subsequently trigger permanent hard-deletion (`deletedByAdmin`).
+
+---
+
+## 2. Technology Stack
+- **Framework & SDK:** Flutter SDK (>=3.0.0 <4.0.0), Dart 3.x with sound null safety.
+- **State Management:** Provider pattern (`provider: ^6.1.2`, `ChangeNotifier`).
+- **Backend as a Service (BaaS):** Supabase (`supabase_flutter: ^2.8.3` - PostgreSQL, Supabase Auth, Supabase Storage, Row Level Security policies, RPC functions).
+- **Push Notifications:** Firebase Cloud Messaging (`firebase_messaging: ^15.2.0`, `firebase_core: ^3.11.0`).
+- **Local Storage & Offline Caching:** `shared_preferences: ^2.3.5`, `sqflite: ^2.4.1`, `path_provider: ^2.1.5`.
+- **Geocoding & Maps:** `geolocator: ^13.0.2`, `geocoding: ^3.0.0`, `flutter_map: ^7.0.2`, `latlong2: ^0.9.1`.
+- **Media & Images:** `image_picker: ^1.1.2`, `flutter_image_compress: ^2.3.0`, `cached_network_image: ^3.4.1`.
+- **Networking & Connectivity:** `connectivity_plus: ^6.1.1`, `http: ^1.3.0`.
+- **Testing:** `flutter_test`, `mockito: ^5.4.5`, `build_runner: ^2.4.14`.
+
+---
+
+## 3. Project Structure
+```text
+laporin/
+├── lib/
+│   ├── core/
+│   │   ├── config/             # App configs, routes, theme, Indonesia boundary & regions
+│   │   ├── errors/             # Custom exceptions, failure classes
+│   │   ├── services/           # BoundaryService, FCMService, MediaService, ConnectivityService
+│   │   ├── theme/              # AppColors, AppTypography, AppRadius, AppSpacing
+│   │   └── utils/              # DateFormatter, helpers, validators
+│   ├── data/
+│   │   ├── models/             # ReportModel, ProfileModel, AnnouncementModel, CommentModel, VoteModel
+│   │   └── repositories/       # ReportRepository, AuthRepository, NotificationRepository, CommentRepository
+│   ├── features/
+│   │   ├── admin/              # AdminDashboard, AdminStatusUpdateSheet, AdminProvinceFilter, Announcements
+│   │   ├── auth/               # LoginScreen, RegisterScreen, ForgotPassword, SetUsernameScreen
+│   │   ├── create_report/      # CreateReportScreen, Drafts, CategoryPicker, LocationPicker
+│   │   ├── edit_report/        # EditReportScreen (with immutability validations)
+│   │   ├── feed/               # FeedScreen, ReportCard, Upvote/Downvote actions
+│   │   ├── navigation/         # MainNavigationScreen, AdminNavigationScreen, AppDrawer
+│   │   ├── notifications/      # NotificationListScreen, NotificationBadge
+│   │   ├── profile/            # ProfileScreen, EditProfile, MyReportsScreen
+│   │   └── report_detail/      # ReportDetailScreen, CommentThread, ResolutionProof, DeleteReportDialog
+│   └── main.dart               # App entrypoint, dependency initialization, MultiProvider setup
+├── supabase/
+│   └── migrations/             # SQL migrations, RLS policies, RPC functions (dual-party deletion, immutability)
+├── assets/                     # Indonesia GeoJSON boundaries, icons, placeholder images
+└── test/                       # 32 comprehensive unit, widget, and integration test suites
+```
+
+---
+
+## 4. Architecture Overview
+Laporin adheres to a clean, layered architectural pattern:
+- **Presentation Layer (UI & Controllers):** Widgets subscribe to feature controllers extending `ChangeNotifier`. Controllers manage UI state, error handling, loading states, and user actions.
+- **Data & Repository Layer:** Repositories abstract Supabase REST/RPC queries, offline SQLite caching, media uploads, and in-memory test mocks.
+- **Domain Models:** Data models provide immutability rules, serialization/deserialization (`fromJson`/`toJson`), validation getters (`canEdit`, `canAdminDelete`, `downvotePercentage`), and `copyWith` utilities.
+- **Core Services:** Reusable, testable singletons or service classes for boundary verification (Ray-Casting GeoJSON polygon checks), Supabase storage upload/cleanup, and FCM notifications.
+
+---
+
+## 5. Core Components and Modules
+1. **ReportRepository (`lib/data/repositories/report_repository.dart`):**
+   - Core CRUD and synchronization logic for reports.
+   - Enforces business rules: report creation role guard, edit immutability guard, dual-party soft deletion protocol, and regional province filtering.
+2. **AdminReportController (`lib/features/admin/controllers/admin_report_controller.dart`):**
+   - Manages admin metrics (KPI cards), filtering by status (`new`, `accepted`, `in_progress`, `completed`, `rejected`, `deleted_by_user`), and regional filtering by province.
+3. **BoundaryService (`lib/core/services/boundary_service.dart`):**
+   - Ingests GeoJSON boundaries of Indonesian provinces and validates user GPS coordinates.
+4. **MediaService (`lib/core/services/media_service.dart`):**
+   - Validates, compresses images before upload, extracts storage bucket paths, and cleans up storage assets upon permanent deletion.
+5. **AppGate & Navigation (`lib/features/navigation/`):**
+   - Automatically directs users based on auth state and role: `AdminNavigationScreen` for admins, `MainNavigationScreen` for citizens.
+
+---
+
+## 6. Feature Implementation Map
+- **Report Immutability:** `lib/data/models/report_model.dart` (`canEdit`, `cannotEditReason`), enforced in `EditReportScreen` and `ReportRepository.updateReport()`.
+- **Dual-Party Deletion:** `ReportRepository.softDeleteReport()`, `DeleteReportDialog`, and `_AdminReportCard._buildDeleteButton()`.
+- **Province-Based Admin Filtering:** `AdminProvinceFilterDropdown` (`lib/features/admin/widgets/admin_province_filter_dropdown.dart`), `AdminReportController.setProvinceFilter()`, and `ReportRepository.getAdminReports(provinceId: ...)`.
+- **Voting & Invariants:** Upvote and downvote counters with downvote percentage thresholds in `lib/data/models/report_model.dart` and `lib/features/feed/widgets/report_card.dart`.
+- **Public Discussions:** Discussion thread toggle (`isDiscussionActive`), nested comment replies in `lib/features/report_detail/`.
+- **Resolution Proof:** Mandatory image proof and resolution notes required when marking reports as `completed` via `AdminResolveSheet`.
+
+---
+
+## 7. Data Flow and Integrations
+1. **User Action (Mobile/Web Client):** Citizen fills report with location + photos.
+2. **Boundary Validation:** Coordinates evaluated against GeoJSON polygons.
+3. **Media Upload:** Compressed photos sent to Supabase Storage bucket `report-attachments`.
+4. **Database Mutation:** Report inserted into PostgreSQL `public.reports` via Supabase client, triggering RLS checks.
+5. **Notification:** Edge function / webhook or client service triggers FCM message to area-assigned admins.
+6. **Admin Triage & Moderation:** Admin updates status with notes and resolution proof; state changes reflect in both public thread and user's private tracker.
+
+---
+
+## 8. Database Overview
+- **`public.profiles`:** User metadata, full name, username, avatar URL, role (`user` | `admin`), and assigned region.
+- **`public.reports`:** Core report records with dual status columns (`handling_status`, `publication_state`), soft deletion flags (`deleted_by_user`, `deleted_by_admin`, `deleted_by_user_at`, `deleted_by_admin_at`), GPS coordinates, and media URLs.
+- **`public.comments`:** Nested comment threads per report.
+- **`public.votes`:** User vote records (`upvote` | `downvote`) with unique constraint on `(report_id, user_id)`.
+- **`public.announcements`:** Broadcast notices created by admins.
+- **Database Functions & Triggers:**
+  - `validate_report_immutability()`: BEFORE UPDATE trigger blocking changes to completed/rejected reports.
+  - `execute_dual_party_deletion()`: Atomic RPC enforcing that admin deletion requires citizen deletion first.
+
+---
+
+## 9. Authentication and Authorization
+- **Supabase Auth:** Google OAuth and email/password sign-in.
+- **Role-Based Access Control (RBAC):**
+  - `user`: Citizen role. Can create reports, view own reports, edit active reports, vote, comment, and soft-delete own reports. Blocked from accessing admin portal.
+  - `admin`: Public official role. Can update statuses, upload resolution proof, moderate held threads, broadcast announcements, filter by province, and execute permanent deletion on citizen-deleted reports. Blocked from filing reports.
+
+---
+
+## 10. Development Conventions
+- **Code Style:** Effective Dart rules via `analysis_options.yaml`. Strict linting with zero analyzer errors or warnings.
+- **Error Handling:** Graceful fallback when offline or Supabase connection is unavailable.
+- **UI Architecture:** Design tokens organized in `lib/core/theme/` (`AppColors`, `AppRadius`, `AppTypography`).
+- **Testing Mandate:** Every new feature, status rule, and state transition must be validated with comprehensive unit and widget tests in `test/`.
+
+---
+
+## 11. Build, Run, and Test Instructions
+### Static Analysis:
+```powershell
+flutter analyze
+```
+### Running Tests:
+```powershell
+# Run the entire test suite (350+ tests across 32 files)
+flutter test
+
+# Run a specific test suite
+flutter test test/admin_role_and_navigation_test.dart
+flutter test test/dual_party_report_deletion_test.dart
+```
+### Running the Application:
+```powershell
+# Run on Chrome (Web)
+flutter run -d chrome
+
+# Run on connected Android device/emulator
+flutter run -d android
+```
+
+---
+
+## 12. Known Issues and Technical Limitations
+- **Offline Sync:** In-memory fallback is fully functional for tests; production background sync requires network reconnect handlers in active foreground sessions.
+- **Storage Cleanup:** Offline and test environments safely skip remote Supabase Storage deletion calls via `MediaService` bypass.
+
+---
+
+## 13. Important File References
+- `lib/data/models/report_model.dart`: Core report entity and business invariant rules.
+- `lib/data/repositories/report_repository.dart`: Central data access and mutation layer.
+- `lib/features/admin/screens/admin_dashboard_screen.dart`: Admin portal dashboard and action triggers.
+- `lib/features/admin/widgets/admin_province_filter_dropdown.dart`: Regional province filter component.
+- `lib/features/report_detail/screens/report_detail_screen.dart`: Report detail and discussion interface.
+- `test/dual_party_report_deletion_test.dart`: Test specifications for dual-party deletion and storage cleanup.
+- `test/admin_role_and_navigation_test.dart`: Test specifications for admin roles, navigation, and dashboard actions.
+
+---
+
+## 14. Development Guidelines for Future Tasks
+- Always follow the cycle: $\text{ANALYZE} \rightarrow \text{IMPLEMENT} \rightarrow \text{CHECK} \rightarrow \text{TEST} \rightarrow \text{DONE}$.
+- Never modify existing business invariants (dual status machine, immutability of completed/rejected reports, dual-party deletion) without consulting product specifications.
+- Verify all changes with `flutter analyze` and `flutter test` before completing a task.

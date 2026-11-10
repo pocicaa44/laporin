@@ -276,6 +276,18 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
   }
 
   void _openEditScreen(ReportModel currentReport) async {
+    if (!currentReport.canEdit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            currentReport.cannotEditReason ??
+                'Laporan dengan status ini tidak dapat diedit.',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     if (!context.isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -698,21 +710,31 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     ],
                   ),
                 ],
-                if (isAdmin &&
-                    !report.deletedByAdmin &&
-                    report.canAdminDelete) ...[
-                  IconButton(
-                    icon: Icon(
-                      report.deletedByUser
-                          ? Icons.delete_forever_rounded
-                          : Icons.delete_outline_rounded,
-                      color: AppColors.danger,
+                if (isAdmin && !report.deletedByAdmin) ...[
+                  Tooltip(
+                    message: report.canAdminDelete
+                        ? (report.deletedByUser
+                            ? 'Hapus Permanen Laporan'
+                            : 'Hapus Laporan')
+                        : (report.cannotAdminDeleteReason ??
+                            'Laporan belum dihapus oleh pelapor'),
+                    child: IconButton(
+                      icon: Icon(
+                        report.deletedByUser
+                            ? Icons.delete_forever_rounded
+                            : Icons.delete_outline_rounded,
+                        color: report.canAdminDelete
+                            ? AppColors.danger
+                            : AppColors.textSecondary,
+                      ),
+                      onPressed: report.canAdminDelete
+                          ? () => _showDeleteDialog(
+                              report,
+                              currentUserId,
+                              isAdmin: true,
+                            )
+                          : null,
                     ),
-                    tooltip: report.deletedByUser
-                        ? 'Hapus Permanen Laporan'
-                        : 'Hapus Laporan',
-                    onPressed: () =>
-                        _showDeleteDialog(report, currentUserId, isAdmin: true),
                   ),
                 ],
                 if (isOwner && !report.deletedByUser) ...[
@@ -746,19 +768,55 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             ],
                           ),
                         ),
-                      if (!report.isTerminal)
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.edit_outlined,
-                                size: 20,
-                                color: AppColors.primary,
-                              ),
-                              SizedBox(width: 8),
-                              Expanded(child: Text('Edit Laporan')),
-                            ],
+                      // Opsi Edit Laporan (Task 1: Disabled jika selesai atau ditolak)
+                      if (!report.isDeleted &&
+                          report.handlingStatus != HandlingStatus.cancelled)
+                        PopupMenuItem<String>(
+                          value: report.canEdit ? 'edit' : 'edit_disabled',
+                          enabled: report.canEdit,
+                          child: Tooltip(
+                            message: report.cannotEditReason ?? 'Edit Laporan',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  report.canEdit
+                                      ? Icons.edit_outlined
+                                      : Icons.edit_off_outlined,
+                                  size: 20,
+                                  color: report.canEdit
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Edit Laporan',
+                                        style: TextStyle(
+                                          color: report.canEdit
+                                              ? null
+                                              : AppColors.textSecondary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      if (!report.canEdit &&
+                                          report.cannotEditReason != null)
+                                        Text(
+                                          report.cannotEditReason!,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       // Opsi Toggle Diskusi untuk Pemilik Laporan (bisa dinonaktifkan/diaktifkan)

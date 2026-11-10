@@ -1187,6 +1187,13 @@ void main() {
     testWidgets(
       'Admin Dashboard panel displays ONLY Detail and Hapus for completed or rejected reports',
       (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1024, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
         final rep = await reportRepo.createReport(
           authorId: testUser.id,
           authorName: testUser.fullName,
@@ -1227,8 +1234,34 @@ void main() {
         expect(find.text('Selesaikan'), findsNothing);
         expect(find.text('Pulihkan Publikasi'), findsNothing);
 
-        // Tap Hapus -> DeleteReportDialog shows up
+        // Before user deletes: Admin cannot delete (button is disabled)
         await tester.tap(find.text('Hapus'));
+        await tester.pumpAndSettle();
+        expect(find.text('Hapus Laporan?'), findsNothing);
+
+        // Now citizen soft-deletes the report first
+        await reportRepo.softDeleteReport(
+          reportId: rep.id,
+          currentUserId: testUser.id,
+          isCallerAdmin: false,
+        );
+
+        // Re-render admin dashboard screen
+        await tester.pumpWidget(
+          createTestApp(child: const AdminDashboardScreen(), user: testAdmin),
+        );
+        await tester.pumpAndSettle();
+
+        // Filter to completed reports
+        await tester.tap(find.text('Selesai').first);
+        await tester.pumpAndSettle();
+
+        // Check button becomes 'Hapus Permanen' and is now active
+        expect(find.text('Hapus Permanen'), findsOneWidget);
+
+        // Tap Hapus Permanen -> DeleteReportDialog shows up
+        await tester.ensureVisible(find.text('Hapus Permanen'));
+        await tester.tap(find.text('Hapus Permanen'));
         await tester.pumpAndSettle();
 
         expect(find.text('Hapus Laporan?'), findsOneWidget);

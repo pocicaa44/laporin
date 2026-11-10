@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/config/indonesia_regions.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 
@@ -12,32 +13,59 @@ class AdminReportController extends ChangeNotifier {
   final ReportRepository reportRepository;
 
   List<ReportModel> _allReports = [];
+
+  String? _selectedProvinceId;
+  String? get selectedProvinceId => _selectedProvinceId;
+
+  String? _selectedProvinceName;
+  String? get selectedProvinceName => _selectedProvinceName;
+
+  List<ReportModel> get _scopedReports {
+    if (_selectedProvinceId == null ||
+        _selectedProvinceId!.isEmpty ||
+        _selectedProvinceId == 'all') {
+      return _allReports;
+    }
+    return _allReports.where((r) {
+      if (r.provinceId == _selectedProvinceId) return true;
+      if (r.areaId.contains(_selectedProvinceId!)) return true;
+      final prov = IndonesiaRegions.findById(_selectedProvinceId!);
+      if (prov != null) {
+        if (r.areaId.toLowerCase().contains(prov.name.toLowerCase())) return true;
+        if (r.areaId.toLowerCase().contains(prov.code.toLowerCase())) return true;
+        if (r.areaName.toLowerCase().contains(prov.name.toLowerCase())) return true;
+      }
+      return false;
+    }).toList();
+  }
+
   List<ReportModel> get reports {
+    final list = _scopedReports;
     switch (_filter) {
       case 'deleted_by_user':
-        return _allReports.where((r) => r.deletedByUser).toList();
+        return list.where((r) => r.deletedByUser).toList();
       case 'new':
-        return _allReports
+        return list
             .where((r) => r.handlingStatus == HandlingStatus.newReport)
             .toList();
       case 'accepted':
-        return _allReports
+        return list
             .where((r) => r.handlingStatus == HandlingStatus.accepted)
             .toList();
       case 'in_progress':
-        return _allReports
+        return list
             .where((r) => r.handlingStatus == HandlingStatus.inProgress)
             .toList();
       case 'completed':
-        return _allReports
+        return list
             .where((r) => r.handlingStatus == HandlingStatus.completed)
             .toList();
       case 'rejected':
-        return _allReports
+        return list
             .where((r) => r.handlingStatus == HandlingStatus.rejected)
             .toList();
       default:
-        return _allReports;
+        return list;
     }
   }
 
@@ -63,27 +91,27 @@ class AdminReportController extends ChangeNotifier {
       'all'; // 'all', 'new', 'accepted', 'in_progress', 'completed', 'rejected'
   String get filter => _filter;
 
-  int get totalReports => _allReports.length;
-  int get newCount => _allReports
+  int get totalReports => _scopedReports.length;
+  int get newCount => _scopedReports
       .where((r) => r.handlingStatus == HandlingStatus.newReport)
       .length;
-  int get acceptedCount => _allReports
+  int get acceptedCount => _scopedReports
       .where((r) => r.handlingStatus == HandlingStatus.accepted)
       .length;
-  int get inProgressCount => _allReports
+  int get inProgressCount => _scopedReports
       .where((r) => r.handlingStatus == HandlingStatus.inProgress)
       .length;
-  int get completedCount => _allReports
+  int get completedCount => _scopedReports
       .where((r) => r.handlingStatus == HandlingStatus.completed)
       .length;
-  int get rejectedCount => _allReports
+  int get rejectedCount => _scopedReports
       .where((r) => r.handlingStatus == HandlingStatus.rejected)
       .length;
-  int get heldCount => _allReports
+  int get heldCount => _scopedReports
       .where((r) => r.publicationState == PublicationState.held)
       .length;
   int get deletedByUserCount =>
-      _allReports.where((r) => r.deletedByUser && !r.deletedByAdmin).length;
+      _scopedReports.where((r) => r.deletedByUser && !r.deletedByAdmin).length;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -107,6 +135,7 @@ class AdminReportController extends ChangeNotifier {
 
     try {
       final list = await reportRepository.getAdminReports(
+        provinceId: _selectedProvinceId,
         forceRefresh: forceRefresh,
       );
       if (_isDisposed) return;
@@ -127,6 +156,18 @@ class AdminReportController extends ChangeNotifier {
     if (_filter != newFilter) {
       _filter = newFilter;
       notifyListeners();
+    }
+  }
+
+  void setProvinceFilter(String? provinceId, [String? provinceName]) {
+    if (_selectedProvinceId != provinceId) {
+      _selectedProvinceId = provinceId;
+      _selectedProvinceName = provinceName ??
+          (provinceId != null
+              ? IndonesiaRegions.findById(provinceId)?.name
+              : null);
+      notifyListeners();
+      fetchReports(forceRefresh: true);
     }
   }
 

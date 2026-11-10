@@ -117,6 +117,15 @@ class EditReportController extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    // Validasi immutability laporan (Task 1: Selesai / Ditolak)
+    if (!report.canEdit) {
+      _isLoading = false;
+      _errorMessage = report.cannotEditReason ??
+          'Laporan berstatus selesai atau ditolak tidak dapat diedit.';
+      notifyListeners();
+      return null;
+    }
+
     if (_locationAddress.trim().isEmpty) {
       _isLoading = false;
       _errorMessage = 'Harap tentukan titik lokasi kejadian terlebih dahulu.';
