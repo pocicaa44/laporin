@@ -104,6 +104,13 @@ class _AdminEditAnnouncementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(
@@ -114,14 +121,14 @@ class _AdminEditAnnouncementScreenState
         title: const Text('Edit Pengumuman'),
       ),
       body: Container(
-        color: const Color(0xFFF0F2F5),
+        color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
         child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 720),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
+            decoration: BoxDecoration(
+              color: bgColor,
               border: Border.symmetric(
-                vertical: BorderSide(color: AppColors.border, width: 1),
+                vertical: BorderSide(color: borderColor, width: 1),
               ),
             ),
             child: Form(
@@ -135,21 +142,21 @@ class _AdminEditAnnouncementScreenState
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: surfaceColor,
                       borderRadius: AppRadius.card,
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           'Informasi Pengumuman',
-                          style: AppTextStyles.sectionTitle,
+                          style: AppTextStyles.sectionTitleOf(context),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           'Perbarui informasi pengumuman resmi agar warga mendapatkan data yang akurat.',
-                          style: AppTextStyles.caption,
+                          style: AppTextStyles.captionOf(context),
                         ),
                         const SizedBox(height: 18),
                         TextFormField(
@@ -173,9 +180,9 @@ class _AdminEditAnnouncementScreenState
                           },
                         ),
                         const SizedBox(height: 14),
-                        const Text(
+                        Text(
                           'Kategori Pengumuman',
-                          style: AppTextStyles.label,
+                          style: AppTextStyles.labelOf(context),
                         ),
                         const SizedBox(height: 8),
                         SingleChildScrollView(
@@ -195,18 +202,18 @@ class _AdminEditAnnouncementScreenState
                                           : FontWeight.w500,
                                       color: isSelected
                                           ? Colors.white
-                                          : AppColors.textPrimary,
+                                          : textPrimary,
                                     ),
                                   ),
                                   selected: isSelected,
-                                  selectedColor: AppColors.primary,
-                                  backgroundColor: AppColors.surface,
+                                  selectedColor: primaryColor,
+                                  backgroundColor: surfaceColor,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: AppRadius.pill,
                                     side: BorderSide(
                                       color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.border,
+                                          ? primaryColor
+                                          : borderColor,
                                     ),
                                   ),
                                   onSelected: _isUpdating
@@ -242,9 +249,9 @@ class _AdminEditAnnouncementScreenState
                           },
                         ),
                         const SizedBox(height: 18),
-                        const Text(
+                        Text(
                           'Media Gambar (Opsional)',
-                          style: AppTextStyles.label,
+                          style: AppTextStyles.labelOf(context),
                         ),
                         const SizedBox(height: 8),
                         AnnouncementImagePicker(

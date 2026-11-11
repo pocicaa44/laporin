@@ -67,11 +67,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context.read<NavigationController>().resetToHome();
       } catch (_) {}
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Akun berhasil didaftarkan! Selamat datang di Laporin.',
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: AppColors.successOf(context),
         ),
       );
       Navigator.pushAndRemoveUntil(
@@ -103,16 +103,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.backgroundOf(context),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: AppColors.backgroundOf(context),
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: AppColors.borderOf(context), width: 1),
             ),
           ),
           child: Scaffold(
@@ -144,16 +145,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Buat Akun Laporin',
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.pageTitle,
+                        style: AppTextStyles.pageTitleOf(context),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Daftarkan diri Anda untuk mulai berpartisipasi dan memantau penanganan masalah publik.',
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.bodySecondary,
+                        style: AppTextStyles.bodySecondaryOf(context),
                       ),
                       const SizedBox(height: 28),
 
@@ -163,16 +164,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: AppColors.dangerSubtle,
+                            color: isDark
+                                ? AppColors.darkDanger.withValues(alpha: 0.15)
+                                : AppColors.dangerSubtle,
                             borderRadius: const BorderRadius.all(
                               Radius.circular(8),
                             ),
-                            border: Border.all(color: AppColors.danger),
+                            border: Border.all(
+                              color: AppColors.dangerOf(context),
+                            ),
                           ),
                           child: Text(
                             auth.errorMessage!,
-                            style: const TextStyle(
-                              color: AppColors.danger,
+                            style: TextStyle(
+                              color: AppColors.dangerOf(context),
                               fontSize: 13,
                             ),
                           ),
@@ -285,14 +290,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 20),
 
                       // Divider "atau"
-                      const Row(
+                      Row(
                         children: [
-                          Expanded(child: Divider()),
+                          const Expanded(child: Divider()),
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('atau', style: AppTextStyles.caption),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('atau', style: AppTextStyles.captionOf(context)),
                           ),
-                          Expanded(child: Divider()),
+                          const Expanded(child: Divider()),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -315,9 +320,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Sudah punya akun? ',
-                            style: AppTextStyles.bodySecondary,
+                            style: AppTextStyles.bodySecondaryOf(context),
                           ),
                           GestureDetector(
                             onTap: () {
@@ -326,10 +331,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   .clearErrorMessage();
                               Navigator.pop(context);
                             },
-                            child: const Text(
+                            child: Text(
                               'Masuk di sini',
                               style: TextStyle(
-                                color: AppColors.primary,
+                                color: AppColors.primaryOf(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

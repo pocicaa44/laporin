@@ -25,6 +25,7 @@ import 'features/auth/screens/app_gate.dart';
 import 'features/feed/controllers/feed_controller.dart';
 import 'features/navigation/controllers/navigation_controller.dart';
 import 'features/notifications/controllers/notification_controller.dart';
+import 'features/settings/controllers/settings_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,12 +110,14 @@ class LaporinApp extends StatelessWidget {
     this.reportRepository,
     this.announcementRepository,
     this.networkService,
+    this.settingsController,
   });
 
   final AuthRepository? authRepository;
   final ReportRepository? reportRepository;
   final AnnouncementRepository? announcementRepository;
   final NetworkService? networkService;
+  final SettingsController? settingsController;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +146,11 @@ class LaporinApp extends StatelessWidget {
           create: (_) => announcementRepository ?? AnnouncementRepository(),
         ),
 
+        // Settings & Theme Controller
+        ChangeNotifierProvider(
+          create: (_) => settingsController ?? SettingsController(),
+        ),
+
         // Global Controllers
         ChangeNotifierProvider(
           create: (context) =>
@@ -166,37 +174,45 @@ class LaporinApp extends StatelessWidget {
           )..fetchAnnouncements(),
         ),
       ],
-      child: MaterialApp(
-        navigatorKey: FcmService.navigatorKey,
-        scaffoldMessengerKey: NetworkService.scaffoldMessengerKey,
-        navigatorObservers: [NetworkService.routeObserver],
-        title: 'Laporin',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        scrollBehavior: const AppScrollBehavior(),
-        builder: (context, child) {
-          final isOverview = context.watch<NetworkService>().isOverviewActive;
-          final topPadding = MediaQuery.paddingOf(context).top;
-          final bannerTop = isOverview
-              ? topPadding
-              : topPadding + kToolbarHeight;
+      child: Consumer<SettingsController>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            navigatorKey: FcmService.navigatorKey,
+            scaffoldMessengerKey: NetworkService.scaffoldMessengerKey,
+            navigatorObservers: [NetworkService.routeObserver],
+            title: 'Laporin',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: settings.themeMode,
+            scrollBehavior: const AppScrollBehavior(),
+            builder: (context, child) {
+              final viewInsets = MediaQuery.viewInsetsOf(context);
+              final padding = MediaQuery.paddingOf(context);
+              final bottomPadding =
+                  viewInsets.bottom > 0 ? 0.0 : padding.bottom;
 
-          return Material(
-            color: Colors.transparent,
-            child: Stack(
-              children: [
-                child ?? const SizedBox.shrink(),
-                Positioned(
-                  top: bannerTop,
-                  left: 0,
-                  right: 0,
-                  child: const TopConnectivityStrip(),
+              return Material(
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeBottom: true,
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    ),
+                    const BottomConnectivityStrip(),
+                    if (bottomPadding > 0)
+                      SizedBox(height: bottomPadding),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
+            home: const AppGate(),
           );
         },
-        home: const AppGate(),
       ),
     );
   }

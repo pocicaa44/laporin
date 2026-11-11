@@ -58,6 +58,14 @@ class _OfflineFallbackViewState extends State<OfflineFallbackView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconBg =
+        isDark ? const Color(0xFF334155).withValues(alpha: 0.3) : const Color(0xFF23272F).withValues(alpha: 0.08);
+    final iconColor =
+        isDark ? const Color(0xFFCBD5E1) : const Color(0xFF23272F);
+    final messageColor =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Center(
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -68,26 +76,26 @@ class _OfflineFallbackViewState extends State<OfflineFallbackView> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF23272F).withValues(alpha: 0.08),
+                color: iconBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.wifi_off_rounded,
                 size: 40,
-                color: Color(0xFF23272F),
+                color: iconColor,
               ),
             ),
             const SizedBox(height: 20),
             Text(
               widget.title,
               textAlign: TextAlign.center,
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 18),
+              style: AppTextStyles.sectionTitleOf(context).copyWith(fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
               widget.message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodySecondary,
+              style: AppTextStyles.bodySecondary.copyWith(color: messageColor),
             ),
             const SizedBox(height: 24),
             SizedBox(

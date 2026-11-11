@@ -43,11 +43,11 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
         context.read<NavigationController>().resetToHome();
       } catch (_) {}
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Username berhasil disimpan! Selamat datang di Laporin.',
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: AppColors.successOf(context),
         ),
       );
       Navigator.pushAndRemoveUntil(
@@ -62,6 +62,7 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final user = auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -84,14 +85,14 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: AppColors.primaryOf(context).withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: FaIcon(
                             FontAwesomeIcons.userCheck,
                             size: 32,
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                         ),
                       ),
@@ -100,13 +101,13 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
                     Text(
                       'Halo, ${user?.fullName ?? 'Warga Laporin'}!',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.pageTitle,
+                      style: AppTextStyles.pageTitleOf(context),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Tentukan username unik Anda untuk melanjutkan. Username ini akan menjadi identitas Anda saat membuat laporan dan berdiskusi.',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySecondary,
+                      style: AppTextStyles.bodySecondaryOf(context),
                     ),
                     const SizedBox(height: 32),
 
@@ -115,16 +116,20 @@ class _SetUsernameScreenState extends State<SetUsernameScreen> {
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: AppColors.dangerSubtle,
+                          color: isDark
+                              ? AppColors.darkDanger.withValues(alpha: 0.15)
+                              : AppColors.dangerSubtle,
                           borderRadius: const BorderRadius.all(
                             Radius.circular(8),
                           ),
-                          border: Border.all(color: AppColors.danger),
+                          border: Border.all(
+                            color: AppColors.dangerOf(context),
+                          ),
                         ),
                         child: Text(
                           auth.errorMessage!,
-                          style: const TextStyle(
-                            color: AppColors.danger,
+                          style: TextStyle(
+                            color: AppColors.dangerOf(context),
                             fontSize: 13,
                           ),
                         ),

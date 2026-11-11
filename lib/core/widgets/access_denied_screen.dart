@@ -24,15 +24,17 @@ class AccessDeniedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      color: AppColors.background,
+      color: AppColors.backgroundOf(context),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: AppColors.backgroundOf(context),
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: AppColors.borderOf(context), width: 1),
             ),
           ),
           child: Scaffold(
@@ -52,9 +54,9 @@ class AccessDeniedScreen extends StatelessWidget {
                     vertical: 32,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppColors.surfaceOf(context),
                     borderRadius: AppRadius.card,
-                    border: Border.all(color: AppColors.border, width: 1),
+                    border: Border.all(color: AppColors.borderOf(context), width: 1),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -63,18 +65,22 @@ class AccessDeniedScreen extends StatelessWidget {
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: AppColors.dangerSubtle,
+                          color: isDark
+                              ? AppColors.darkDanger.withValues(alpha: 0.15)
+                              : AppColors.dangerSubtle,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFFECACA),
+                            color: isDark
+                                ? AppColors.darkDanger.withValues(alpha: 0.4)
+                                : const Color(0xFFFECACA),
                             width: 1,
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: FaIcon(
                             FontAwesomeIcons.shieldHalved,
                             size: 28,
-                            color: AppColors.danger,
+                            color: AppColors.dangerOf(context),
                           ),
                         ),
                       ),
@@ -82,15 +88,13 @@ class AccessDeniedScreen extends StatelessWidget {
                       Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.pageTitle.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
+                        style: AppTextStyles.pageTitleOf(context),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         message,
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.bodySecondary.copyWith(
+                        style: AppTextStyles.bodySecondaryOf(context).copyWith(
                           height: 1.5,
                         ),
                       ),

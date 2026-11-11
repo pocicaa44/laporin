@@ -77,7 +77,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.danger,
+          backgroundColor: AppColors.dangerOf(context),
         ),
       );
     } finally {
@@ -102,14 +102,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _showAvatarOptionsSheet() {
     if (!context.isOnline) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = context.read<AuthController>().currentUser;
     final hasCustomAvatar =
         (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) ||
         _selectedAvatarFile != null;
+    final sheetBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final handleColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
       builder: (ctx) {
         return SafeArea(
@@ -123,12 +130,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: handleColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -136,31 +144,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: textPrimary,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 ListTile(
-                  leading: const FaIcon(
+                  leading: FaIcon(
                     FontAwesomeIcons.solidEye,
-                    color: AppColors.primary,
+                    color: primaryColor,
                     size: 20,
                   ),
-                  title: const Text('Lihat Foto Profil'),
+                  title: Text(
+                    'Lihat Foto Profil',
+                    style: TextStyle(color: textPrimary),
+                  ),
                   onTap: () {
                     Navigator.pop(ctx);
                     _showAvatarDetail();
                   },
                 ),
                 ListTile(
-                  leading: const FaIcon(
+                  leading: FaIcon(
                     FontAwesomeIcons.images,
-                    color: AppColors.primary,
+                    color: primaryColor,
                     size: 20,
                   ),
-                  title: const Text('Pilih dari Galeri'),
+                  title: Text(
+                    'Pilih dari Galeri',
+                    style: TextStyle(color: textPrimary),
+                  ),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickAvatar(ImageSource.gallery);
@@ -168,12 +182,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 if (!kIsWeb)
                   ListTile(
-                    leading: const FaIcon(
+                    leading: FaIcon(
                       FontAwesomeIcons.camera,
-                      color: AppColors.primary,
+                      color: primaryColor,
                       size: 20,
                     ),
-                    title: const Text('Ambil dari Kamera'),
+                    title: Text(
+                      'Ambil dari Kamera',
+                      style: TextStyle(color: textPrimary),
+                    ),
                     onTap: () {
                       Navigator.pop(ctx);
                       _pickAvatar(ImageSource.camera);
@@ -181,14 +198,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 if (hasCustomAvatar && !_resetToDefault)
                   ListTile(
-                    leading: const FaIcon(
+                    leading: FaIcon(
                       FontAwesomeIcons.trashCan,
-                      color: AppColors.danger,
+                      color: dangerColor,
                       size: 20,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Gunakan Avatar Standar (Hapus Foto)',
-                      style: TextStyle(color: AppColors.danger),
+                      style: TextStyle(color: dangerColor),
                     ),
                     onTap: () {
                       Navigator.pop(ctx);
@@ -215,11 +232,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (_isCheckingUsername) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Harap tunggu, sedang memeriksa ketersediaan nama akun.',
           ),
-          backgroundColor: AppColors.warning,
+          backgroundColor: AppColors.warningOf(context),
         ),
       );
       return;
@@ -245,11 +262,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (hasUsernameChange && !_isUsernameAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Nama akun yang dipilih tidak tersedia atau tidak valid.',
           ),
-          backgroundColor: AppColors.danger,
+          backgroundColor: AppColors.dangerOf(context),
         ),
       );
       return;
@@ -262,9 +279,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (!hasUsernameChange && !hasNameChange && !hasAvatarChange) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak ada perubahan profil yang disimpan.'),
-          backgroundColor: AppColors.textSecondary,
+        SnackBar(
+          content: const Text('Tidak ada perubahan profil yang disimpan.'),
+          backgroundColor: AppColors.textSecondaryOf(context),
         ),
       );
       return;
@@ -305,10 +322,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui.'),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: const Text('Profil berhasil diperbarui.'),
+          backgroundColor: AppColors.successOf(context),
+          duration: const Duration(seconds: 2),
         ),
       );
 
@@ -323,7 +340,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 .replaceFirst('Exception: ', '')
                 .replaceFirst('AuthException: ', ''),
           ),
-          backgroundColor: AppColors.danger,
+          backgroundColor: AppColors.dangerOf(context),
         ),
       );
     } finally {
@@ -337,6 +354,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildAvatarPreview(String? currentAvatarUrl) {
     const double size = 100;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
 
     Widget avatarImage;
     if (_selectedAvatarBytes != null) {
@@ -406,8 +426,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.grey.shade100,
-                  border: Border.all(color: AppColors.border, width: 2),
+                  color: isDark
+                      ? AppColors.darkSurfaceElevated
+                      : Colors.grey.shade100,
+                  border: Border.all(color: borderColor, width: 2),
                 ),
                 child: Stack(
                   fit: StackFit.expand,
@@ -440,8 +462,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             bottom: 0,
             child: Material(
               color: (_isSaving || _isProcessingAvatar)
-                  ? AppColors.border
-                  : AppColors.primary,
+                  ? borderColor
+                  : primaryColor,
               shape: const CircleBorder(),
               elevation: 0,
               child: InkWell(
@@ -470,9 +492,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final auth = context.watch<AuthController>();
     final isOnline = context.isOnline;
     final user = auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final surfaceColor =
+        isDark ? AppColors.darkSurfaceElevated : AppColors.surface;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Profil'), centerTitle: false),
+      appBar: AppBar(
+        title: Text(
+          'Edit Profil',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+        iconTheme: IconThemeData(color: textPrimary),
+        centerTitle: false,
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -489,15 +531,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 12),
                     Center(
                       child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: primaryColor,
+                        ),
                         onPressed: (_isSaving || _isProcessingAvatar)
                             ? null
                             : _showAvatarOptionsSheet,
-                        icon: const FaIcon(FontAwesomeIcons.camera, size: 13),
-                        label: const Text(
+                        icon: FaIcon(
+                          FontAwesomeIcons.camera,
+                          size: 13,
+                          color: primaryColor,
+                        ),
+                        label: Text(
                           'Ubah Foto Profil',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
+                            color: primaryColor,
                           ),
                         ),
                       ),
@@ -510,15 +560,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             horizontal: 10,
                             vertical: 4,
                           ),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primarySoft,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkPrimarySoft
+                                : AppColors.primarySoft,
                             borderRadius: AppRadius.pill,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Akan menggunakan avatar standar',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primaryStrong,
+                              color: isDark
+                                  ? AppColors.darkPrimary
+                                  : AppColors.primaryStrong,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -529,59 +583,68 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 28),
 
                     // Nama Pengguna (Display Name) Edit Section
-                    const Text(
+                    Text(
                       'Nama Pengguna',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _nameController,
                       enabled: !_isSaving,
+                      style: TextStyle(color: textPrimary),
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Contoh: Budi Santoso',
+                        hintStyle: TextStyle(color: textSecondary),
                         prefixIcon: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: FaIcon(
                             FontAwesomeIcons.user,
                             size: 15,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                         ),
-                        prefixIconConstraints: BoxConstraints(minWidth: 44),
+                        prefixIconConstraints:
+                            const BoxConstraints(minWidth: 44),
                         filled: true,
-                        fillColor: AppColors.surface,
+                        fillColor: surfaceColor,
                         border: OutlineInputBorder(
                           borderRadius: AppRadius.input,
-                          borderSide: BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: AppRadius.input,
-                          borderSide: BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: AppRadius.input,
                           borderSide: BorderSide(
-                            color: AppColors.primary,
+                            color: primaryColor,
                             width: 1.5,
                           ),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: AppRadius.input,
-                          borderSide: BorderSide(color: AppColors.danger),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? AppColors.darkDanger
+                                : AppColors.danger,
+                          ),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: AppRadius.input,
                           borderSide: BorderSide(
-                            color: AppColors.danger,
+                            color: isDark
+                                ? AppColors.darkDanger
+                                : AppColors.danger,
                             width: 1.5,
                           ),
                         ),
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
                         ),
@@ -601,23 +664,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       },
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Nama publik atau panggilan Anda yang ditampilkan kepada warga lain dan petugas.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ),
 
                     const SizedBox(height: 20),
 
                     // Nama Akun (Username dengan @) Edit Section
-                    const Text(
+                    Text(
                       'Nama Akun (@)',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -632,11 +695,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       },
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Nama akun unik diawali dengan @ untuk identitas profil Anda di thread publik dan laporan (3–30 karakter).',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ),
 
@@ -646,50 +709,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : AppColors.surface,
                         borderRadius: AppRadius.card,
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Informasi Akun',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
+                              color: textSecondary,
                               letterSpacing: 0.3,
                             ),
                           ),
-                          const Divider(height: 20),
+                          Divider(height: 20, color: borderColor),
                           Row(
                             children: [
-                              const FaIcon(
+                              FaIcon(
                                 FontAwesomeIcons.envelope,
                                 size: 14,
-                                color: AppColors.textSecondary,
+                                color: textSecondary,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Email Terdaftar',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: AppColors.textSecondary,
+                                        color: textSecondary,
                                       ),
                                     ),
                                     Text(
                                       user?.email.isNotEmpty == true
                                           ? user!.email
                                           : '-',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.textPrimary,
+                                        color: textPrimary,
                                       ),
                                     ),
                                   ],
@@ -700,21 +765,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const FaIcon(
+                              FaIcon(
                                 FontAwesomeIcons.shieldHalved,
                                 size: 14,
-                                color: AppColors.textSecondary,
+                                color: textSecondary,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Peran Akun',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: AppColors.textSecondary,
+                                        color: textSecondary,
                                       ),
                                     ),
                                     Text(
@@ -725,8 +790,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         color: auth.isAdmin
-                                            ? const Color(0xFFD98205)
-                                            : AppColors.primary,
+                                            ? (isDark
+                                                ? AppColors.darkWarning
+                                                : const Color(0xFFD98205))
+                                            : primaryColor,
                                       ),
                                     ),
                                   ],

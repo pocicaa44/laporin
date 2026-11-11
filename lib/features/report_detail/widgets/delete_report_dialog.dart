@@ -56,29 +56,36 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : AppColors.dangerSubtle;
+    final dangerBorder = isDark ? dangerColor.withValues(alpha: 0.3) : const Color(0xFFFECACA);
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
     return AlertDialog(
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: AppRadius.dialog,
-        side: BorderSide(color: AppColors.border, width: 1),
+        side: BorderSide(color: borderColor, width: 1),
       ),
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.dangerSubtle,
+              color: dangerSubtle,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFFECACA), width: 1),
+              border: Border.all(color: dangerBorder, width: 1),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.warning_amber_rounded,
-              color: AppColors.danger,
+              color: dangerColor,
               size: 24,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
-            child: Text('Hapus Laporan?', style: AppTextStyles.sectionTitle),
+          Expanded(
+            child: Text('Hapus Laporan?', style: AppTextStyles.sectionTitleOf(context)),
           ),
         ],
       ),
@@ -88,25 +95,25 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
         children: [
           Text(
             'apakah anda yakin ingin menghapus laporan ${widget.reportNumber}?',
-            style: AppTextStyles.body,
+            style: AppTextStyles.bodyOf(context),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'catatan: Tindakan ini tidak dapat dibatalkan',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(color: textSecondary, fontSize: 13),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.dangerSubtle,
+                color: dangerSubtle,
                 borderRadius: AppRadius.borderSm,
-                border: Border.all(color: const Color(0xFFFECACA), width: 1),
+                border: Border.all(color: dangerBorder, width: 1),
               ),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(color: AppColors.danger, fontSize: 12),
+                style: TextStyle(color: dangerColor, fontSize: 12),
               ),
             ),
           ],
@@ -116,14 +123,14 @@ class _DeleteReportDialogState extends State<DeleteReportDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
-          child: const Text(
+          child: Text(
             'Batal',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: textSecondary),
           ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.danger,
+            backgroundColor: dangerColor,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),

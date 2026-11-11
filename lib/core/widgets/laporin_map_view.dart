@@ -131,16 +131,19 @@ class _LaporinMapViewState extends State<LaporinMapView> {
   }
 
   Widget _buildUserLocationIndicator() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.primary.withValues(alpha: 0.25),
+        color: primaryColor.withValues(alpha: 0.25),
       ),
       padding: const EdgeInsets.all(3),
       child: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.primary,
+          color: primaryColor,
           border: Border.all(color: Colors.white, width: 2),
         ),
       ),
@@ -148,20 +151,22 @@ class _LaporinMapViewState extends State<LaporinMapView> {
   }
 
   Widget _buildAttributionBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Align(
       alignment: Alignment.bottomRight,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         margin: const EdgeInsets.all(4),
-        decoration: const BoxDecoration(
-          color: Color(0xCCFFFFFF),
-          borderRadius: BorderRadius.all(Radius.circular(4)),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xCC1E293B) : const Color(0xCCFFFFFF),
+          borderRadius: const BorderRadius.all(Radius.circular(4)),
         ),
-        child: const Text(
+        child: Text(
           MapConfig.osmAttribution,
           style: TextStyle(
             fontSize: 9,
-            color: Colors.black87,
+            color: isDark ? Colors.white70 : Colors.black87,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -170,21 +175,28 @@ class _LaporinMapViewState extends State<LaporinMapView> {
   }
 
   Widget _buildErrorState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      color: AppColors.surface,
+      color: isDark ? AppColors.darkSurface : AppColors.surface,
       padding: const EdgeInsets.all(24),
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.map_outlined, size: 48, color: AppColors.disabled),
+          Icon(
+            Icons.map_outlined,
+            size: 48,
+            color: isDark ? AppColors.darkDisabled : AppColors.disabled,
+          ),
           const SizedBox(height: 12),
           Text(
             widget.errorMessage ?? 'Gagal memuat peta',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color:
+                  isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
             ),
           ),
           if (widget.onRetry != null) ...[

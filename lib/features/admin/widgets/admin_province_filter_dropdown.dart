@@ -19,13 +19,18 @@ class AdminProvinceFilterDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedId = controller.selectedProvinceId;
     final isFiltered = selectedId != null && selectedId.isNotEmpty && selectedId != 'all';
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: AppRadius.card,
         border: Border.all(
-          color: isFiltered ? AppColors.primary : AppColors.border,
+          color: isFiltered ? primaryColor : borderColor,
           width: isFiltered ? 1.5 : 1.0,
         ),
       ),
@@ -35,14 +40,14 @@ class AdminProvinceFilterDropdown extends StatelessWidget {
           Icon(
             Icons.location_on_outlined,
             size: 20,
-            color: isFiltered ? AppColors.primary : AppColors.textSecondary,
+            color: isFiltered ? primaryColor : textSecondary,
           ),
           const SizedBox(width: 8),
           Text(
             'Wilayah:',
-            style: AppTextStyles.caption.copyWith(
+            style: AppTextStyles.captionOf(context).copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: textSecondary,
             ),
           ),
           const SizedBox(width: 8),
@@ -52,20 +57,21 @@ class AdminProvinceFilterDropdown extends StatelessWidget {
                 key: const Key('admin_province_filter_dropdown'),
                 isExpanded: true,
                 value: selectedId,
-                icon: const Icon(
+                dropdownColor: surfaceColor,
+                icon: Icon(
                   Icons.arrow_drop_down_rounded,
-                  color: AppColors.textSecondary,
+                  color: textSecondary,
                 ),
                 style: AppTextStyles.bodyRegular.copyWith(
                   fontWeight: isFiltered ? FontWeight.w600 : FontWeight.normal,
-                  color: isFiltered ? AppColors.primary : AppColors.textPrimary,
+                  color: isFiltered ? primaryColor : textPrimary,
                   fontSize: 13,
                 ),
-                hint: const Text(
+                hint: Text(
                   'Semua Provinsi (Nasional)',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
                 items: [
@@ -96,7 +102,7 @@ class AdminProvinceFilterDropdown extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.close_rounded, size: 18),
               tooltip: 'Reset Filter Provinsi',
-              color: AppColors.textSecondary,
+              color: textSecondary,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
               onPressed: () => controller.setProvinceFilter(null),

@@ -34,6 +34,16 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = onPressed != null && !isLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final disabledColor = isDark ? AppColors.darkDisabled : AppColors.disabled;
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
+    final textPrimaryColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondaryColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     Color backgroundColor;
     Color foregroundColor;
@@ -41,31 +51,31 @@ class AppButton extends StatelessWidget {
 
     switch (variant) {
       case AppButtonVariant.primary:
-        backgroundColor = isEnabled ? AppColors.primary : AppColors.disabled;
+        backgroundColor = isEnabled ? primaryColor : disabledColor;
         foregroundColor = Colors.white;
         borderSide = BorderSide(
-          color: isEnabled ? AppColors.primary : AppColors.disabled,
+          color: isEnabled ? primaryColor : disabledColor,
           width: 1,
         );
         break;
       case AppButtonVariant.secondary:
-        backgroundColor = AppColors.surface;
+        backgroundColor = surfaceColor;
         foregroundColor = isEnabled
-            ? AppColors.textPrimary
-            : AppColors.textSecondary;
-        borderSide = const BorderSide(color: AppColors.border, width: 1);
+            ? textPrimaryColor
+            : textSecondaryColor;
+        borderSide = BorderSide(color: borderColor, width: 1);
         break;
       case AppButtonVariant.destructive:
-        backgroundColor = isEnabled ? AppColors.danger : AppColors.disabled;
+        backgroundColor = isEnabled ? dangerColor : disabledColor;
         foregroundColor = Colors.white;
         borderSide = BorderSide(
-          color: isEnabled ? AppColors.danger : AppColors.disabled,
+          color: isEnabled ? dangerColor : disabledColor,
           width: 1,
         );
         break;
       case AppButtonVariant.text:
         backgroundColor = Colors.transparent;
-        foregroundColor = isEnabled ? AppColors.primary : AppColors.disabled;
+        foregroundColor = isEnabled ? primaryColor : disabledColor;
         borderSide = null;
         break;
     }

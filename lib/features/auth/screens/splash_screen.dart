@@ -98,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
     final isOnline = context.isOnline;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -130,38 +130,38 @@ class _SplashScreenState extends State<SplashScreen> with RouteAware {
                                 'assets/logo_laporin.png',
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, _, _) => Container(
-                                  color: AppColors.surface,
+                                  color: AppColors.surfaceOf(context),
                                   alignment: Alignment.center,
-                                  child: const FaIcon(
+                                  child: FaIcon(
                                     FontAwesomeIcons.bullhorn,
                                     size: 54,
-                                    color: AppColors.primary,
+                                    color: AppColors.primaryOf(context),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 28),
-                          const Text(
+                          Text(
                             'Laporin',
                             style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                               letterSpacing: -0.5,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Suarakan Masalah Fasilitas Publik Bersama',
                             textAlign: TextAlign.center,
-                            style: AppTextStyles.pageTitle,
+                            style: AppTextStyles.pageTitleOf(context),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
+                          Text(
                             'Laporkan kerusakan fasilitas umum, pantau progres penanganan transparan, dan bantu jadikan lingkungan kita lebih baik.',
                             textAlign: TextAlign.center,
-                            style: AppTextStyles.bodySecondary,
+                            style: AppTextStyles.bodySecondaryOf(context),
                           ),
                         ],
                       ),

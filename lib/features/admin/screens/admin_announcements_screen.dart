@@ -123,6 +123,7 @@ class _AdminAnnouncementsViewState extends State<_AdminAnnouncementsView> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AdminAnnouncementController>();
+    final primaryColor = AppColors.primaryOf(context);
 
     return Scaffold(
       drawer: const AppDrawer(),
@@ -141,7 +142,7 @@ class _AdminAnnouncementsViewState extends State<_AdminAnnouncementsView> {
       floatingActionButton: FloatingActionButton(
         key: const Key('admin_add_announcement_fab'),
         onPressed: () => _handleCreate(context, controller),
-        backgroundColor: AppColors.primary,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         shape: const CircleBorder(),
         elevation: 0,
@@ -157,18 +158,18 @@ class _AdminAnnouncementsViewState extends State<_AdminAnnouncementsView> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           children: [
-            const Row(
+            Row(
               children: [
                 FaIcon(
                   FontAwesomeIcons.bullhorn,
                   size: 16,
-                  color: AppColors.primary,
+                  color: primaryColor,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Daftar Pengumuman Resmi',
-                    style: AppTextStyles.sectionTitle,
+                    style: AppTextStyles.sectionTitleOf(context),
                   ),
                 ),
               ],
@@ -255,6 +256,14 @@ class _AnnouncementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final primaryColor = AppColors.primaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+
     final isEmergency = announcement.category == 'Darurat';
     final hasImage =
         announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
@@ -262,10 +271,10 @@ class _AnnouncementCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surfaceColor,
         borderRadius: AppRadius.card,
         border: Border.all(
-          color: isEmergency ? AppColors.danger : AppColors.border,
+          color: isEmergency ? dangerColor : borderColor,
           width: isEmergency ? 1.5 : 1,
         ),
       ),
@@ -290,8 +299,8 @@ class _AnnouncementCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isEmergency
-                            ? const Color(0xFFFEECEB)
-                            : AppColors.primarySoft,
+                            ? (isDark ? AppColors.darkDangerSubtle : const Color(0xFFFEECEB))
+                            : (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft),
                         borderRadius: AppRadius.pill,
                       ),
                       child: Text(
@@ -300,21 +309,21 @@ class _AnnouncementCard extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: isEmergency
-                              ? AppColors.danger
-                              : AppColors.primaryStrong,
+                              ? dangerColor
+                              : (isDark ? primaryColor : AppColors.primaryStrong),
                         ),
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
+                    Icon(
                       Icons.access_time_rounded,
                       size: 13,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       announcement.createdAt.toRelativeTime(),
-                      style: AppTextStyles.caption,
+                      style: AppTextStyles.captionOf(context),
                     ),
                     const SizedBox(width: 4),
                     PopupMenuButton<String>(
@@ -330,59 +339,59 @@ class _AnnouncementCard extends StatelessWidget {
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'edit',
                           child: Row(
                             children: [
                               Icon(
                                 Icons.edit_outlined,
                                 size: 18,
-                                color: AppColors.textPrimary,
+                                color: textPrimary,
                               ),
-                              SizedBox(width: 8),
-                              Text(
+                              const SizedBox(width: 8),
+                              const Text(
                                 'Edit Pengumuman',
                                 style: TextStyle(fontSize: 13),
                               ),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Row(
                             children: [
                               Icon(
                                 Icons.delete_outline_rounded,
                                 size: 18,
-                                color: AppColors.danger,
+                                color: dangerColor,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'Hapus Pengumuman',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.danger,
+                                  color: dangerColor,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ],
-                      child: const Icon(
+                      child: Icon(
                         Icons.more_vert_rounded,
                         size: 20,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(announcement.title, style: AppTextStyles.sectionTitle),
+                Text(announcement.title, style: AppTextStyles.sectionTitleOf(context)),
                 const SizedBox(height: 6),
                 Text(
                   announcement.content,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.textPrimary,
+                  style: AppTextStyles.bodyOf(context).copyWith(
+                    color: textPrimary,
                     height: 1.4,
                   ),
                 ),
@@ -400,16 +409,16 @@ class _AnnouncementCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.verified_user_rounded,
                       size: 14,
-                      color: AppColors.primary,
+                      color: primaryColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'Diterbitkan oleh: ${announcement.authorName}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
+                      style: AppTextStyles.captionOf(context).copyWith(
+                        color: textSecondary,
                       ),
                     ),
                   ],

@@ -54,12 +54,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.',
           ),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 4),
+          backgroundColor: AppColors.successOf(context),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -68,16 +68,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.backgroundOf(context),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: AppColors.backgroundOf(context),
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: AppColors.borderOf(context), width: 1),
             ),
           ),
           child: Scaffold(
@@ -100,30 +101,32 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         child: Container(
                           width: 68,
                           height: 68,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primarySoft,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkPrimary.withValues(alpha: 0.15)
+                                : AppColors.primarySoft,
                             shape: BoxShape.circle,
                           ),
-                          child: const Center(
+                          child: Center(
                             child: FaIcon(
                               FontAwesomeIcons.lockOpen,
                               size: 28,
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Masukkan Kata Sandi Baru',
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.pageTitle,
+                        style: AppTextStyles.pageTitleOf(context),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Pastikan kata sandi baru Anda kuat dan mudah diingat.',
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.bodySecondary,
+                        style: AppTextStyles.bodySecondaryOf(context),
                       ),
                       const SizedBox(height: 28),
 
@@ -132,16 +135,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: AppColors.dangerSubtle,
+                            color: isDark
+                                ? AppColors.darkDanger.withValues(alpha: 0.15)
+                                : AppColors.dangerSubtle,
                             borderRadius: const BorderRadius.all(
                               Radius.circular(8),
                             ),
-                            border: Border.all(color: AppColors.danger),
+                            border: Border.all(
+                              color: AppColors.dangerOf(context),
+                            ),
                           ),
                           child: Text(
                             auth.errorMessage!,
-                            style: const TextStyle(
-                              color: AppColors.danger,
+                            style: TextStyle(
+                              color: AppColors.dangerOf(context),
                               fontSize: 13,
                             ),
                           ),

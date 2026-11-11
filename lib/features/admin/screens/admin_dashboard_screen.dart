@@ -120,16 +120,19 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
   Widget build(BuildContext context) {
     final controller = context.watch<AdminReportController>();
     final isOnline = context.isOnline;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 840),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: bgColor,
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: borderColor, width: 1),
             ),
           ),
           child: Scaffold(
@@ -412,23 +415,27 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textMuted = AppColors.textMutedOf(context);
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: surfaceColor,
           borderRadius: AppRadius.card,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textMuted,
+                color: textMuted,
                 letterSpacing: 0.5,
               ),
             ),
@@ -461,19 +468,29 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+
     return ChoiceChip(
       label: Text(
         label,
         style: TextStyle(
           fontSize: 12,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          color: isSelected ? Colors.white : AppColors.textPrimary,
+          color: isSelected ? Colors.white : textPrimary,
         ),
       ),
       selected: isSelected,
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surface,
-      shape: const StadiumBorder(),
+      selectedColor: primaryColor,
+      backgroundColor: surfaceColor,
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: isSelected ? Colors.transparent : borderColor,
+        ),
+      ),
       onSelected: (_) => onTap(),
       showCheckmark: false,
     );
@@ -497,6 +514,18 @@ class _AdminReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final borderSubtle = AppColors.borderSubtleOf(context);
+    final primaryColor = AppColors.primaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : const Color(0xFFFEE2E2);
+    final dangerBorder = isDark ? dangerColor.withValues(alpha: 0.3) : const Color(0xFFFCA5A5);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
+
     final isHeld = report.publicationState == PublicationState.held;
     final isFinalized =
         report.handlingStatus == HandlingStatus.completed ||
@@ -517,10 +546,10 @@ class _AdminReportCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surfaceColor,
         borderRadius: AppRadius.card,
         border: Border.all(
-          color: isHeld ? AppColors.danger : AppColors.border,
+          color: isHeld ? dangerColor : borderColor,
           width: isHeld ? 1.5 : 1,
         ),
       ),
@@ -537,10 +566,10 @@ class _AdminReportCard extends StatelessWidget {
                   children: [
                     Text(
                       report.reportNumber,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: primaryColor,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -551,15 +580,15 @@ class _AdminReportCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
+                          color: primaryColor.withValues(alpha: 0.12),
                           borderRadius: AppRadius.pill,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Baru',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: primaryColor,
                           ),
                         ),
                       )
@@ -567,9 +596,9 @@ class _AdminReportCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           timeLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF9CA3AF),
+                            color: textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -604,10 +633,10 @@ class _AdminReportCard extends StatelessWidget {
           // 2. Title
           Text(
             report.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15.5,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF111827),
+              color: textPrimary,
               height: 1.3,
             ),
             maxLines: 2,
@@ -618,9 +647,9 @@ class _AdminReportCard extends StatelessWidget {
           // 3. Location Address
           Text(
             report.locationAddress,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
-              color: Color(0xFF6B7280),
+              color: textSecondary,
               height: 1.35,
             ),
             maxLines: 2,
@@ -633,15 +662,17 @@ class _AdminReportCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF8E7),
+                color: isDark ? AppColors.darkWarningSubtle : const Color(0xFFFEF8E7),
                 borderRadius: AppRadius.borderSm,
-                border: Border.all(color: const Color(0xFFFDD888)),
+                border: Border.all(
+                  color: isDark ? AppColors.darkWarning.withValues(alpha: 0.3) : const Color(0xFFFDD888),
+                ),
               ),
               child: Text(
                 'Moderasi: ${report.moderationReason}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: Color(0xFFD98205),
+                  color: isDark ? AppColors.darkWarningText : const Color(0xFFD98205),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -652,24 +683,24 @@ class _AdminReportCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
+                color: dangerSubtle,
                 borderRadius: AppRadius.borderSm,
-                border: Border.all(color: const Color(0xFFFCA5A5)),
+                border: Border.all(color: dangerBorder),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(
                     Icons.person_off_outlined,
                     size: 14,
-                    color: AppColors.danger,
+                    color: dangerColor,
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Laporan telah dihapus oleh pelapor. Menunggu konfirmasi admin untuk hapus permanen.',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: AppColors.danger,
+                        color: dangerColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -681,7 +712,7 @@ class _AdminReportCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // 5. Divider
-          const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6)),
+          Divider(height: 1, thickness: 1, color: borderSubtle),
           const SizedBox(height: 12),
 
           // 6. Action Buttons
@@ -690,9 +721,12 @@ class _AdminReportCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildDetailButton(context, controller),
+                _buildDetailButton(context, controller, primaryColor),
                 if (onDelete != null && !report.deletedByAdmin)
                   _buildDeleteButton(
+                    dangerColor: dangerColor,
+                    dangerBorder: dangerBorder,
+                    disabledColor: textSecondary,
                     isDeletedByUser: report.deletedByUser,
                     canDelete: report.canAdminDelete,
                   ),
@@ -703,13 +737,16 @@ class _AdminReportCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildDetailButton(context, controller),
-                _buildUpdateStatusButton(),
+                _buildDetailButton(context, controller, primaryColor),
+                _buildUpdateStatusButton(primaryColor),
                 if (report.handlingStatus != HandlingStatus.completed)
-                  _buildResolveButton(),
-                if (isHeld) _buildRestorePublicationButton(),
+                  _buildResolveButton(successColor),
+                if (isHeld) _buildRestorePublicationButton(primaryColor),
                 if (onDelete != null && !report.deletedByAdmin)
                   _buildDeleteButton(
+                    dangerColor: dangerColor,
+                    dangerBorder: dangerBorder,
+                    disabledColor: textSecondary,
                     isDeletedByUser: report.deletedByUser,
                     canDelete: report.canAdminDelete,
                   ),
@@ -723,16 +760,17 @@ class _AdminReportCard extends StatelessWidget {
   Widget _buildDetailButton(
     BuildContext context,
     AdminReportController? controller,
+    Color primaryColor,
   ) {
     return OutlinedButton.icon(
-      icon: const Icon(
+      icon: Icon(
         Icons.visibility_outlined,
         size: 15,
-        color: AppColors.primary,
+        color: primaryColor,
       ),
       label: const Text('Detail'),
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        foregroundColor: primaryColor,
         side: const BorderSide(color: Color(0xFF9CA3AF), width: 1),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
@@ -753,12 +791,12 @@ class _AdminReportCard extends StatelessWidget {
     );
   }
 
-  Widget _buildUpdateStatusButton() {
+  Widget _buildUpdateStatusButton(Color primaryColor) {
     return OutlinedButton.icon(
-      icon: const Icon(Icons.tune_rounded, size: 15, color: AppColors.primary),
+      icon: Icon(Icons.tune_rounded, size: 15, color: primaryColor),
       label: const Text('Ubah Status'),
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        foregroundColor: primaryColor,
         side: const BorderSide(color: Color(0xFF9CA3AF), width: 1),
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
@@ -769,7 +807,7 @@ class _AdminReportCard extends StatelessWidget {
     );
   }
 
-  Widget _buildResolveButton() {
+  Widget _buildResolveButton(Color successColor) {
     return ElevatedButton.icon(
       icon: const Icon(
         Icons.check_circle_outline_rounded,
@@ -778,7 +816,7 @@ class _AdminReportCard extends StatelessWidget {
       ),
       label: const Text('Selesaikan'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF10B981),
+        backgroundColor: successColor,
         foregroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
@@ -791,6 +829,9 @@ class _AdminReportCard extends StatelessWidget {
   }
 
   Widget _buildDeleteButton({
+    required Color dangerColor,
+    required Color dangerBorder,
+    required Color disabledColor,
     bool isDeletedByUser = false,
     bool canDelete = true,
   }) {
@@ -807,16 +848,13 @@ class _AdminReportCard extends StatelessWidget {
               ? Icons.delete_forever_rounded
               : Icons.delete_outline_rounded,
           size: 15,
-          color: canDelete ? const Color(0xFFEF4444) : const Color(0xFF9CA3AF),
+          color: canDelete ? dangerColor : disabledColor,
         ),
         label: Text(isDeletedByUser ? 'Hapus Permanen' : 'Hapus'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: canDelete
-              ? const Color(0xFFEF4444)
-              : const Color(0xFF9CA3AF),
+          foregroundColor: canDelete ? dangerColor : disabledColor,
           side: BorderSide(
-            color:
-                canDelete ? const Color(0xFFFCA5A5) : const Color(0xFFD1D5DB),
+            color: canDelete ? dangerBorder : const Color(0xFFD1D5DB),
             width: 1,
           ),
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
@@ -830,12 +868,12 @@ class _AdminReportCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRestorePublicationButton() {
+  Widget _buildRestorePublicationButton(Color primaryColor) {
     return ElevatedButton.icon(
       icon: const Icon(Icons.public_rounded, size: 15, color: Colors.white),
       label: const Text('Pulihkan Publikasi'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),

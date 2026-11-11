@@ -5,6 +5,7 @@ import 'package:laporin/core/config/indonesia_regions.dart';
 import 'package:laporin/core/config/map_config.dart';
 import 'package:laporin/core/services/boundary_service.dart';
 import 'package:laporin/core/services/network_service.dart';
+import 'package:laporin/core/theme/app_colors.dart';
 import 'package:laporin/core/widgets/laporin_map_view.dart';
 import 'package:laporin/data/models/user_profile_model.dart';
 import 'package:laporin/data/repositories/auth_repository.dart';
@@ -460,6 +461,70 @@ void main() {
 
           expect(feedController.isNational, isTrue);
           expect(feedController.selectedProvinceId, isNull);
+        },
+      );
+
+      testWidgets(
+        'FeedScreen header title "Laporin" renders white in dark mode and textPrimary in light mode',
+        (tester) async {
+          // 1. Dark Mode: header title is bright white
+          await tester.pumpWidget(
+            MultiProvider(
+              providers: [
+                ChangeNotifierProvider<NetworkService>.value(
+                  value: networkService,
+                ),
+                Provider<AuthRepository>.value(value: authRepo),
+                ChangeNotifierProvider<AuthController>.value(
+                  value: authController,
+                ),
+                Provider<ReportRepository>.value(value: reportRepo),
+                ChangeNotifierProvider<FeedController>.value(
+                  value: feedController,
+                ),
+              ],
+              child: MaterialApp(
+                theme: ThemeData.dark(),
+                home: const FeedScreen(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final titleFinder = find.descendant(
+            of: find.byType(AppBar),
+            matching: find.text('Laporin'),
+          );
+          expect(titleFinder, findsOneWidget);
+          final darkTitleText = tester.widget<Text>(titleFinder);
+          expect(darkTitleText.style?.color, equals(Colors.white));
+
+          // 2. Light Mode: header title is AppColors.textPrimary
+          await tester.pumpWidget(
+            MultiProvider(
+              providers: [
+                ChangeNotifierProvider<NetworkService>.value(
+                  value: networkService,
+                ),
+                Provider<AuthRepository>.value(value: authRepo),
+                ChangeNotifierProvider<AuthController>.value(
+                  value: authController,
+                ),
+                Provider<ReportRepository>.value(value: reportRepo),
+                ChangeNotifierProvider<FeedController>.value(
+                  value: feedController,
+                ),
+              ],
+              child: MaterialApp(
+                theme: ThemeData.light(),
+                home: const FeedScreen(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final lightTitleText = tester.widget<Text>(titleFinder);
+          expect(lightTitleText.style?.color, equals(AppColors.textPrimary));
         },
       );
     },

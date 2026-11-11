@@ -296,6 +296,12 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             valueListenable: _rotationNotifier,
             builder: (context, rotation, _) {
               final isRotated = rotation.abs() > 1.0;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final fabBg = isDark ? AppColors.darkSurface : AppColors.surface;
+              final fabBorder = isDark ? AppColors.darkBorder : AppColors.border;
+              final primaryColor = AppColors.primaryOf(context);
+              final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+
               return Stack(
                 children: [
                   if (isRotated)
@@ -304,14 +310,14 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                       top: 16,
                       child: FloatingActionButton.small(
                         heroTag: 'btn-reset-north',
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: AppColors.danger,
+                        backgroundColor: fabBg,
+                        foregroundColor: dangerColor,
                         elevation: 0,
                         focusElevation: 0,
                         hoverElevation: 0,
                         highlightElevation: 0,
-                        shape: const CircleBorder(
-                          side: BorderSide(color: AppColors.border, width: 1),
+                        shape: CircleBorder(
+                          side: BorderSide(color: fabBorder, width: 1),
                         ),
                         tooltip: 'Reset Arah Utara (Tegak)',
                         onPressed: () {
@@ -333,14 +339,14 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                     top: isRotated ? 68 : 16,
                     child: FloatingActionButton.small(
                       heroTag: 'btn-my-loc',
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.primary,
+                      backgroundColor: fabBg,
+                      foregroundColor: primaryColor,
                       elevation: 0,
                       focusElevation: 0,
                       hoverElevation: 0,
                       highlightElevation: 0,
-                      shape: const CircleBorder(
-                        side: BorderSide(color: AppColors.border, width: 1),
+                      shape: CircleBorder(
+                        side: BorderSide(color: fabBorder, width: 1),
                       ),
                       tooltip: 'Lokasi Saya',
                       onPressed: _isLoadingGps ? null : _useCurrentGps,
@@ -372,12 +378,20 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   }
 
   Widget _buildLocationSummaryCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : AppColors.dangerSubtle;
+    final textSecondary = AppColors.textSecondaryOf(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surfaceColor,
         borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -390,8 +404,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                     ? FontAwesomeIcons.circleCheck
                     : FontAwesomeIcons.circleExclamation,
                 color: _isInsideIndonesia
-                    ? AppColors.success
-                    : AppColors.danger,
+                    ? successColor
+                    : dangerColor,
                 size: 16,
               ),
               const SizedBox(width: 8),
@@ -400,10 +414,10 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                   _isInsideIndonesia
                       ? (_currentResult?.areaName ?? 'Indonesia')
                       : 'Di Luar Wilayah Indonesia',
-                  style: AppTextStyles.label.copyWith(
+                  style: AppTextStyles.labelOf(context).copyWith(
                     color: _isInsideIndonesia
-                        ? AppColors.success
-                        : AppColors.danger,
+                        ? successColor
+                        : dangerColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -421,15 +435,17 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.dangerSubtle,
+                color: dangerSubtle,
                 borderRadius: const BorderRadius.all(Radius.circular(8)),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                border: Border.all(
+                  color: isDark ? dangerColor.withValues(alpha: 0.3) : const Color(0xFFFECACA),
+                ),
               ),
-              child: const Text(
+              child: Text(
                 BoundaryService.outsideIndonesiaErrorMessage,
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.danger,
+                  color: dangerColor,
                   fontWeight: FontWeight.w500,
                   height: 1.4,
                 ),
@@ -439,7 +455,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
           ],
           Text(
             _currentResult?.address ?? 'Memuat alamat...',
-            style: AppTextStyles.body.copyWith(
+            style: AppTextStyles.bodyOf(context).copyWith(
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -449,8 +465,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
           const SizedBox(height: 4),
           Text(
             'Koordinat: ${_selectedPoint.latitude.toStringAsFixed(5)}, ${_selectedPoint.longitude.toStringAsFixed(5)}',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
+            style: AppTextStyles.captionOf(context).copyWith(
+              color: textSecondary,
             ),
           ),
           const SizedBox(height: 14),

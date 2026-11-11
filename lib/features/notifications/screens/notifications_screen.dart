@@ -262,93 +262,117 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         bottomNavigationBar:
             _isSelectionMode && controller.notifications.isNotEmpty
             ? SafeArea(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.border)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Kiri bawah: "Pilih Semua"
-                      InkWell(
-                        borderRadius: AppRadius.button,
-                        onTap: () => _toggleSelectAll(controller.notifications),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 4,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Checkbox(
-                                value: isAllSelected,
-                                onChanged: (_) =>
-                                    _toggleSelectAll(controller.notifications),
-                                activeColor: AppColors.primary,
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Pilih Semua',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                child: Builder(
+                  builder: (context) {
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+                    final barBg =
+                        isDark ? AppColors.darkSurface : AppColors.surface;
+                    final borderColor =
+                        isDark ? AppColors.darkBorder : AppColors.border;
+                    final textPrimary = isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary;
+                    final primaryColor = isDark
+                        ? AppColors.darkPrimary
+                        : AppColors.primary;
 
-                      // Kanan bawah: Tombol "Hapus"
-                      ElevatedButton(
-                        onPressed: _selectedIds.isEmpty || _isDeleting
-                            ? null
-                            : () => _handleDeleteSelected(controller),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.danger,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.border,
-                          disabledForegroundColor: AppColors.disabled,
-                          elevation: 0,
-                          minimumSize: const Size(88, 40),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: AppRadius.button,
-                          ),
-                        ),
-                        child: _isDeleting
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Text(
-                                'Hapus',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
                       ),
-                    ],
-                  ),
+                      decoration: BoxDecoration(
+                        color: barBg,
+                        border: Border(top: BorderSide(color: borderColor)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Kiri bawah: "Pilih Semua"
+                          InkWell(
+                            borderRadius: AppRadius.button,
+                            onTap: () =>
+                                _toggleSelectAll(controller.notifications),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Checkbox(
+                                    value: isAllSelected,
+                                    onChanged: (_) => _toggleSelectAll(
+                                      controller.notifications,
+                                    ),
+                                    activeColor: primaryColor,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Pilih Semua',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Kanan bawah: Tombol "Hapus"
+                          ElevatedButton(
+                            onPressed: _selectedIds.isEmpty || _isDeleting
+                                ? null
+                                : () => _handleDeleteSelected(controller),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark
+                                  ? AppColors.darkDanger
+                                  : AppColors.danger,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: borderColor,
+                              disabledForegroundColor: isDark
+                                  ? AppColors.darkDisabled
+                                  : AppColors.disabled,
+                              elevation: 0,
+                              minimumSize: const Size(88, 40),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: AppRadius.button,
+                              ),
+                            ),
+                            child: _isDeleting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Hapus',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               )
             : null,
@@ -374,52 +398,70 @@ class _NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     IconData icon;
     Color iconColor;
 
     switch (item.type) {
       case NotificationType.statusChanged:
         icon = Icons.autorenew_rounded;
-        iconColor = AppColors.primary;
+        iconColor = isDark ? AppColors.darkPrimary : AppColors.primary;
         break;
       case NotificationType.newComment:
         icon = Icons.chat_bubble_outline_rounded;
-        iconColor = AppColors.info;
+        iconColor = isDark ? AppColors.darkInfo : AppColors.info;
         break;
       case NotificationType.replyComment:
         icon = Icons.reply_rounded;
-        iconColor = AppColors.info;
+        iconColor = isDark ? AppColors.darkInfo : AppColors.info;
         break;
       case NotificationType.upvoted:
         icon = Icons.thumb_up_alt_outlined;
-        iconColor = AppColors.success;
+        iconColor = isDark ? AppColors.darkSuccess : AppColors.success;
         break;
       case NotificationType.moderation:
         icon = Icons.flag_outlined;
-        iconColor = AppColors.danger;
+        iconColor = isDark ? AppColors.darkDanger : AppColors.danger;
         break;
       case NotificationType.announcement:
         icon = Icons.campaign_outlined;
-        iconColor = const Color(0xFFD98205);
+        iconColor = isDark ? AppColors.darkWarning : const Color(0xFFD98205);
         break;
       case NotificationType.newReport:
         icon = Icons.assignment_outlined;
-        iconColor = AppColors.primary;
+        iconColor = isDark ? AppColors.darkPrimary : AppColors.primary;
         break;
     }
 
+    final cardBg = isSelected
+        ? (isDark
+            ? AppColors.darkDanger.withValues(alpha: 0.15)
+            : AppColors.danger.withValues(alpha: 0.05))
+        : (item.isRead
+            ? (isDark ? AppColors.darkSurface : AppColors.surface)
+            : (isDark
+                ? AppColors.darkPrimarySoft.withValues(alpha: 0.3)
+                : const Color(0xFFF7F8FF)));
+
+    final cardBorder = isSelected
+        ? (isDark ? AppColors.darkDanger : AppColors.danger)
+        : (item.isRead
+            ? (isDark ? AppColors.darkBorder : AppColors.border)
+            : (isDark
+                ? AppColors.darkPrimary.withValues(alpha: 0.5)
+                : AppColors.primary.withValues(alpha: 0.3)));
+
+    final titleColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final messageColor =
+        isDark ? AppColors.darkTextBody : AppColors.textSecondary;
+
     return Material(
-      color: isSelected
-          ? AppColors.danger.withValues(alpha: 0.05)
-          : (item.isRead ? AppColors.surface : const Color(0xFFF7F8FF)),
+      color: cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.button,
         side: BorderSide(
-          color: isSelected
-              ? AppColors.danger
-              : (item.isRead
-                    ? AppColors.border
-                    : AppColors.primary.withValues(alpha: 0.3)),
+          color: cardBorder,
           width: isSelected ? 1.5 : 1.0,
         ),
       ),
@@ -437,6 +479,7 @@ class _NotificationItem extends StatelessWidget {
         title: Text(
           item.title,
           style: AppTextStyles.label.copyWith(
+            color: titleColor,
             fontWeight: item.isRead ? FontWeight.w500 : FontWeight.bold,
           ),
         ),
@@ -446,31 +489,37 @@ class _NotificationItem extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               item.message,
-              style: AppTextStyles.bodySecondary.copyWith(fontSize: 13),
+              style: AppTextStyles.bodySecondary.copyWith(
+                fontSize: 13,
+                color: messageColor,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(item.createdAt.toRelativeTime(), style: AppTextStyles.caption),
+            Text(
+              item.createdAt.toRelativeTime(),
+              style: AppTextStyles.captionOf(context),
+            ),
           ],
         ),
         trailing: isSelectionMode
             ? Checkbox(
                 value: isSelected,
                 onChanged: (_) => onToggleSelect?.call(),
-                activeColor: AppColors.danger,
+                activeColor: isDark ? AppColors.darkDanger : AppColors.danger,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
               )
             : (!item.isRead
-                  ? Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                  : null),
+                ? Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                : null),
       ),
     );
   }

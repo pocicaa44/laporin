@@ -80,7 +80,7 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceFirst('Exception: ', '')),
-            backgroundColor: AppColors.danger,
+            backgroundColor: AppColors.dangerOf(context),
           ),
         );
       }
@@ -88,34 +88,45 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
   }
 
   void _showSourcePicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
+      backgroundColor: AppColors.surfaceOf(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.sheet,
+        side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+      ),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Pilih Sumber Gambar', style: AppTextStyles.label),
+              Text('Pilih Sumber Gambar', style: AppTextStyles.labelOf(context)),
               const SizedBox(height: 12),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.photo_library_rounded,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
-                title: const Text('Pilih dari Galeri'),
+                title: Text(
+                  'Pilih dari Galeri',
+                  style: TextStyle(color: AppColors.textPrimaryOf(context)),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery);
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt_rounded,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
-                title: const Text('Ambil dari Kamera'),
+                title: Text(
+                  'Ambil dari Kamera',
+                  style: TextStyle(color: AppColors.textPrimaryOf(context)),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera);
@@ -137,9 +148,9 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
     if (!hasFile && !hasInitialUrl) {
       return OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(
-            color: AppColors.primary,
+          foregroundColor: AppColors.primaryOf(context),
+          side: BorderSide(
+            color: AppColors.primaryOf(context),
             style: BorderStyle.solid,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -156,9 +167,9 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.surfaceOf(context),
         borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderOf(context)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -207,18 +218,18 @@ class _AnnouncementImagePickerState extends State<AnnouncementImagePicker> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.image_outlined,
                   size: 16,
-                  color: AppColors.primary,
+                  color: AppColors.primaryOf(context),
                 ),
                 const SizedBox(width: 6),
-                const Text('Foto Pengumuman', style: AppTextStyles.caption),
+                Text('Foto Pengumuman', style: AppTextStyles.captionOf(context)),
                 const Spacer(),
                 TextButton.icon(
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    foregroundColor: AppColors.primary,
+                    foregroundColor: AppColors.primaryOf(context),
                   ),
                   icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: const Text('Ganti Foto'),

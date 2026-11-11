@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 
 import '../../data/services/supabase_service.dart';
 import '../config/map_config.dart';
@@ -67,9 +68,37 @@ class LocationService {
   /// Optional mock position for test environments to avoid hanging platform channels
   static Position? mockPositionForTesting;
 
+  Position? _lastFetchedPosition;
+
+  /// Returns the most recently acquired GPS position, if any
+  Position? get lastFetchedPosition => _lastFetchedPosition;
+
+  /// Returns the last known LatLng, either from testing mock or real GPS cache
+  LatLng? get lastKnownLatLng {
+    if (mockPositionForTesting != null) {
+      return LatLng(
+        mockPositionForTesting!.latitude,
+        mockPositionForTesting!.longitude,
+      );
+    }
+    if (_lastFetchedPosition != null) {
+      return LatLng(
+        _lastFetchedPosition!.latitude,
+        _lastFetchedPosition!.longitude,
+      );
+    }
+    return null;
+  }
+
+  @visibleForTesting
+  void setLastFetchedPositionForTesting(Position? pos) {
+    _lastFetchedPosition = pos;
+  }
+
   /// Check GPS status and permissions, then return the current position.
   Future<Position> getCurrentLocation() async {
     if (mockPositionForTesting != null) {
+      _lastFetchedPosition = mockPositionForTesting;
       return mockPositionForTesting!;
     }
 
@@ -121,20 +150,24 @@ class LocationService {
         locationSettings: locationSettings,
       ).timeout(const Duration(seconds: 7));
 
+      _lastFetchedPosition = freshPosition;
       return freshPosition;
     } catch (_) {
       // 3. Fallback to last known position if available
       if (lastKnown != null) {
+        _lastFetchedPosition = lastKnown;
         return lastKnown;
       }
 
       // 4. Try low accuracy with short timeout as final attempt
       try {
-        return await Geolocator.getCurrentPosition(
+        final lowPos = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
             accuracy: LocationAccuracy.low,
           ),
         ).timeout(const Duration(seconds: 4));
+        _lastFetchedPosition = lowPos;
+        return lowPos;
       } catch (_) {
         throw Exception(
           'Tidak dapat mengunci sinyal GPS saat ini. Pastikan GPS aktif dan berada di area terbuka, atau pilih titik langsung pada peta.',

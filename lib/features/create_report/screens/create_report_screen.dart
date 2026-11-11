@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../../core/widgets/app_button.dart';
@@ -89,6 +90,9 @@ class _CreateReportFormState extends State<_CreateReportForm> {
   }
 
   Future<bool> _confirmLeave(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+
     final leave = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -103,7 +107,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: dangerColor,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx, true),
@@ -116,12 +120,17 @@ class _CreateReportFormState extends State<_CreateReportForm> {
   }
 
   Future<String?> _showConfirmationDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: AppRadius.dialog,
-          side: BorderSide(color: AppColors.border, width: 1),
+          side: BorderSide(color: borderColor, width: 1),
         ),
         titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
         contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -129,21 +138,21 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: AppColors.primarySoft,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.send_rounded,
-                color: AppColors.primary,
+                color: primaryColor,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Kirim Laporan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: AppTextStyles.sectionTitleOf(context).copyWith(fontSize: 18),
               ),
             ),
           ],
@@ -152,11 +161,11 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Apakah Anda ingin menyimpan laporan ini sebagai draft atau langsung mempublikasikannya?',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: textSecondary,
                 height: 1.4,
               ),
             ),
@@ -165,11 +174,11 @@ class _CreateReportFormState extends State<_CreateReportForm> {
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(46),
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                side: BorderSide(color: primaryColor, width: 1.5),
                 shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.button,
                 ),
-                foregroundColor: AppColors.primary,
+                foregroundColor: primaryColor,
               ),
               icon: const Icon(Icons.drafts_outlined, size: 20),
               label: const Text(
@@ -183,7 +192,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(46),
-                backgroundColor: AppColors.primary,
+                backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.button,
@@ -201,10 +210,10 @@ class _CreateReportFormState extends State<_CreateReportForm> {
             Center(
               child: TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text(
+                child: Text(
                   'Batal / Lanjut Mengedit',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -310,6 +319,9 @@ class _CreateReportFormState extends State<_CreateReportForm> {
   Widget build(BuildContext context) {
     final controller = context.watch<CreateReportController>();
     final isOnline = context.isOnline;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     return PopScope(
       canPop: !_isFormDirty(controller) || controller.isLoading,
@@ -326,10 +338,10 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           child: Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 720),
-              decoration: const BoxDecoration(
-                color: AppColors.background,
+              decoration: BoxDecoration(
+                color: bgColor,
                 border: Border.symmetric(
-                  vertical: BorderSide(color: AppColors.border, width: 1),
+                  vertical: BorderSide(color: borderColor, width: 1),
                 ),
               ),
               child: SingleChildScrollView(

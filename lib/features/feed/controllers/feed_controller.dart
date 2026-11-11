@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/config/indonesia_regions.dart';
@@ -44,6 +45,9 @@ class FeedController extends ChangeNotifier {
 
   String? _detectedProvinceName;
   String? get detectedProvinceName => _detectedProvinceName;
+
+  LatLng? _userLocation;
+  LatLng? get userLocation => _userLocation;
 
   bool _isDetectingLocation = false;
   bool get isDetectingLocation => _isDetectingLocation;
@@ -196,6 +200,12 @@ class FeedController extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void setUserLocationForTesting(LatLng? location) {
+    _userLocation = location;
+    notifyListeners();
+  }
+
   Future<bool> autoDetectLocation({bool setAsActiveScope = false}) async {
     if (_isDetectingLocation) return false;
     _isDetectingLocation = true;
@@ -203,6 +213,7 @@ class FeedController extends ChangeNotifier {
 
     try {
       final pos = await LocationService.instance.getCurrentLocation();
+      _userLocation = LatLng(pos.latitude, pos.longitude);
       final res = await LocationService.instance.getAddressFromCoordinates(
         pos.latitude,
         pos.longitude,

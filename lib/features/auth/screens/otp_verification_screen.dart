@@ -135,9 +135,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (success && mounted) {
       _startTimer();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kode OTP baru telah dikirimkan ke email Anda.'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: const Text('Kode OTP baru telah dikirimkan ke email Anda.'),
+          backgroundColor: AppColors.successOf(context),
         ),
       );
     }
@@ -152,16 +152,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      color: const Color(0xFFF0F2F5),
+      color: AppColors.backgroundOf(context),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: AppColors.backgroundOf(context),
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: AppColors.borderOf(context), width: 1),
             ),
           ),
           child: Scaffold(
@@ -185,24 +186,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       child: Container(
                         width: 68,
                         height: 68,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primarySoft,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.darkPrimary.withValues(alpha: 0.15)
+                              : AppColors.primarySoft,
                           shape: BoxShape.circle,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: FaIcon(
                             FontAwesomeIcons.shieldHalved,
                             size: 28,
-                            color: AppColors.primary,
+                            color: AppColors.primaryOf(context),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Masukkan Kode OTP',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.pageTitle,
+                      style: AppTextStyles.pageTitleOf(context),
                     ),
                     const SizedBox(height: 8),
 
@@ -214,38 +217,44 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.successSubtle,
+                        color: isDark
+                            ? AppColors.darkSuccess.withValues(alpha: 0.15)
+                            : AppColors.successSubtle,
                         borderRadius: const BorderRadius.all(
                           Radius.circular(8),
                         ),
-                        border: Border.all(color: AppColors.success),
+                        border: Border.all(color: AppColors.successOf(context)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.check_circle_outline,
                             size: 20,
-                            color: AppColors.success,
+                            color: AppColors.successOf(context),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'kode OTP terkirim. silahkan buka email anda',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1B6E3F),
+                                    color: isDark
+                                        ? const Color(0xFF6EE7B7)
+                                        : const Color(0xFF1B6E3F),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   widget.email,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF2C7D4E),
+                                    color: isDark
+                                        ? const Color(0xFFA7F3D0)
+                                        : const Color(0xFF2C7D4E),
                                   ),
                                 ),
                               ],
@@ -277,17 +286,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         padding: const EdgeInsets.only(top: 8, left: 4),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
                               size: 15,
-                              color: AppColors.danger,
+                              color: AppColors.dangerOf(context),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 _errorMessage!,
-                                style: const TextStyle(
-                                  color: AppColors.danger,
+                                style: TextStyle(
+                                  color: AppColors.dangerOf(context),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -304,24 +313,24 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.timer_outlined,
                           size: 16,
-                          color: AppColors.textSecondary,
+                          color: AppColors.textSecondaryOf(context),
                         ),
                         const SizedBox(width: 6),
                         if (_expirationSeconds > 0)
                           Text(
                             'Waktu tersisa: ${_formatTimer(_expirationSeconds)}',
-                            style: AppTextStyles.bodySecondary.copyWith(
+                            style: AppTextStyles.bodySecondaryOf(context).copyWith(
                               fontWeight: FontWeight.w500,
                             ),
                           )
                         else
-                          const Text(
+                          Text(
                             'Kode OTP kedaluwarsa',
                             style: TextStyle(
-                              color: AppColors.danger,
+                              color: AppColors.dangerOf(context),
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -350,8 +359,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                               : 'Kirim Ulang OTP',
                           style: TextStyle(
                             color: _resendSeconds > 0
-                                ? AppColors.disabled
-                                : AppColors.primary,
+                                ? AppColors.disabledOf(context)
+                                : AppColors.primaryOf(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

@@ -56,25 +56,34 @@ class _AdminDeleteAnnouncementDialogState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : AppColors.danger.withValues(alpha: 0.1);
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final textSecondary = AppColors.textSecondaryOf(context);
+
     return AlertDialog(
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.dialog,
+        side: BorderSide(color: borderColor),
+      ),
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.1),
+              color: dangerSubtle,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.warning_amber_rounded,
-              color: AppColors.danger,
+              color: dangerColor,
               size: 24,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
-            child: Text('Hapus Pengumuman?', style: AppTextStyles.sectionTitle),
+          Expanded(
+            child: Text('Hapus Pengumuman?', style: AppTextStyles.sectionTitleOf(context)),
           ),
         ],
       ),
@@ -84,24 +93,24 @@ class _AdminDeleteAnnouncementDialogState
         children: [
           Text(
             'Apakah Anda yakin ingin menghapus pengumuman "${widget.announcementTitle}"?',
-            style: AppTextStyles.body,
+            style: AppTextStyles.bodyOf(context),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Pengumuman yang dihapus tidak akan lagi tampil pada layar warga. Tindakan ini tidak dapat dibatalkan.',
-            style: AppTextStyles.caption,
+            style: AppTextStyles.captionOf(context),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.1),
+                color: dangerSubtle,
                 borderRadius: AppRadius.sm,
               ),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(color: AppColors.danger, fontSize: 12),
+                style: TextStyle(color: dangerColor, fontSize: 12),
               ),
             ),
           ],
@@ -111,14 +120,14 @@ class _AdminDeleteAnnouncementDialogState
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
-          child: const Text(
+          child: Text(
             'Batal',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: textSecondary),
           ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.danger,
+            backgroundColor: dangerColor,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),

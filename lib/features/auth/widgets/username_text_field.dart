@@ -123,9 +123,9 @@ class _UsernameTextFieldState extends State<UsernameTextField> {
     }
   }
 
-  Widget? _buildSuffixIcon() {
+  Widget? _buildSuffixIcon(bool isDark) {
     if (_isChecking) {
-      return const Center(
+      return Center(
         widthFactor: 1.0,
         heightFactor: 1.0,
         child: SizedBox(
@@ -133,31 +133,31 @@ class _UsernameTextFieldState extends State<UsernameTextField> {
           height: 16,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppColors.primary,
+            color: isDark ? AppColors.darkPrimary : AppColors.primary,
           ),
         ),
       );
     }
 
     if (_isAvailable == true) {
-      return const Center(
+      return Center(
         widthFactor: 1.0,
         heightFactor: 1.0,
         child: FaIcon(
           FontAwesomeIcons.circleCheck,
-          color: AppColors.success,
+          color: isDark ? AppColors.darkSuccess : AppColors.success,
           size: 16,
         ),
       );
     }
 
     if (_isAvailable == false) {
-      return const Center(
+      return Center(
         widthFactor: 1.0,
         heightFactor: 1.0,
         child: FaIcon(
           FontAwesomeIcons.circleXmark,
-          color: AppColors.danger,
+          color: isDark ? AppColors.darkDanger : AppColors.danger,
           size: 16,
         ),
       );
@@ -166,15 +166,23 @@ class _UsernameTextFieldState extends State<UsernameTextField> {
     return null;
   }
 
-  Color _getStatusColor() {
-    if (_isChecking) return AppColors.textSecondary;
-    if (_isAvailable == true) return AppColors.success;
-    if (_isAvailable == false) return AppColors.danger;
-    return AppColors.textSecondary;
+  Color _getStatusColor(bool isDark) {
+    if (_isChecking) {
+      return isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    }
+    if (_isAvailable == true) {
+      return isDark ? AppColors.darkSuccess : AppColors.success;
+    }
+    if (_isAvailable == false) {
+      return isDark ? AppColors.darkDanger : AppColors.danger;
+    }
+    return isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,7 +199,7 @@ class _UsernameTextFieldState extends State<UsernameTextField> {
               heightFactor: 1.0,
               child: FaIcon(FontAwesomeIcons.at, size: 16),
             ),
-            suffixIcon: _buildSuffixIcon(),
+            suffixIcon: _buildSuffixIcon(isDark),
           ),
           validator: AppValidators.validateUsername,
         ),
@@ -202,16 +210,16 @@ class _UsernameTextFieldState extends State<UsernameTextField> {
             child: Row(
               children: [
                 if (_isAvailable == true) ...[
-                  const FaIcon(
+                  FaIcon(
                     FontAwesomeIcons.check,
-                    color: AppColors.success,
+                    color: isDark ? AppColors.darkSuccess : AppColors.success,
                     size: 12,
                   ),
                   const SizedBox(width: 6),
                 ] else if (_isAvailable == false && !_isChecking) ...[
-                  const FaIcon(
+                  FaIcon(
                     FontAwesomeIcons.triangleExclamation,
-                    color: AppColors.danger,
+                    color: isDark ? AppColors.darkDanger : AppColors.danger,
                     size: 12,
                   ),
                   const SizedBox(width: 6),
@@ -222,7 +230,7 @@ class _UsernameTextFieldState extends State<UsernameTextField> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: _getStatusColor(),
+                      color: _getStatusColor(isDark),
                     ),
                   ),
                 ),

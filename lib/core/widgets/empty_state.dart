@@ -26,6 +26,13 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconBg = isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft;
+    final iconColor =
+        isDark ? AppColors.darkPrimaryLight : AppColors.primary;
+    final messageColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -34,29 +41,29 @@ class EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: AppColors.primarySoft,
+              decoration: BoxDecoration(
+                color: iconBg,
                 shape: BoxShape.circle,
               ),
               child: faIcon != null
-                  ? FaIcon(faIcon, size: 40, color: AppColors.primary)
+                  ? FaIcon(faIcon, size: 40, color: iconColor)
                   : Icon(
                       icon ?? Icons.inbox_outlined,
                       size: 40,
-                      color: AppColors.primary,
+                      color: iconColor,
                     ),
             ),
             const SizedBox(height: 20),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 18),
+              style: AppTextStyles.sectionTitleOf(context).copyWith(fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodySecondary,
+              style: AppTextStyles.bodySecondary.copyWith(color: messageColor),
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),

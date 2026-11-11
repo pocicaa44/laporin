@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../core/widgets/status_badge.dart';
@@ -106,6 +107,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
 
   @override
   void dispose() {
+    AppToast.dismiss();
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
@@ -261,6 +263,11 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
               }
               _replyingToComment = null;
             });
+            AppToast.show(
+              context,
+              message: 'komentar diposting',
+              duration: const Duration(seconds: 3),
+            );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -636,15 +643,34 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
         report.handlingStatus == HandlingStatus.completed ||
         report.handlingStatus == HandlingStatus.rejected;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final bgColor = AppColors.backgroundOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final borderSubtle = AppColors.borderSubtleOf(context);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final textBody = AppColors.textBodyOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : AppColors.dangerSubtle;
+    final dangerBorder = isDark ? dangerColor.withValues(alpha: 0.3) : const Color(0xFFFECACA);
+    final warningSubtle = isDark ? AppColors.darkWarningSubtle : const Color(0xFFFFFBEB);
+    final warningBorder = isDark ? (AppColors.darkWarning.withValues(alpha: 0.3)) : const Color(0xFFFDE68A);
+    final warningText = isDark ? AppColors.darkWarningText : const Color(0xFFB45309);
+    final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
+    final successSubtle = isDark ? AppColors.darkSuccessSubtle : AppColors.successSubtle;
+    final successBorder = isDark ? successColor.withValues(alpha: 0.3) : const Color(0xFFBBF7D0);
+
     return Container(
-      color: AppColors.background,
+      color: bgColor,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: bgColor,
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: borderColor, width: 1),
             ),
           ),
           child: Scaffold(
@@ -678,32 +704,32 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                       }
                     },
                     itemBuilder: (ctx) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'update_status',
                         child: Row(
                           children: [
                             Icon(
                               Icons.edit_note_rounded,
                               size: 20,
-                              color: AppColors.primary,
+                              color: primaryColor,
                             ),
-                            SizedBox(width: 8),
-                            Text('Ubah Status'),
+                            const SizedBox(width: 8),
+                            const Text('Ubah Status'),
                           ],
                         ),
                       ),
                       if (report.handlingStatus != HandlingStatus.completed)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'resolve',
                           child: Row(
                             children: [
                               Icon(
                                 Icons.task_alt,
                                 size: 20,
-                                color: AppColors.success,
+                                color: successColor,
                               ),
-                              SizedBox(width: 8),
-                              Text('Selesaikan Laporan'),
+                              const SizedBox(width: 8),
+                              const Text('Selesaikan Laporan'),
                             ],
                           ),
                         ),
@@ -724,8 +750,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             ? Icons.delete_forever_rounded
                             : Icons.delete_outline_rounded,
                         color: report.canAdminDelete
-                            ? AppColors.danger
-                            : AppColors.textSecondary,
+                            ? dangerColor
+                            : textSecondary,
                       ),
                       onPressed: report.canAdminDelete
                           ? () => _showDeleteDialog(
@@ -754,17 +780,17 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                     },
                     itemBuilder: (ctx) => [
                       if (report.isDraft)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'publish_draft',
                           child: Row(
                             children: [
                               Icon(
                                 Icons.public_rounded,
                                 size: 20,
-                                color: AppColors.primary,
+                                color: primaryColor,
                               ),
-                              SizedBox(width: 8),
-                              Expanded(child: Text('Publikasikan Laporan')),
+                              const SizedBox(width: 8),
+                              const Expanded(child: Text('Publikasikan Laporan')),
                             ],
                           ),
                         ),
@@ -784,8 +810,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       : Icons.edit_off_outlined,
                                   size: 20,
                                   color: report.canEdit
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
+                                      ? primaryColor
+                                      : textSecondary,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -799,7 +825,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                         style: TextStyle(
                                           color: report.canEdit
                                               ? null
-                                              : AppColors.textSecondary,
+                                              : textSecondary,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -809,7 +835,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                           report.cannotEditReason!,
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: AppColors.textSecondary,
+                                            color: textSecondary,
                                           ),
                                         ),
                                     ],
@@ -831,8 +857,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                     : Icons.comment_outlined,
                                 size: 20,
                                 color: report.isDiscussionActive
-                                    ? AppColors.textSecondary
-                                    : AppColors.primary,
+                                    ? textSecondary
+                                    : primaryColor,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -847,20 +873,20 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                         ),
                       // Skema Hapus Laporan: Hanya tampil jika status baru/pending, ditolak, atau selesai
                       if (report.canAuthorDelete)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Row(
                             children: [
                               Icon(
                                 Icons.delete_outline_rounded,
                                 size: 20,
-                                color: AppColors.danger,
+                                color: dangerColor,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'Hapus Laporan',
-                                  style: TextStyle(color: AppColors.danger),
+                                  style: TextStyle(color: dangerColor),
                                 ),
                               ),
                             ],
@@ -887,39 +913,39 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFFBEB),
+                              color: warningSubtle,
                               borderRadius: AppRadius.borderSm,
                               border: Border.all(
-                                color: const Color(0xFFFDE68A),
+                                color: warningBorder,
                               ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Row(
+                                Row(
                                   children: [
                                     Icon(
                                       Icons.edit_note_rounded,
-                                      color: Color(0xFFB45309),
+                                      color: warningText,
                                       size: 20,
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
                                       'Draft Laporan',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
-                                        color: Color(0xFFB45309),
+                                        color: warningText,
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
+                                Text(
                                   'Laporan ini masih disimpan sebagai draft dan belum dapat dilihat publik atau ditangani petugas.',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF78350F),
+                                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF78350F),
                                     height: 1.35,
                                   ),
                                 ),
@@ -928,7 +954,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
                                       minimumSize: const Size.fromHeight(38),
-                                      backgroundColor: AppColors.primary,
+                                      backgroundColor: primaryColor,
                                       foregroundColor: Colors.white,
                                       shape: const RoundedRectangleBorder(
                                         borderRadius: AppRadius.button,
@@ -961,39 +987,39 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: AppColors.dangerSubtle,
+                              color: dangerSubtle,
                               borderRadius: AppRadius.borderSm,
                               border: Border.all(
-                                color: const Color(0xFFFECACA),
+                                color: dangerBorder,
                               ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Row(
+                                Row(
                                   children: [
                                     Icon(
                                       Icons.person_off_outlined,
-                                      color: AppColors.danger,
+                                      color: dangerColor,
                                       size: 20,
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
                                       'Laporan Telah Dihapus Oleh Pelapor',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
-                                        color: AppColors.danger,
+                                        color: dangerColor,
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
+                                Text(
                                   'Pelapor telah menghapus laporan ini dari akunnya. Tekan tombol di bawah untuk menghapus permanen dari database dan membersihkan media di server.',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF991B1B),
+                                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF991B1B),
                                     height: 1.35,
                                   ),
                                 ),
@@ -1001,7 +1027,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                 ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
                                     minimumSize: const Size.fromHeight(38),
-                                    backgroundColor: AppColors.danger,
+                                    backgroundColor: dangerColor,
                                     foregroundColor: Colors.white,
                                     shape: const RoundedRectangleBorder(
                                       borderRadius: AppRadius.button,
@@ -1034,9 +1060,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: surfaceColor,
                             borderRadius: AppRadius.card,
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Row(
                             children: [
@@ -1055,13 +1081,13 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       report.displayAuthorUsername,
                                       style: AppTextStyles.label.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
+                                        color: textPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       '${report.authorName} • ${report.createdAt.toDisplayDateTime()}',
-                                      style: AppTextStyles.caption,
+                                      style: AppTextStyles.captionOf(context),
                                     ),
                                   ],
                                 ),
@@ -1072,19 +1098,19 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primarySubtle,
+                                  color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle,
                                   borderRadius: AppRadius.pill,
                                   border: Border.all(
-                                    color: const Color(0xFFBFDBFE),
+                                    color: isDark ? primaryColor.withValues(alpha: 0.3) : const Color(0xFFBFDBFE),
                                     width: 1,
                                   ),
                                 ),
                                 child: Text(
                                   report.category,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
+                                    color: primaryColor,
                                   ),
                                 ),
                               ),
@@ -1094,7 +1120,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                         const SizedBox(height: 16),
 
                         // Title
-                        Text(report.title, style: AppTextStyles.pageTitle),
+                        Text(report.title, style: AppTextStyles.pageTitleOf(context)),
                         const SizedBox(height: 8),
 
                         // Location row
@@ -1113,27 +1139,27 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             padding: const EdgeInsets.symmetric(vertical: 2),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.location_on,
                                   size: 16,
-                                  color: AppColors.primary,
+                                  color: primaryColor,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
                                     report.locationAddress,
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.primaryStrong,
+                                    style: AppTextStyles.captionOf(context).copyWith(
+                                      color: primaryColor,
                                       fontWeight: FontWeight.w600,
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(
+                                Icon(
                                   Icons.open_in_new,
                                   size: 14,
-                                  color: AppColors.primary,
+                                  color: primaryColor,
                                 ),
                               ],
                             ),
@@ -1151,21 +1177,23 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: surfaceColor,
                             borderRadius: AppRadius.card,
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Deskripsi Masalah',
-                                style: AppTextStyles.sectionTitle,
+                                style: AppTextStyles.sectionTitleOf(context),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 report.description,
-                                style: AppTextStyles.body,
+                                style: AppTextStyles.bodyOf(context).copyWith(
+                                  color: textBody,
+                                ),
                               ),
                             ],
                           ),
@@ -1182,39 +1210,39 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
+                                color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF8FAFC),
                                 borderRadius: AppRadius.card,
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: borderColor),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.lock_outline_rounded,
                                     size: 18,
-                                    color: AppColors.textSecondary,
+                                    color: textSecondary,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       'Laporan ini telah ${report.handlingStatus.label.toLowerCase()} dan statusnya tidak dapat diubah lagi.',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textSecondary,
+                                        color: textSecondary,
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   OutlinedButton.icon(
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.delete_outline_rounded,
                                       size: 16,
-                                      color: AppColors.danger,
+                                      color: dangerColor,
                                     ),
                                     label: const Text('Hapus'),
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.danger,
-                                      side: const BorderSide(
-                                        color: Color(0xFFFCA5A5),
+                                      foregroundColor: dangerColor,
+                                      side: BorderSide(
+                                        color: dangerBorder,
                                         width: 1,
                                       ),
                                       shape: const RoundedRectangleBorder(
@@ -1243,29 +1271,29 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFFBEB),
+                                color: warningSubtle,
                                 borderRadius: AppRadius.card,
                                 border: Border.all(
-                                  color: const Color(0xFFFDE68A),
+                                  color: warningBorder,
                                 ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Row(
+                                  Row(
                                     children: [
                                       Icon(
                                         Icons.admin_panel_settings,
                                         size: 18,
-                                        color: Color(0xFFD98205),
+                                        color: warningText,
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       Text(
                                         'Aksi Penanganan Petugas',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
-                                          color: Color(0xFFD98205),
+                                          color: warningText,
                                         ),
                                       ),
                                     ],
@@ -1275,16 +1303,16 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                     children: [
                                       Expanded(
                                         child: OutlinedButton.icon(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.edit_note_rounded,
                                             size: 17,
-                                            color: AppColors.primary,
+                                            color: primaryColor,
                                           ),
                                           label: const Text('Ubah Status'),
                                           style: OutlinedButton.styleFrom(
-                                            foregroundColor: AppColors.primary,
-                                            side: const BorderSide(
-                                              color: Color(0xFF9CA3AF),
+                                            foregroundColor: primaryColor,
+                                            side: BorderSide(
+                                              color: isDark ? primaryColor.withValues(alpha: 0.5) : const Color(0xFF9CA3AF),
                                               width: 1,
                                             ),
                                             shape: const RoundedRectangleBorder(
@@ -1317,9 +1345,7 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                             ),
                                             label: const Text('Selesaikan'),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(
-                                                0xFF10B981,
-                                              ),
+                                              backgroundColor: successColor,
                                               foregroundColor: Colors.white,
                                               elevation: 0,
                                               shape:
@@ -1362,10 +1388,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             key: const Key('completion_resolution_card'),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.successSubtle,
+                              color: successSubtle,
                               borderRadius: AppRadius.card,
                               border: Border.all(
-                                color: const Color(0xFFBBF7D0),
+                                color: successBorder,
                               ),
                             ),
                             child: Column(
@@ -1373,15 +1399,15 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.verified,
-                                      color: AppColors.success,
+                                      color: successColor,
                                       size: 20,
                                     ),
-                                    SizedBox(width: 8),
-                                    const Text(
+                                    const SizedBox(width: 8),
+                                    Text(
                                       'Penyelesaian Pekerjaan',
-                                      style: AppTextStyles.sectionTitle,
+                                      style: AppTextStyles.sectionTitleOf(context),
                                     ),
                                     const Spacer(),
                                     Container(
@@ -1389,8 +1415,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                         horizontal: 10,
                                         vertical: 4,
                                       ),
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.success,
+                                      decoration: BoxDecoration(
+                                        color: successColor,
                                         borderRadius: AppRadius.pill,
                                       ),
                                       child: const Text(
@@ -1415,31 +1441,31 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
                                       borderRadius: AppRadius.button,
                                       border: Border.all(
-                                        color: const Color(0xFFBBF7D0),
+                                        color: successBorder,
                                       ),
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Row(
+                                        Row(
                                           children: [
                                             Icon(
                                               Icons
                                                   .assignment_turned_in_outlined,
                                               size: 16,
-                                              color: AppColors.success,
+                                              color: successColor,
                                             ),
-                                            SizedBox(width: 6),
+                                            const SizedBox(width: 6),
                                             Text(
                                               'Catatan Penyelesaian:',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
-                                                color: AppColors.textPrimary,
+                                                color: textPrimary,
                                               ),
                                             ),
                                           ],
@@ -1450,9 +1476,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                           key: const Key(
                                             'report_completion_notes_text',
                                           ),
-                                          style: AppTextStyles.body.copyWith(
+                                          style: AppTextStyles.bodyOf(context).copyWith(
                                             fontSize: 13,
-                                            color: AppColors.textPrimary,
+                                            color: textPrimary,
                                           ),
                                         ),
                                       ],
@@ -1464,12 +1490,12 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
 
                                 // Foto Bukti Pekerjaan Selesai
                                 if (report.completionProofUrl != null) ...[
-                                  const Text(
+                                  Text(
                                     'Foto Bukti Pekerjaan:',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.textSecondary,
+                                      color: textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -1557,21 +1583,21 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           children: [
                             Text(
                               'Komentar & Diskusi (${_formatCommentCount(controller.comments.length)})',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                                color: textPrimary,
                               ),
                             ),
                             if (controller.isLoadingComments &&
                                 controller.comments.isNotEmpty)
-                              const SizedBox(
+                              SizedBox(
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.primary,
+                                    primaryColor,
                                   ),
                                 ),
                               ),
@@ -1595,29 +1621,29 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primarySoft
+                                          color: (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft)
                                               .withValues(alpha: 0.5),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const SizedBox(
+                                        child: SizedBox(
                                           width: 28,
                                           height: 28,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.8,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
-                                                  AppColors.primary,
+                                                  primaryColor,
                                                 ),
                                           ),
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text(
+                                      Text(
                                         'Memuat komentar & diskusi...',
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
-                                          color: AppColors.textSecondary,
+                                          color: textSecondary,
                                         ),
                                       ),
                                     ],
@@ -1627,12 +1653,12 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             }
 
                             if (controller.comments.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24),
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24),
                                 child: Center(
                                   child: Text(
                                     'Belum ada komentar. Jadilah yang pertama menanggapi.',
-                                    style: AppTextStyles.caption,
+                                    style: AppTextStyles.captionOf(context),
                                   ),
                                 ),
                               );
@@ -1645,10 +1671,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             return Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.surface,
+                                color: surfaceColor,
                                 borderRadius: AppRadius.card,
                                 border: Border.all(
-                                  color: AppColors.border,
+                                  color: borderColor,
                                   width: 1,
                                 ),
                               ),
@@ -1657,12 +1683,12 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                 children: [
                                   for (int i = 0; i < threads.length; i++) ...[
                                     if (i > 0)
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
                                         child: Divider(
-                                          color: AppColors.borderSubtle,
+                                          color: borderSubtle,
                                           height: 1,
                                           thickness: 1,
                                         ),
@@ -1707,10 +1733,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                 if (report.isPubliclyVisible && !report.isTerminal)
                   report.canAddComment
                       ? Container(
-                          decoration: const BoxDecoration(
-                            color: AppColors.surface,
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
                             border: Border(
-                              top: BorderSide(color: AppColors.border),
+                              top: BorderSide(color: borderColor),
                             ),
                           ),
                           child: SafeArea(
@@ -1725,24 +1751,24 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                       horizontal: 16,
                                       vertical: 8,
                                     ),
-                                    color: const Color(0xFFF3F4F6),
+                                    color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF3F4F6),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.reply_rounded,
                                           size: 16,
-                                          color: AppColors.primary,
+                                          color: primaryColor,
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text.rich(
                                             TextSpan(
                                               children: [
-                                                const TextSpan(
+                                                TextSpan(
                                                   text: 'Membalas ',
                                                   style: TextStyle(
                                                     fontSize: 12,
-                                                    color: Color(0xFF4B5563),
+                                                    color: textSecondary,
                                                   ),
                                                 ),
                                                 TextSpan(
@@ -1755,10 +1781,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                                             .authorName
                                                             .trim()
                                                       : '@${_replyingToComment!.authorName.trim()}',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
-                                                    color: AppColors.primary,
+                                                    color: primaryColor,
                                                   ),
                                                 ),
                                               ],
@@ -1770,22 +1796,22 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                         InkWell(
                                           onTap: _cancelReply,
                                           borderRadius: AppRadius.borderSm,
-                                          child: const Padding(
-                                            padding: EdgeInsets.all(4),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(4),
                                             child: Icon(
                                               Icons.close_rounded,
                                               size: 16,
-                                              color: Color(0xFF6B7280),
+                                              color: textSecondary,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Divider(
+                                  Divider(
                                     height: 1,
                                     thickness: 1,
-                                    color: AppColors.border,
+                                    color: borderColor,
                                   ),
                                 ],
 
@@ -1812,30 +1838,30 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                                 : (_replyingToComment != null
                                                       ? 'Tulis balasan untuk ${_replyingToComment!.authorName.trim().startsWith('@') ? _replyingToComment!.authorName.trim() : '@${_replyingToComment!.authorName.trim()}'}...'
                                                       : 'Tulis komentar atau tanggapan...'),
-                                            hintStyle: AppTextStyles.caption,
+                                            hintStyle: AppTextStyles.captionOf(context),
                                             contentPadding:
                                                 const EdgeInsets.symmetric(
                                                   horizontal: 14,
                                                   vertical: 10,
                                                 ),
-                                            border: const OutlineInputBorder(
+                                            border: OutlineInputBorder(
                                               borderRadius: AppRadius.input,
                                               borderSide: BorderSide(
-                                                color: AppColors.border,
+                                                color: borderColor,
                                               ),
                                             ),
                                             enabledBorder:
-                                                const OutlineInputBorder(
+                                                OutlineInputBorder(
                                                   borderRadius: AppRadius.input,
                                                   borderSide: BorderSide(
-                                                    color: AppColors.border,
+                                                    color: borderColor,
                                                   ),
                                                 ),
                                             focusedBorder:
-                                                const OutlineInputBorder(
+                                                OutlineInputBorder(
                                                   borderRadius: AppRadius.input,
                                                   borderSide: BorderSide(
-                                                    color: AppColors.primary,
+                                                    color: primaryColor,
                                                     width: 1.5,
                                                   ),
                                                 ),
@@ -1856,8 +1882,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                             : Icon(
                                                 Icons.send_rounded,
                                                 color: isOnline
-                                                    ? AppColors.primary
-                                                    : AppColors.disabled,
+                                                    ? primaryColor
+                                                    : (isDark ? AppColors.darkDisabled : AppColors.disabled),
                                               ),
                                         onPressed:
                                             (isOnline &&
@@ -1878,10 +1904,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             horizontal: 16,
                             vertical: 14,
                           ),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF9FAFB),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF9FAFB),
                             border: Border(
-                              top: BorderSide(color: AppColors.border),
+                              top: BorderSide(color: borderColor),
                             ),
                           ),
                           child: SafeArea(
@@ -1889,10 +1915,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.lock_outline_rounded,
                                   size: 16,
-                                  color: AppColors.textSecondary,
+                                  color: textSecondary,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -1903,9 +1929,9 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                               ? 'Diskusi dinonaktifkan (Laporan Selesai). Anda dapat mengaktifkannya kembali melalui menu opsi di atas.'
                                               : 'Diskusi telah dinonaktifkan karena laporan telah selesai.')
                                         : 'Diskusi telah dinonaktifkan oleh pemilik laporan.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.textSecondary,
+                                      color: textSecondary,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),

@@ -14,18 +14,56 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
-        surface: AppColors.surface,
-        error: AppColors.danger,
+      colorScheme: const ColorScheme(
         brightness: Brightness.light,
+        primary: AppColors.primary,
+        onPrimary: Colors.white,
+        secondary: AppColors.secondary,
+        onSecondary: Colors.white,
+        tertiary: AppColors.tertiary,
+        onTertiary: Colors.white,
+        error: AppColors.danger,
+        onError: Colors.white,
+        surface: AppColors.surface,
+        onSurface: AppColors.textPrimary,
+      ),
+
+      // Text Theme: Light mode text hierarchy
+      textTheme: const TextTheme(
+        displayLarge: AppTextStyles.display,
+        headlineLarge: AppTextStyles.h1,
+        headlineMedium: AppTextStyles.h2,
+        headlineSmall: AppTextStyles.h3,
+        titleLarge: AppTextStyles.pageTitle,
+        titleMedium: AppTextStyles.sectionTitle,
+        bodyLarge: AppTextStyles.bodyRegular,
+        bodyMedium: AppTextStyles.bodyMedium,
+        bodySmall: AppTextStyles.caption,
+        labelLarge: AppTextStyles.label,
+        labelSmall: AppTextStyles.caption,
+      ),
+
+      // Navigation Bar Themes
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        type: BottomNavigationBarType.fixed,
+      ),
+
+      tabBarTheme: const TabBarThemeData(
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        indicatorColor: AppColors.primary,
       ),
 
       // App Bar: Clean surface, 0 elevation, 1px bottom border
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -141,6 +179,191 @@ class AppTheme {
       // Divider Theme: 1 px hairline border
       dividerTheme: const DividerThemeData(
         color: AppColors.borderSubtle,
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
+
+  // ==========================================
+  // MODE GELAP (DARK THEME)
+  // ==========================================
+  static ThemeData get darkTheme {
+    const darkBorderSide = BorderSide(color: AppColors.darkBorder, width: 1.0);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      colorScheme: const ColorScheme(
+        brightness: Brightness.dark,
+        primary: AppColors.darkPrimary,
+        onPrimary: Colors.white,
+        secondary: AppColors.darkSecondary,
+        onSecondary: Colors.white,
+        tertiary: AppColors.darkTertiary,
+        onTertiary: Colors.white,
+        error: AppColors.darkDanger,
+        onError: Colors.white,
+        surface: AppColors.darkSurface,
+        onSurface: AppColors.darkTextPrimary,
+      ),
+
+      // Text Theme: Dark mode text hierarchy with WCAG AA compliance
+      textTheme: TextTheme(
+        displayLarge: AppTextStyles.display.copyWith(color: AppColors.darkTextPrimary),
+        headlineLarge: AppTextStyles.h1.copyWith(color: AppColors.darkTextPrimary),
+        headlineMedium: AppTextStyles.h2.copyWith(color: AppColors.darkTextPrimary),
+        headlineSmall: AppTextStyles.h3.copyWith(color: AppColors.darkTextPrimary),
+        titleLarge: AppTextStyles.pageTitle.copyWith(color: AppColors.darkTextPrimary),
+        titleMedium: AppTextStyles.sectionTitle.copyWith(color: AppColors.darkTextPrimary),
+        bodyLarge: AppTextStyles.bodyRegular.copyWith(color: AppColors.darkTextBody),
+        bodyMedium: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkTextBody),
+        bodySmall: AppTextStyles.caption.copyWith(color: AppColors.darkTextMuted),
+        labelLarge: AppTextStyles.label.copyWith(color: AppColors.darkTextPrimary),
+        labelSmall: AppTextStyles.caption.copyWith(color: AppColors.darkTextMuted),
+      ),
+
+      // Navigation Bar Themes (Dark Mode)
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.darkSurface,
+        elevation: 0,
+        selectedItemColor: AppColors.darkPrimary,
+        unselectedItemColor: AppColors.darkTextSecondary,
+        type: BottomNavigationBarType.fixed,
+      ),
+
+      tabBarTheme: const TabBarThemeData(
+        labelColor: AppColors.darkPrimary,
+        unselectedLabelColor: AppColors.darkTextSecondary,
+        indicatorColor: AppColors.darkPrimary,
+      ),
+
+      // App Bar: Slate 800 surface, 0 elevation, 1px bottom border
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.darkSurface,
+        foregroundColor: AppColors.darkTextPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: AppColors.darkTextPrimary),
+        titleTextStyle: AppTextStyles.pageTitle.copyWith(
+          color: AppColors.darkTextPrimary,
+        ),
+      ),
+
+      // Card Theme: Sudut membulat 16px, background Slate 800, hairline border Slate 700 (Flat UI)
+      cardTheme: const CardThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.card,
+          side: darkBorderSide,
+        ),
+        margin: EdgeInsets.zero,
+        color: AppColors.darkSurface,
+      ),
+
+      // Elevated & Filled Button Theme: Sudut membulat 12px
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          backgroundColor: AppColors.darkPrimary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTextStyles.button,
+        ),
+      ),
+
+      // Outlined Button Theme: Sudut membulat 12px, border Slate 700 1px solid
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          elevation: 0,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          side: darkBorderSide,
+          foregroundColor: AppColors.darkTextPrimary,
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTextStyles.button.copyWith(
+            color: AppColors.darkTextPrimary,
+          ),
+        ),
+      ),
+
+      // Text Button Theme
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          foregroundColor: AppColors.darkPrimary,
+        ),
+      ),
+
+      // Floating Action Button Theme: Squircle membulat 16px, Flat UI
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
+        disabledElevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.card),
+        backgroundColor: AppColors.darkPrimary,
+        foregroundColor: Colors.white,
+      ),
+
+      // Input Decoration Theme: Latar Slate 900, sudut membulat 12px, border Slate 700
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
+        border: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: darkBorderSide,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: darkBorderSide,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.darkPrimary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.darkDanger, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.darkDanger, width: 1.5),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: TextStyle(color: AppColors.darkTextSecondary, fontSize: 14),
+        labelStyle: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+
+      // Dialog & Modal Theme: Latar Slate 800, sudut membulat 20px, border Slate 700
+      dialogTheme: const DialogThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.dialog,
+          side: darkBorderSide,
+        ),
+        backgroundColor: AppColors.darkSurface,
+      ),
+
+      // Bottom Sheet Theme: Sudut atas membulat 24px, latar Slate 800
+      bottomSheetTheme: const BottomSheetThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.sheet),
+        backgroundColor: AppColors.darkSurface,
+      ),
+
+      // Divider Theme: 1 px hairline border Slate 700
+      dividerTheme: const DividerThemeData(
+        color: AppColors.darkBorder,
         thickness: 1,
         space: 1,
       ),

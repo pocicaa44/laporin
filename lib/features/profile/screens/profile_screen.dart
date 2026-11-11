@@ -14,6 +14,7 @@ import '../../auth/screens/set_username_screen.dart';
 import '../../my_reports/screens/my_reports_screen.dart';
 import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
+import '../../settings/screens/settings_screen.dart';
 import '../widgets/profile_photo_detail_dialog.dart';
 import 'edit_profile_screen.dart';
 
@@ -31,6 +32,12 @@ class ProfileScreen extends StatelessWidget {
     final rootNav = Navigator.of(context, rootNavigator: true);
     var isDialogShowing = true;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+
     // Dialog loading non-dismissible langsung muncul saat tombol logout ditekan
     showDialog(
       context: context,
@@ -39,10 +46,10 @@ class ProfileScreen extends StatelessWidget {
       builder: (dialogContext) => PopScope(
         canPop: false,
         child: Dialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: dialogBg,
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.dialog),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -51,17 +58,17 @@ class ProfileScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: 36,
                   height: 36,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                      primaryColor,
                     ),
                   ),
                 ),
@@ -99,6 +106,12 @@ class ProfileScreen extends StatelessWidget {
     final auth = context.watch<AuthController>();
     final isOnline = context.isOnline;
     final user = auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     return Scaffold(
       drawer: const AppDrawer(),
@@ -116,9 +129,9 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: cardBg,
                 borderRadius: AppRadius.card,
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: cardBorder),
               ),
               child: Row(
                 children: [
@@ -142,27 +155,27 @@ class ProfileScreen extends StatelessWidget {
                               : (auth.isAuthenticated
                                     ? 'Warga Laporin'
                                     : 'Tamu'),
-                          style: AppTextStyles.sectionTitle,
+                          style: AppTextStyles.sectionTitleOf(context),
                         ),
                         const SizedBox(height: 3),
                         // Username display with robust fallback handling
                         if (auth.isLoading)
-                          const Row(
+                          Row(
                             children: [
-                              SizedBox(
+                              const SizedBox(
                                 width: 12,
                                 height: 12,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
                                 ),
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
                                 'Memuat username...',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontStyle: FontStyle.italic,
-                                  color: AppColors.textSecondary,
+                                  color: textSecondary,
                                 ),
                               ),
                             ],
@@ -171,21 +184,21 @@ class ProfileScreen extends StatelessWidget {
                             user.username.trim().isNotEmpty)
                           Text(
                             '@${user.username.trim().replaceFirst('@', '')}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: primaryColor,
                             ),
                           )
                         else if (auth.isAuthenticated)
                           Row(
                             children: [
-                              const Text(
+                              Text(
                                 '@belum_diset',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontStyle: FontStyle.italic,
-                                  color: AppColors.textSecondary,
+                                  color: textSecondary,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -198,12 +211,12 @@ class ProfileScreen extends StatelessWidget {
                                     ),
                                   );
                                 },
-                                child: const Text(
+                                child: Text(
                                   'Setel Sekarang',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: primaryColor,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
@@ -211,16 +224,19 @@ class ProfileScreen extends StatelessWidget {
                             ],
                           )
                         else
-                          const Text(
+                          Text(
                             '@tamu',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textSecondary,
+                              color: textSecondary,
                             ),
                           ),
                         if (user?.email.isNotEmpty == true) ...[
                           const SizedBox(height: 3),
-                          Text(user!.email, style: AppTextStyles.caption),
+                          Text(
+                            user!.email,
+                            style: AppTextStyles.captionOf(context),
+                          ),
                         ],
                         const SizedBox(height: 8),
                         Wrap(
@@ -235,8 +251,12 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: auth.isAdmin
-                                    ? const Color(0xFFFEF8E7)
-                                    : AppColors.primarySoft,
+                                    ? (isDark
+                                        ? AppColors.darkWarningSubtle
+                                        : const Color(0xFFFEF8E7))
+                                    : (isDark
+                                        ? AppColors.darkPrimarySoft
+                                        : AppColors.primarySoft),
                                 borderRadius: AppRadius.pill,
                               ),
                               child: Text(
@@ -247,8 +267,12 @@ class ProfileScreen extends StatelessWidget {
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: auth.isAdmin
-                                      ? const Color(0xFFD98205)
-                                      : AppColors.primaryStrong,
+                                      ? (isDark
+                                          ? AppColors.darkWarningText
+                                          : const Color(0xFFD98205))
+                                      : (isDark
+                                          ? AppColors.darkPrimaryLight
+                                          : AppColors.primaryStrong),
                                 ),
                               ),
                             ),
@@ -297,27 +321,13 @@ class ProfileScreen extends StatelessWidget {
               ),
 
             _ProfileMenuItem(
-              icon: FontAwesomeIcons.circleInfo,
-              title: 'Tentang Aplikasi Laporin',
-              subtitle: 'Versi 1.0.0 (MVP Pelaporan Fasilitas Publik)',
+              icon: FontAwesomeIcons.gear,
+              title: 'Pengaturan',
+              subtitle: 'Tema tampilan, notifikasi, dan tentang aplikasi',
               onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'Laporin',
-                  applicationVersion: '1.0.0 (MVP)',
-                  applicationIcon: ClipOval(
-                    child: Image.asset(
-                      'assets/logo_laporin.png',
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  children: const [
-                    Text(
-                      'Aplikasi pelaporan masalah publik transparan berbasis geospasial, moderasi komunitas, dan akuntabilitas penanganan instansi.',
-                    ),
-                  ],
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
             ),
@@ -360,19 +370,31 @@ class _ProfileMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultPrimary =
+        isDark ? AppColors.darkPrimary : AppColors.primary;
+    final defaultTextPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final defaultTextSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final defaultDisabled =
+        isDark ? AppColors.darkDisabled : AppColors.disabled;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.border;
+
     final effectiveIconColor = isEnabled
-        ? (iconColor ?? AppColors.primary)
-        : AppColors.disabled;
+        ? (iconColor ?? defaultPrimary)
+        : defaultDisabled;
     final effectiveTextColor = isEnabled
-        ? (textColor ?? AppColors.textPrimary)
-        : AppColors.textSecondary;
+        ? (textColor ?? defaultTextPrimary)
+        : defaultTextSecondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cardBg,
         borderRadius: AppRadius.button,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cardBorder),
       ),
       child: Material(
         color: Colors.transparent,
@@ -385,13 +407,13 @@ class _ProfileMenuItem extends StatelessWidget {
             style: AppTextStyles.label.copyWith(color: effectiveTextColor),
           ),
           subtitle: subtitle != null
-              ? Text(subtitle!, style: AppTextStyles.caption)
+              ? Text(subtitle!, style: AppTextStyles.captionOf(context))
               : null,
           trailing: isEnabled
-              ? const FaIcon(
+              ? FaIcon(
                   FontAwesomeIcons.chevronRight,
                   size: 14,
-                  color: AppColors.textSecondary,
+                  color: defaultTextSecondary,
                 )
               : null,
         ),

@@ -23,15 +23,23 @@ class VoteActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isUp = report.currentUserVote == 'up';
     final isDown = report.currentUserVote == 'down';
+
+    final surfaceColor = isEnabled ? AppColors.surfaceOf(context) : AppColors.backgroundOf(context);
+    final borderColor = AppColors.borderSubtleOf(context);
+    final dividerColor = AppColors.borderOf(context);
+    final primaryColor = AppColors.primaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final textSecondary = AppColors.textSecondaryOf(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isEnabled ? AppColors.surface : AppColors.background,
+        color: surfaceColor,
         borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -45,18 +53,18 @@ class VoteActionBar extends StatelessWidget {
                     : Icons.thumb_up_alt_outlined,
                 label: 'Dukung (${report.upvotesCount})',
                 isActive: isUp,
-                activeColor: AppColors.primary,
+                activeColor: primaryColor,
                 isEnabled: isEnabled,
                 onTap: isEnabled ? onUpvote : null,
               ),
-              Container(width: 1, height: 28, color: AppColors.border),
+              Container(width: 1, height: 28, color: dividerColor),
               _ActionButton(
                 icon: isDown
                     ? Icons.thumb_down_alt_rounded
                     : Icons.thumb_down_alt_outlined,
                 label: 'Keberatan (${report.downvotesCount})',
                 isActive: isDown,
-                activeColor: AppColors.danger,
+                activeColor: dangerColor,
                 isEnabled: isEnabled,
                 onTap: isEnabled ? onDownvote : null,
               ),
@@ -67,17 +75,17 @@ class VoteActionBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.lock_outline_rounded,
                   size: 13,
-                  color: AppColors.textSecondary,
+                  color: textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   disabledReason!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
               ],
@@ -108,9 +116,13 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+
     final color = !isEnabled
-        ? AppColors.textSecondary.withValues(alpha: 0.6)
-        : (isActive ? activeColor : AppColors.textPrimary);
+        ? textSecondary.withValues(alpha: 0.6)
+        : (isActive ? activeColor : textPrimary);
 
     return InkWell(
       onTap: onTap,
@@ -120,12 +132,12 @@ class _ActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isEnabled && isActive
-              ? activeColor.withValues(alpha: 0.1)
+              ? activeColor.withValues(alpha: isDark ? 0.2 : 0.1)
               : Colors.transparent,
           borderRadius: AppRadius.pill,
           border: Border.all(
             color: isEnabled && isActive
-                ? activeColor.withValues(alpha: 0.28)
+                ? activeColor.withValues(alpha: isDark ? 0.35 : 0.28)
                 : Colors.transparent,
             width: 1,
           ),

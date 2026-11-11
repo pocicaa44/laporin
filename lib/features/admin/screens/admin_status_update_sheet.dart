@@ -38,6 +38,11 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -54,9 +59,9 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Ubah Status Penanganan',
-                  style: AppTextStyles.pageTitle,
+                  style: AppTextStyles.pageTitleOf(context),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -67,7 +72,7 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
             const SizedBox(height: 6),
             Text(
               '${widget.report.reportNumber} - ${widget.report.title}',
-              style: AppTextStyles.bodySecondary,
+              style: AppTextStyles.captionOf(context),
             ),
             const SizedBox(height: 16),
 
@@ -92,12 +97,12 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
                             ? Icons.radio_button_checked
                             : Icons.radio_button_off,
                         color: isSelected
-                            ? (isDanger ? AppColors.danger : AppColors.primary)
-                            : AppColors.textSecondary,
+                            ? (isDanger ? dangerColor : primaryColor)
+                            : textSecondary,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
-                      Text(status.label, style: AppTextStyles.label),
+                      Text(status.label, style: AppTextStyles.labelOf(context)),
                     ],
                   ),
                 ),
@@ -116,9 +121,9 @@ class _AdminStatusUpdateSheetState extends State<AdminStatusUpdateSheet> {
                 validator: (v) => AppValidators.validateReason(v, 'penolakan'),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Catatan: Laporan yang ditolak akan langsung hilang dari feed publik dan masuk jadwal arsip 24 jam.',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 11, color: textSecondary),
               ),
             ],
             const SizedBox(height: 20),

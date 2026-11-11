@@ -5,19 +5,22 @@ import 'package:flutter/material.dart';
 import '../services/network_service.dart';
 import '../theme/app_colors.dart';
 
-/// Top connectivity status strip (banner) per PRD & DESIGN specs.
-/// - Offline: Dark Grey background, persistent "Anda sedang offline" text.
-/// - Back Online: Success green background, "Kembali online" text for exactly 1 second, then dismisses.
-class TopConnectivityStrip extends StatefulWidget {
-  const TopConnectivityStrip({super.key, this.onVisibilityChanged});
+/// Bottom connectivity status strip (banner) positioned right between the application layer
+/// and the Android system navigation buttons.
+/// - Offline: Grey background (abu-abu), persistent "Anda sedang offline" text.
+/// - Back Online: Green background (hijau), "Kembali online" text for exactly 1 second, then dismisses.
+class BottomConnectivityStrip extends StatefulWidget {
+  const BottomConnectivityStrip({super.key, this.onVisibilityChanged});
 
   final ValueChanged<bool>? onVisibilityChanged;
 
   @override
-  State<TopConnectivityStrip> createState() => _TopConnectivityStripState();
+  State<BottomConnectivityStrip> createState() => _BottomConnectivityStripState();
 }
 
-class _TopConnectivityStripState extends State<TopConnectivityStrip> {
+typedef TopConnectivityStrip = BottomConnectivityStrip;
+
+class _BottomConnectivityStripState extends State<BottomConnectivityStrip> {
   bool? _wasOnline;
   bool _showOnlineSuccess = false;
   Timer? _onlineDismissTimer;
@@ -72,7 +75,7 @@ class _TopConnectivityStripState extends State<TopConnectivityStrip> {
     }
 
     final Color backgroundColor = isOffline
-        ? const Color(0xFF23272F)
+        ? const Color(0xFF4B5563)
         : AppColors.success;
     final IconData icon = isOffline
         ? Icons.wifi_off_rounded
@@ -86,14 +89,14 @@ class _TopConnectivityStripState extends State<TopConnectivityStrip> {
           opacity: animation,
           child: SizeTransition(
             sizeFactor: animation,
-            alignment: Alignment.topCenter,
+            alignment: Alignment.bottomCenter,
             child: child,
           ),
         );
       },
       child: Container(
         key: ValueKey(isOffline ? 'offline_strip' : 'online_strip'),
-        height: 28,
+        height: 26,
         width: double.infinity,
         color: backgroundColor,
         alignment: Alignment.center,
@@ -102,13 +105,13 @@ class _TopConnectivityStripState extends State<TopConnectivityStrip> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: Colors.white),
+            Icon(icon, size: 13, color: Colors.white),
             const SizedBox(width: 8),
             Text(
               text,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.none,
               ),

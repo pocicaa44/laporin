@@ -13,27 +13,41 @@ class StatusTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final borderSubtle = AppColors.borderSubtleOf(context);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : AppColors.dangerSubtle;
+    final dangerBorder = isDark ? dangerColor.withValues(alpha: 0.3) : const Color(0xFFFECACA);
+    final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
+    final successSubtle = isDark ? AppColors.darkSuccessSubtle : AppColors.successSubtle;
+    final successBorder = isDark ? successColor.withValues(alpha: 0.3) : const Color(0xFFBBF7D0);
+
     if (report.handlingStatus == HandlingStatus.rejected) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.dangerSubtle,
+          color: dangerSubtle,
           borderRadius: AppRadius.borderSm,
-          border: Border.all(color: const Color(0xFFFECACA), width: 1),
+          border: Border.all(color: dangerBorder, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.cancel, color: AppColors.danger, size: 20),
-                SizedBox(width: 8),
+                Icon(Icons.cancel, color: dangerColor, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   'Laporan Ditolak',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.danger,
+                    color: dangerColor,
                   ),
                 ),
               ],
@@ -42,7 +56,7 @@ class StatusTimeline extends StatelessWidget {
             Text(
               report.rejectionReason ??
                   'Laporan belum memenuhi kriteria kelayakan publik.',
-              style: AppTextStyles.body,
+              style: AppTextStyles.bodyOf(context),
             ),
           ],
         ),
@@ -66,14 +80,14 @@ class StatusTimeline extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surfaceColor,
         borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: borderSubtle, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Progres Penanganan', style: AppTextStyles.sectionTitle),
+          Text('Progres Penanganan', style: AppTextStyles.sectionTitleOf(context)),
           const SizedBox(height: 16),
           Row(
             children: List.generate(steps.length, (index) {
@@ -91,8 +105,8 @@ class StatusTimeline extends StatelessWidget {
                             color: index == 0
                                 ? Colors.transparent
                                 : (isPassed
-                                      ? AppColors.primary
-                                      : AppColors.borderSubtle),
+                                      ? primaryColor
+                                      : borderSubtle),
                           ),
                         ),
                         // Circular status node per DESIGN.md Section 5.4
@@ -101,13 +115,13 @@ class StatusTimeline extends StatelessWidget {
                           height: 26,
                           decoration: BoxDecoration(
                             color: isPassed
-                                ? AppColors.primary
-                                : AppColors.surface,
+                                ? primaryColor
+                                : surfaceColor,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isPassed
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? primaryColor
+                                  : borderColor,
                               width: 1.5,
                             ),
                           ),
@@ -125,7 +139,7 @@ class StatusTimeline extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                       color: isPassed
                                           ? Colors.white
-                                          : AppColors.textSecondary,
+                                          : textSecondary,
                                     ),
                                   ),
                           ),
@@ -136,8 +150,8 @@ class StatusTimeline extends StatelessWidget {
                             color: index == steps.length - 1
                                 ? Colors.transparent
                                 : (index < currentStepIndex
-                                      ? AppColors.primary
-                                      : AppColors.borderSubtle),
+                                      ? primaryColor
+                                      : borderSubtle),
                           ),
                         ),
                       ],
@@ -152,8 +166,8 @@ class StatusTimeline extends StatelessWidget {
                             ? FontWeight.bold
                             : FontWeight.w500,
                         color: isPassed
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
+                            ? textPrimary
+                            : textSecondary,
                       ),
                     ),
                   ],
@@ -169,25 +183,25 @@ class StatusTimeline extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.successSubtle,
+                color: successSubtle,
                 borderRadius: AppRadius.button,
-                border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+                border: Border.all(color: successBorder, width: 1),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_circle_outline,
                     size: 16,
-                    color: AppColors.success,
+                    color: successColor,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Penyelesaian: ${report.completionNotes!}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textPrimary,
+                        color: textPrimary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

@@ -40,6 +40,7 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
   }
 
   Future<void> _showPickerBottomSheet(BuildContext context) async {
+    final primaryColor = AppColors.primaryOf(context);
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
@@ -49,23 +50,23 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Pilih Sumber Foto Bukti',
-                style: AppTextStyles.sectionTitle,
+                style: AppTextStyles.sectionTitleOf(context),
               ),
               const SizedBox(height: 12),
               ListTile(
-                leading: const FaIcon(
+                leading: FaIcon(
                   FontAwesomeIcons.camera,
-                  color: AppColors.primary,
+                  color: primaryColor,
                 ),
                 title: const Text('Ambil Foto dari Kamera'),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
-                leading: const FaIcon(
+                leading: FaIcon(
                   FontAwesomeIcons.images,
-                  color: AppColors.primary,
+                  color: primaryColor,
                 ),
                 title: const Text('Pilih dari Galeri Perangkat'),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
@@ -104,11 +105,11 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Foto Bukti Masalah (Maks. 5)',
-              style: AppTextStyles.label,
+              style: AppTextStyles.labelOf(context),
             ),
-            Text('${photos.length}/5 Foto', style: AppTextStyles.caption),
+            Text('${photos.length}/5 Foto', style: AppTextStyles.captionOf(context)),
           ],
         ),
         const SizedBox(height: 8),
@@ -132,6 +133,9 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
   }
 
   Widget _buildAddButton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+
     return InkWell(
       onTap: () => _showPickerBottomSheet(context),
       borderRadius: AppRadius.input,
@@ -139,20 +143,20 @@ class _ReportMediaUploaderState extends State<ReportMediaUploader> {
         width: 90,
         height: 90,
         decoration: BoxDecoration(
-          color: AppColors.primarySubtle,
+          color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle,
           borderRadius: AppRadius.input,
-          border: Border.all(color: AppColors.primary, width: 1),
+          border: Border.all(color: primaryColor, width: 1),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            FaIcon(FontAwesomeIcons.camera, color: AppColors.primary, size: 20),
-            SizedBox(height: 6),
+            FaIcon(FontAwesomeIcons.camera, color: primaryColor, size: 20),
+            const SizedBox(height: 6),
             Text(
               'Tambah',
               style: TextStyle(
                 fontSize: 11,
-                color: AppColors.primary,
+                color: primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -364,5 +364,58 @@ void main() {
         expect(controller.currentUser?.avatarUrl, isNull);
       },
     );
+
+    testWidgets(
+      'EditProfileScreen renders app header and account info card with dark theme colors',
+      (tester) async {
+        final authRepo = AuthRepository();
+        authRepo.setCurrentUserProfileForTesting(
+          const UserProfileModel(
+            id: 'test-user-dark',
+            email: 'user_dark@laporin.id',
+            fullName: 'Dark Mode User',
+            username: 'dark_user',
+            avatarUrl: null,
+            role: UserRole.user,
+          ),
+        );
+
+        final controller = AuthController(authRepository: authRepo);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<AuthController>.value(
+            value: controller,
+            child: MaterialApp(
+              theme: ThemeData.dark(),
+              home: const EditProfileScreen(),
+            ),
+          ),
+        );
+
+        // 1. Verify App Header title 'Edit Profil' uses bright text color
+        final headerTitleFinder = find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Edit Profil'),
+        );
+        expect(headerTitleFinder, findsOneWidget);
+        final headerText = tester.widget<Text>(headerTitleFinder);
+        expect(headerText.style?.color, equals(const Color(0xFFF8FAFC)));
+
+        // 2. Verify 'Informasi Akun' card container uses darkSurface and darkBorder
+        expect(find.text('Informasi Akun'), findsOneWidget);
+        expect(find.text('user_dark@laporin.id'), findsOneWidget);
+        final emailText = tester.widget<Text>(find.text('user_dark@laporin.id'));
+        expect(emailText.style?.color, equals(const Color(0xFFF8FAFC)));
+
+        // 3. Verify card container decoration color is darkSurface
+        final cardContainerFinder = find.ancestor(
+          of: find.text('Informasi Akun'),
+          matching: find.byType(Container),
+        ).first;
+        final cardContainer = tester.widget<Container>(cardContainerFinder);
+        final decoration = cardContainer.decoration as BoxDecoration;
+        expect(decoration.color, equals(const Color(0xFF1E293B)));
+      },
+    );
   });
 }

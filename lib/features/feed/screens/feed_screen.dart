@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/location_service.dart';
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -132,6 +133,7 @@ class _FeedScreenState extends State<FeedScreen> {
     final isOnline = context.isOnline;
     final auth = context.watch<AuthController>();
     final currentUserId = auth.currentUser?.id;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (auth.currentUser?.id != null &&
         controller.currentUserId != auth.currentUser?.id) {
@@ -145,12 +147,12 @@ class _FeedScreenState extends State<FeedScreen> {
       appBar: AppBar(
         leading: const DrawerMenuButton(),
         titleSpacing: 0,
-        title: const Text(
+        title: Text(
           'Laporin',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: isDark ? Colors.white : AppColors.textPrimary,
             letterSpacing: -0.5,
           ),
         ),
@@ -162,8 +164,12 @@ class _FeedScreenState extends State<FeedScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      FeedMapScreen(initialReports: controller.reports),
+                  builder: (_) => FeedMapScreen(
+                    initialReports: controller.reports,
+                    initialUserLocation: controller.userLocation ??
+                        LocationService.instance.lastKnownLatLng,
+                    initialProvinceId: controller.selectedProvinceId,
+                  ),
                 ),
               );
             },
@@ -178,69 +184,106 @@ class _FeedScreenState extends State<FeedScreen> {
       body: Column(
         children: [
           // Search & Sort bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Cari laporan atau lokasi...',
-                      prefixIcon: Icon(Icons.search_rounded, size: 20),
-                      contentPadding: EdgeInsets.symmetric(vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: AppRadius.pill,
-                        borderSide: BorderSide(color: AppColors.border),
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final borderColor =
+                  isDark ? AppColors.darkBorder : AppColors.border;
+              final primaryColor =
+                  isDark ? AppColors.darkPrimary : AppColors.primary;
+              final surfaceColor =
+                  isDark ? AppColors.darkSurface : AppColors.surface;
+              final elevatedColor = isDark
+                  ? AppColors.darkSurfaceElevated
+                  : AppColors.surface;
+              final textColor =
+                  isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+              final hintColor = isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.textSecondary;
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        style: TextStyle(color: textColor, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Cari laporan atau lokasi...',
+                          hintStyle:
+                              TextStyle(color: hintColor, fontSize: 14),
+                          fillColor: elevatedColor,
+                          filled: true,
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: hintColor,
+                          ),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: AppRadius.pill,
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: AppRadius.pill,
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: AppRadius.pill,
+                            borderSide: BorderSide(
+                              color: primaryColor,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        onChanged: (val) => controller.setSearchQuery(val),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppRadius.pill,
-                        borderSide: BorderSide(color: AppColors.border),
+                    ),
+                    const SizedBox(width: 10),
+                    PopupMenuButton<String>(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.input,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: AppRadius.pill,
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 1.5,
+                      color: surfaceColor,
+                      icon: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: AppRadius.input,
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Icon(
+                          Icons.sort_rounded,
+                          size: 20,
+                          color: textColor,
                         ),
                       ),
-                    ),
-                    onChanged: (val) => controller.setSearchQuery(val),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                PopupMenuButton<String>(
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: AppRadius.input,
-                  ),
-                  icon: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: AppRadius.input,
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: const Icon(
-                      Icons.sort_rounded,
-                      size: 20,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  tooltip: 'Urutkan',
-                  initialValue: controller.sortBy,
-                  onSelected: (val) => controller.setSortBy(val),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'newest',
-                      child: Text('Terbaru'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'popular',
-                      child: Text('Terpopuler'),
+                      tooltip: 'Urutkan',
+                      initialValue: controller.sortBy,
+                      onSelected: (val) => controller.setSortBy(val),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'newest',
+                          child: Text(
+                            'Terbaru',
+                            style: TextStyle(color: textColor),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'popular',
+                          child: Text(
+                            'Terpopuler',
+                            style: TextStyle(color: textColor),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
 
           // Scope Menu: "Semua" vs "{Provinsi Terdeteksi}"
@@ -443,45 +486,61 @@ class _FeedScreenState extends State<FeedScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      borderRadius: AppRadius.pill,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final activeColor =
+            isDark ? AppColors.darkPrimary : AppColors.primary;
+        final inactiveBg =
+            isDark ? AppColors.darkSurface : AppColors.surface;
+        final inactiveBorder =
+            isDark ? AppColors.darkBorder : AppColors.border;
+        final inactiveText =
+            isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+        final inactiveIcon =
+            isDark ? AppColors.darkPrimaryLight : AppColors.primary;
+
+        return InkWell(
           borderRadius: AppRadius.pill,
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (leadingWidget != null) ...[
-              leadingWidget,
-              const SizedBox(width: 6),
-            ] else if (icon != null) ...[
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected ? Colors.white : AppColors.primary,
-              ),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: isSelected ? activeColor : inactiveBg,
+              borderRadius: AppRadius.pill,
+              border: Border.all(
+                color: isSelected ? activeColor : inactiveBorder,
+                width: isSelected ? 1.5 : 1.0,
               ),
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (leadingWidget != null) ...[
+                  leadingWidget,
+                  const SizedBox(width: 6),
+                ] else if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 15,
+                    color: isSelected ? Colors.white : inactiveIcon,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? Colors.white : inactiveText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -72,6 +72,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final isOnline = context.isOnline;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = context.watch<AuthController>();
     if (auth.isAdmin) {
       return const AdminNavigationScreen();
@@ -84,15 +85,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       activeIndex = context.watch<NavigationController>().currentIndex;
     } catch (_) {}
 
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final disabledColor = isDark ? AppColors.darkDisabled : AppColors.disabled;
+
     return Container(
-      color: AppColors.background,
+      color: bgColor,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: bgColor,
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: borderColor, width: 1),
             ),
           ),
           child: Scaffold(
@@ -102,10 +109,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               children: _screens,
             ),
             bottomNavigationBar: Container(
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
+              decoration: BoxDecoration(
+                color: surfaceColor,
                 border: Border(
-                  top: BorderSide(color: AppColors.border, width: 1),
+                  top: BorderSide(color: borderColor, width: 1),
                 ),
               ),
               child: SafeArea(
@@ -140,8 +147,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             height: 44,
                             decoration: BoxDecoration(
                               color: isOnline
-                                  ? AppColors.primary
-                                  : AppColors.disabled,
+                                  ? primaryColor
+                                  : disabledColor,
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
@@ -197,7 +204,10 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.textSecondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isSelected
+        ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary);
 
     return InkWell(
       onTap: onTap,

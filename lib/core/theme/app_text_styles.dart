@@ -96,4 +96,35 @@ class AppTextStyles {
     color: AppColors.textSecondary,
     height: 1.50,
   );
+
+  // Dynamic Context-Aware TextStyles for Dual Themes (Light & Dark)
+  static TextStyle h1Of(BuildContext context) =>
+      h1.copyWith(color: AppColors.textPrimaryOf(context));
+
+  static TextStyle h2Of(BuildContext context) =>
+      h2.copyWith(color: AppColors.textPrimaryOf(context));
+
+  static TextStyle h3Of(BuildContext context) =>
+      h3.copyWith(color: AppColors.textPrimaryOf(context));
+
+  static TextStyle bodyOf(BuildContext context) =>
+      bodyRegular.copyWith(color: AppColors.textBodyOf(context));
+
+  static TextStyle bodyMediumOf(BuildContext context) =>
+      bodyMedium.copyWith(color: AppColors.textBodyOf(context));
+
+  static TextStyle bodySecondaryOf(BuildContext context) =>
+      bodySecondary.copyWith(color: AppColors.textSecondaryOf(context));
+
+  static TextStyle captionOf(BuildContext context) =>
+      caption.copyWith(color: AppColors.textMutedOf(context));
+
+  static TextStyle pageTitleOf(BuildContext context) =>
+      pageTitle.copyWith(color: AppColors.textPrimaryOf(context));
+
+  static TextStyle sectionTitleOf(BuildContext context) =>
+      sectionTitle.copyWith(color: AppColors.textPrimaryOf(context));
+
+  static TextStyle labelOf(BuildContext context) =>
+      label.copyWith(color: AppColors.textPrimaryOf(context));
 }

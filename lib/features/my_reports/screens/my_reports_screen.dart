@@ -216,12 +216,17 @@ class _MyReportItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cardBg,
         borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cardBorder),
       ),
       child: InkWell(
         onTap: onTap,
@@ -237,7 +242,7 @@ class _MyReportItem extends StatelessWidget {
                   Text(
                     report.reportNumber,
                     style: AppTextStyles.label.copyWith(
-                      color: AppColors.primary,
+                      color: primaryColor,
                     ),
                   ),
                   HandlingStatusBadge(
@@ -252,14 +257,14 @@ class _MyReportItem extends StatelessWidget {
                 report.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.sectionTitle,
+                style: AppTextStyles.sectionTitleOf(context),
               ),
               const SizedBox(height: 6),
               Text(
                 report.locationAddress,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption,
+                style: AppTextStyles.captionOf(context),
               ),
               const SizedBox(height: 12),
               Row(
@@ -271,7 +276,7 @@ class _MyReportItem extends StatelessWidget {
                   ),
                   Text(
                     report.createdAt.toReportTimeLabel(),
-                    style: AppTextStyles.caption,
+                    style: AppTextStyles.captionOf(context),
                   ),
                 ],
               ),

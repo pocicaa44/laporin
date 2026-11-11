@@ -120,6 +120,13 @@ class CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final textBody = isDark ? AppColors.darkTextBody : const Color(0xFF1F2937);
+    final textSecondary = isDark ? AppColors.darkTextSecondary : const Color(0xFF6B7280);
+    final textMuted = isDark ? AppColors.darkTextMuted : const Color(0xFF9CA3AF);
+    final actionColor = isDark ? AppColors.darkTextSecondary : const Color(0xFF4B5563);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -129,11 +136,11 @@ class CommentTile extends StatelessWidget {
           avatarUrl: comment.authorAvatarUrl,
           radius: isReply ? 14 : 16,
           backgroundColor: comment.isStaff
-              ? AppColors.primary
-              : AppColors.primarySoft,
+              ? primaryColor
+              : (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft),
           foregroundColor: comment.isStaff
               ? Colors.white
-              : AppColors.primaryStrong,
+              : (isDark ? AppColors.darkPrimary : AppColors.primaryStrong),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -146,48 +153,48 @@ class CommentTile extends StatelessWidget {
                 children: [
                   Text(
                     comment.authorName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: Color(0xFF6B7280),
+                      color: textSecondary,
                     ),
                   ),
                   if (replyToAuthor != null &&
                       replyToAuthor!.trim().isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 5),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
                       child: FaIcon(
                         FontAwesomeIcons.caretRight,
                         size: 11,
-                        color: Color(0xFF6B7280),
+                        color: textSecondary,
                       ),
                     ),
                     Text(
                       replyToAuthor!.trim().startsWith('@')
                           ? replyToAuthor!.trim()
                           : '@${replyToAuthor!.trim()}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Color(0xFF6B7280),
+                        color: textSecondary,
                       ),
                     ),
                   ],
                   if (!isReply && isCreator) ...[
-                    const Text(
+                    Text(
                       ' · ',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Color(0xFF9CA3AF),
+                        color: textMuted,
                       ),
                     ),
-                    const Text(
+                    Text(
                       'Pencipta',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
-                        color: Color(0xFF2563EB),
+                        color: primaryColor,
                       ),
                     ),
                   ],
@@ -198,8 +205,8 @@ class CommentTile extends StatelessWidget {
                         horizontal: 6,
                         vertical: 2,
                       ),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
                         borderRadius: AppRadius.pill,
                       ),
                       child: const Text(
@@ -219,10 +226,10 @@ class CommentTile extends StatelessWidget {
               // 2. Body Text (offset ke dalam / kanan dari profil avatar)
               Text(
                 comment.body,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13.5,
                   height: 1.45,
-                  color: Color(0xFF1F2937),
+                  color: textBody,
                 ),
               ),
               const SizedBox(height: 6),
@@ -232,9 +239,9 @@ class CommentTile extends StatelessWidget {
                 children: [
                   Text(
                     comment.createdAt.toShortRelativeTime(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF9CA3AF),
+                      color: textMuted,
                     ),
                   ),
                   if (onReply != null) ...[
@@ -242,8 +249,8 @@ class CommentTile extends StatelessWidget {
                     InkWell(
                       onTap: onReply,
                       borderRadius: AppRadius.borderSm,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 4,
                           vertical: 2,
                         ),
@@ -252,7 +259,7 @@ class CommentTile extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF4B5563),
+                            color: actionColor,
                           ),
                         ),
                       ),
@@ -264,8 +271,8 @@ class CommentTile extends StatelessWidget {
                       key: Key('delete_comment_${comment.id}'),
                       onTap: onDelete,
                       borderRadius: AppRadius.borderSm,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 4,
                           vertical: 2,
                         ),
@@ -274,7 +281,7 @@ class CommentTile extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF4B5563),
+                            color: actionColor,
                           ),
                         ),
                       ),
@@ -317,6 +324,11 @@ class CommentThreadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDark ? AppColors.darkBorderSubtle : AppColors.borderSubtle;
+    final toggleColor = isDark ? AppColors.darkTextSecondary : const Color(0xFF4B5563);
+    final lineColor = isDark ? AppColors.darkBorder : const Color(0xFFD1D5DB);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -339,10 +351,10 @@ class CommentThreadTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (int i = 0; i < thread.replies.length; i++) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Divider(
-                      color: AppColors.borderSubtle,
+                      color: dividerColor,
                       height: 1,
                       thickness: 1,
                     ),
@@ -373,22 +385,22 @@ class CommentThreadTile extends StatelessWidget {
                         Container(
                           width: 20,
                           height: 1.5,
-                          color: const Color(0xFFD1D5DB),
+                          color: lineColor,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Sembunyikan',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF4B5563),
+                            color: toggleColor,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_up_rounded,
                           size: 18,
-                          color: Color(0xFF4B5563),
+                          color: toggleColor,
                         ),
                       ],
                     ),
@@ -415,22 +427,22 @@ class CommentThreadTile extends StatelessWidget {
                     Container(
                       width: 20,
                       height: 1.5,
-                      color: const Color(0xFFD1D5DB),
+                      color: lineColor,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Lihat ${thread.replies.length} balasan',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF4B5563),
+                        color: toggleColor,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 18,
-                      color: Color(0xFF4B5563),
+                      color: toggleColor,
                     ),
                   ],
                 ),

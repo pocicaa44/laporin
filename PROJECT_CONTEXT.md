@@ -48,7 +48,8 @@ laporin/
 │   │   ├── navigation/         # MainNavigationScreen, AdminNavigationScreen, AppDrawer
 │   │   ├── notifications/      # NotificationListScreen, NotificationBadge
 │   │   ├── profile/            # ProfileScreen, EditProfile, MyReportsScreen
-│   │   └── report_detail/      # ReportDetailScreen, CommentThread, ResolutionProof, DeleteReportDialog
+│   │   ├── report_detail/      # ReportDetailScreen, CommentThread, ResolutionProof, DeleteReportDialog
+│   │   └── settings/           # SettingsScreen, SettingsController (Theme mode, Notification toggles, About App)
 │   └── main.dart               # App entrypoint, dependency initialization, MultiProvider setup
 ├── supabase/
 │   └── migrations/             # SQL migrations, RLS policies, RPC functions (dual-party deletion, immutability)
@@ -87,8 +88,9 @@ Laporin adheres to a clean, layered architectural pattern:
 - **Dual-Party Deletion:** `ReportRepository.softDeleteReport()`, `DeleteReportDialog`, and `_AdminReportCard._buildDeleteButton()`.
 - **Province-Based Admin Filtering:** `AdminProvinceFilterDropdown` (`lib/features/admin/widgets/admin_province_filter_dropdown.dart`), `AdminReportController.setProvinceFilter()`, and `ReportRepository.getAdminReports(provinceId: ...)`.
 - **Voting & Invariants:** Upvote and downvote counters with downvote percentage thresholds in `lib/data/models/report_model.dart` and `lib/features/feed/widgets/report_card.dart`.
-- **Public Discussions:** Discussion thread toggle (`isDiscussionActive`), nested comment replies in `lib/features/report_detail/`.
+- **Public Discussions:** Discussion thread toggle (`isDiscussionActive`), nested comment replies, interactive top-center success toast (`"komentar diposting"`, 3s duration, slide down/up animation, universal transparent grey via `AppToast`) in `lib/features/report_detail/`.
 - **Resolution Proof:** Mandatory image proof and resolution notes required when marking reports as `completed` via `AdminResolveSheet`.
+- **Application Settings & Dark Mode:** `lib/features/settings/` (`SettingsScreen`, `SettingsController`), dynamic ThemeMode toggles (System, Light, Dark) persisted via `SharedPreferences`, role-aware notification switches (Citizen: pengumuman masuk, perubahan status, dukungan warga, komentar; Admin: laporan masuk, pengumuman, balasan), bottom connectivity banner (`BottomConnectivityStrip` positioned between app layer and Android navigation bar), and centralized About Application dialog.
 
 ---
 
@@ -125,7 +127,7 @@ Laporin adheres to a clean, layered architectural pattern:
 ## 10. Development Conventions
 - **Code Style:** Effective Dart rules via `analysis_options.yaml`. Strict linting with zero analyzer errors or warnings.
 - **Error Handling:** Graceful fallback when offline or Supabase connection is unavailable.
-- **UI Architecture:** Design tokens organized in `lib/core/theme/` (`AppColors`, `AppRadius`, `AppTypography`).
+- **UI Architecture & Theme System:** Design tokens organized in `lib/core/theme/` (`AppColors`, `AppRadius`, `AppTextStyles`, `AppTheme`). Supports comprehensive dual-theme (Light & Dark mode) conforming to Flat UI principles with WCAG 2.2 AA contrast compliance across all component layers (cards, pills/badges, navigation bars, appbars, typography headings, form inputs, and buttons) utilizing semantic colors (`primary`, `secondary`, `tertiary`, `warning`, `success`, `danger`).
 - **Testing Mandate:** Every new feature, status rule, and state transition must be validated with comprehensive unit and widget tests in `test/`.
 
 ---

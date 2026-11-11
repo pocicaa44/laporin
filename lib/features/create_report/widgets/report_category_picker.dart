@@ -26,30 +26,35 @@ class ReportCategoryPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Kategori Masalah *', style: AppTextStyles.label),
+        Text('Kategori Masalah *', style: AppTextStyles.labelOf(context)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: surfaceColor,
             borderRadius: AppRadius.input,
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: borderColor, width: 1),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: selectedCategory,
               isExpanded: true,
-              icon: const Icon(
+              dropdownColor: surfaceColor,
+              icon: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: AppColors.textSecondary,
+                color: textSecondary,
               ),
               items: availableCategories.map((category) {
                 return DropdownMenuItem<String>(
                   value: category,
-                  child: Text(category, style: AppTextStyles.body),
+                  child: Text(category, style: AppTextStyles.bodyOf(context)),
                 );
               }).toList(),
               onChanged: (val) {

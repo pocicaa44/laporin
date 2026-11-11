@@ -30,12 +30,26 @@ class ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.border;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final chipBg =
+        isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle;
+    final chipBorder =
+        isDark ? AppColors.darkBorder : const Color(0xFFBFDBFE);
+    final chipText =
+        isDark ? AppColors.darkPrimaryLight : AppColors.primary;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cardBg,
         borderRadius: AppRadius.card, // 16px rounded
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: cardBorder, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,10 +95,10 @@ class ReportCard extends StatelessWidget {
                               children: [
                                 Text(
                                   report.displayAuthorUsername,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
+                                    color: textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -96,9 +110,9 @@ class ReportCard extends StatelessWidget {
                                         report.authorUsername!.toLowerCase())
                                   Text(
                                     report.authorName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.textSecondary,
+                                      color: textSecondary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -127,19 +141,19 @@ class ReportCard extends StatelessWidget {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primarySubtle,
+                                    color: chipBg,
                                     borderRadius: AppRadius.pill,
                                     border: Border.all(
-                                      color: const Color(0xFFBFDBFE),
+                                      color: chipBorder,
                                       width: 1,
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Baru',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
+                                      color: chipText,
                                     ),
                                   ),
                                 );
@@ -147,7 +161,7 @@ class ReportCard extends StatelessWidget {
 
                               return Text(
                                 timeLabel,
-                                style: AppTextStyles.caption,
+                                style: AppTextStyles.captionOf(context),
                               );
                             },
                           ),
@@ -165,19 +179,19 @@ class ReportCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primarySubtle,
+                              color: chipBg,
                               borderRadius: AppRadius.pill,
                               border: Border.all(
-                                color: const Color(0xFFBFDBFE),
+                                color: chipBorder,
                                 width: 1,
                               ),
                             ),
                             child: Text(
                               report.category,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: chipText,
                               ),
                             ),
                           ),
@@ -195,17 +209,17 @@ class ReportCard extends StatelessWidget {
                         report.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.sectionTitle,
+                        style: AppTextStyles.sectionTitleOf(context),
                       ),
                       const SizedBox(height: 8),
 
                       // Location metadata
                       Row(
                         children: [
-                          const FaIcon(
+                          FaIcon(
                             FontAwesomeIcons.locationDot,
                             size: 13,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -213,7 +227,7 @@ class ReportCard extends StatelessWidget {
                               report.locationAddress,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.caption,
+                              style: AppTextStyles.captionOf(context),
                             ),
                           ),
                         ],
@@ -225,9 +239,12 @@ class ReportCard extends StatelessWidget {
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(
+              height: 1,
+              color: isDark ? AppColors.darkBorder : AppColors.borderSubtle,
+            ),
           ),
 
           // Independent interactions row: Upvote, Downvote, Comments
@@ -247,7 +264,8 @@ class ReportCard extends StatelessWidget {
                       icon: FontAwesomeIcons.thumbsUp,
                       count: report.upvotesCount,
                       isActive: report.currentUserVote == 'up',
-                      activeColor: AppColors.primary,
+                      activeColor:
+                          isDark ? AppColors.darkPrimary : AppColors.primary,
                       isEnabled: !isCompleted,
                       onTap: isCompleted ? null : onUpvote,
                     ),
@@ -256,7 +274,8 @@ class ReportCard extends StatelessWidget {
                       icon: FontAwesomeIcons.thumbsDown,
                       count: report.downvotesCount,
                       isActive: report.currentUserVote == 'down',
-                      activeColor: AppColors.danger,
+                      activeColor:
+                          isDark ? AppColors.darkDanger : AppColors.danger,
                       isEnabled: !isCompleted,
                       onTap: isCompleted ? null : onDownvote,
                     ),
@@ -274,15 +293,15 @@ class ReportCard extends StatelessWidget {
                           opacity: report.isDiscussionActive ? 1.0 : 0.4,
                           child: Row(
                             children: [
-                              const FaIcon(
+                              FaIcon(
                                 FontAwesomeIcons.comment,
                                 size: 14,
-                                color: AppColors.textSecondary,
+                                color: textSecondary,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 '${report.commentsCount} komentar',
-                                style: AppTextStyles.caption.copyWith(
+                                style: AppTextStyles.captionOf(context).copyWith(
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -330,9 +349,12 @@ class _VoteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final effectiveColor = !isEnabled
-        ? AppColors.textSecondary.withValues(alpha: 0.5)
-        : (isActive ? activeColor : AppColors.textSecondary);
+        ? inactiveColor.withValues(alpha: 0.5)
+        : (isActive ? activeColor : inactiveColor);
 
     return Opacity(
       opacity: isEnabled ? 1.0 : 0.4,

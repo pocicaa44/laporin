@@ -209,7 +209,7 @@ void main() {
     );
 
     testWidgets(
-      'Top connectivity banner is at top of screen on SplashScreen (without AppBar)',
+      'Bottom connectivity banner is at bottom of screen on SplashScreen (without AppBar)',
       (tester) async {
         networkService.updateStatusForTesting(isOnline: false);
 
@@ -221,11 +221,13 @@ void main() {
         expect(find.byType(SplashScreen), findsOneWidget);
         expect(find.byType(AppBar), findsNothing);
 
-        final bannerFinder = find.byType(TopConnectivityStrip);
+        final bannerFinder = find.byType(BottomConnectivityStrip);
         expect(bannerFinder, findsOneWidget);
         final bannerRect = tester.getRect(bannerFinder);
+        final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
-        expect(bannerRect.top, lessThan(kToolbarHeight));
+        expect(bannerRect.bottom, closeTo(screenHeight, 1.0));
+        expect(bannerRect.height, equals(26.0));
       },
     );
   });
@@ -295,7 +297,7 @@ void main() {
     );
 
     testWidgets(
-      'Top connectivity banner is positioned below the AppBar on authenticated screens',
+      'Bottom connectivity banner is positioned at bottom of screen on authenticated screens',
       (tester) async {
         networkService.updateStatusForTesting(isOnline: false);
 
@@ -308,16 +310,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final appBarFinder = find.byType(AppBar);
-        expect(appBarFinder, findsOneWidget);
-        final appBarRect = tester.getRect(appBarFinder);
-
-        final bannerFinder = find.byType(TopConnectivityStrip);
+        final bannerFinder = find.byType(BottomConnectivityStrip);
         expect(bannerFinder, findsOneWidget);
         final bannerRect = tester.getRect(bannerFinder);
+        final screenHeight = tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
-        // Verify banner is positioned at the bottom edge of AppBar
-        expect(bannerRect.top, greaterThanOrEqualTo(appBarRect.bottom - 1.0));
+        // Verify thin banner (height 26) is positioned at the bottom of the screen
+        expect(bannerRect.bottom, closeTo(screenHeight, 1.0));
+        expect(bannerRect.height, equals(26.0));
       },
     );
 

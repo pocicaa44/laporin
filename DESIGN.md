@@ -2,9 +2,9 @@
 
 > **Dokumen:** `DESIGN.md`  
 > **Produk:** Laporin — Platform Pelaporan Masalah Fasilitas & Lingkungan Publik  
-> **Arah Desain:** Modern, Rounded & Flat UI Design (Zero Drop Shadow, Crisp Hairline Borders)  
+> **Arah Desain:** Modern, Rounded & Flat UI Design (Zero Drop Shadow, Crisp Hairline Borders, Adaptive Light & Dark Mode)  
 > **Platform Utama:** Mobile (Android & iOS) dan Web Admin Dashboard  
-> **Status:** Spesifikasi resmi UI/UX — panduan standar desain antarmuka modern dengan komponen rounded elegan, tampilan Flat UI murni (tanpa drop shadow / 0 elevation), garis tepi tegas (crisp hairline borders), dan tata letak yang bersih, intuitif, serta aksesibel.
+> **Status:** Spesifikasi resmi UI/UX — panduan standar desain antarmuka modern dengan komponen rounded elegan, tampilan Flat UI murni (tanpa drop shadow / 0 elevation), garis tepi tegas (crisp hairline borders), dukungan tema adaptif ganda (Mode Terang & Mode Gelap), serta tata letak yang bersih, intuitif, dan aksesibel.
 
 ---
 
@@ -12,7 +12,7 @@
 
 Laporin dirancang sebagai platform pelaporan publik yang menjembatani warga dengan pengelola fasilitas publik dan pemerintah daerah. Aplikasi ini menggabungkan **keandalan sistem pelaporan formal** dengan **pengalaman pengguna modern yang ramah, hangat, dan menyenangkan** (*approachable civic-tech*).
 
-Filosofi desain Laporin berakar pada 5 pilar utama:
+Filosofi desain Laporin berakar pada 6 pilar utama:
 
 1. **Modern, Rounded & Human-Centric:**
    - Menggunakan kurvatura sudut yang lembut dan proporsional (*rounded corners* mulai dari 8px, 12px, 16px hingga pill/stadium 999px).
@@ -22,15 +22,18 @@ Filosofi desain Laporin berakar pada 5 pilar utama:
    - Informasi disajikan dalam kartu-kartu konten terisolasi rapi dengan kontras teks tajam dan tipografi yang nyaman dibaca.
 3. **Flat UI Design & Garis Tepi Tegas (Zero Drop Shadow & Crisp Hairline Borders):**
    - Mengadopsi prinsip Flat UI murni tanpa drop shadow atau elevasi blur (`elevation: 0`, `boxShadow: []`).
-   - Pemisahan visual antar elemen dibangun melalui kontras permukaan (`#FFFFFF` terhadap kanvas latar `#F8FAFC`) dan garis tepi mikro tegas (*hairline borders* 1 px `#E2E8F0`).
+   - Pemisahan visual antar elemen dibangun melalui kontras permukaan (`#FFFFFF` terhadap kanvas latar `#F8FAFC` pada mode terang, serta `#1E293B` terhadap `#0B1120` pada mode gelap) dan garis tepi mikro tegas (*crisp hairline borders* 1 px solid).
    - Memberikan tampilan yang sangat bersih, modern, tajam, dan performan tanpa distorsi bayangan.
 4. **Berbasis Bukti Nyata & Konteks Geospasial:**
    - Dokumentasi foto/video bukti, peta lokasi interaktif, dan riwayat status penanganan transparan merupakan inti dari setiap layar.
    - Peta dan visual media disajikan dalam bingkai melengkung modern (*rounded media containers*).
 5. **Aksesibilitas & Keterbacaan Universal (WCAG 2.2 AA Compliance):**
-   - Rasio kontras warna tinggi di atas 4.5:1 untuk teks biasa dan 3:1 untuk teks besar serta komponen UI interaktif.
+   - Rasio kontras warna tinggi di atas 4.5:1 untuk teks biasa dan 3:1 untuk teks besar serta komponen UI interaktif baik pada Mode Terang maupun Mode Gelap.
    - Status penanganan tidak pernah hanya diwakili oleh warna, melainkan selalu dilengkapi teks semantik dan ikonografi yang deskriptif.
    - Target sentuh minimum 48x48 dp pada seluruh tombol dan kontrol interaktif.
+6. **Dukungan Adaptif Mode Gelap & Terang (Adaptive Dual-Theme Experience):**
+   - Menyediakan pengalaman visual yang konsisten dan nyaman di mata pengguna kapan pun aplikasi digunakan.
+   - Mode Gelap dirancang menggunakan palet Slate-Dark yang elegan, mengeliminasi silau cahaya saat malam hari tanpa mengurangi kejelasan garis batas (hairline borders), kurvatura komponen, maupun hierarki informasi.
 
 ---
 
@@ -82,13 +85,15 @@ Sistem kurvatura sudut dirancang konsisten menggunakan skala modular yang harmon
 
 ### 3.2 Sistem Flat UI & Garis Tepi Bersih (Zero Drop Shadow Design)
 
-Seluruh komponen antarmuka menganut prinsip **Flat UI Design** yang konsisten: meniadakan seluruh *drop shadow*, *elevation shadow*, dan *glow shadow* (`elevation: 0`). Struktur spasial dan hierarki visual dipertegas menggunakan **crisp hairline borders (1 px solid #E2E8F0)** serta kontras permukaan yang bersih (*surface contrast*):
+Seluruh komponen antarmuka menganut prinsip **Flat UI Design** yang konsisten pada **Mode Terang maupun Mode Gelap**: meniadakan seluruh *drop shadow*, *elevation shadow*, dan *glow shadow* (`elevation: 0`). Struktur spasial dan hierarki visual dipertegas menggunakan **crisp hairline borders (1 px solid)** serta kontras permukaan yang bersih (*surface contrast*):
+- **Mode Terang:** Kontras permukaan `#FFFFFF` (Surface) terhadap kanvas `#F8FAFC` (Background) dengan garis batas 1 px solid `#E2E8F0` (Slate 200).
+- **Mode Gelap:** Kontras permukaan `#1E293B` (Slate 800) terhadap kanvas `#0B1120` (Slate 950) dengan garis batas 1 px solid `#334155` (Slate 700).
 
 ```dart
 class AppShadows {
   AppShadows._();
 
-  /// Flat UI: No drop shadow
+  /// Flat UI: No drop shadow (Berlaku untuk Light & Dark Mode)
   static const List<BoxShadow> none = [];
 
   /// Flat UI: Card tanpa drop shadow
@@ -107,35 +112,59 @@ class AppShadows {
 
 ---
 
-### 3.3 Palet Warna Fungsional & Semantik
+### 3.3 Palet Warna Fungsional & Semantik (Light & Dark Mode)
 
-Palet warna mempertahankan identitas profesional yang dapat dipercaya, dipadukan dengan warna latar *soft pastel* untuk chip dan badge agar antarmuka terasa segar dan ramah:
+Palet warna mempertahankan identitas profesional yang dapat dipercaya, dipadukan dengan kontras permukaan terukur untuk chip dan badge agar antarmuka terasa segar, ramah, dan bebas silau di kedua mode tampilan:
 
-| Kategori Token | Token | Kode Hex | Peran & Penggunaan |
-| :--- | :--- | :--- | :--- |
-| **Brand Primary** | `color.primary` | `#2563EB` | Warna identitas utama, tombol aksi submit, link aktif, border fokus formulir. |
-| | `color.primary-dark` | `#1D4ED8` | State hover/pressed pada tombol utama. |
-| | `color.primary-light` | `#3B82F6` | Aksen sekunder, gradien halus, indikator progres aktif. |
-| | `color.primary-subtle` | `#EFF6FF` | Latar pill chip terpilih, latar belakang seleksi aktif. |
-| **Netral & Teks** | `color.text-title` | `#0F172A` | Judul layar utama, heading kartu laporan, label field input (Slate 900). |
-| | `color.text-body` | `#334155` | Teks isi laporan, isi komentar, pesan panduan (Slate 700). |
-| | `color.text-muted` | `#64748B` | Waktu relatif, caption lokasi, placeholder text (Slate 500). |
-| | `color.border` | `#E2E8F0` | Garis pembatas kartu, separator list, border default input (Slate 200). |
-| | `color.border-subtle` | `#F1F5F9` | Garis pemisah internal antar elemen sekunder (Slate 100). |
-| | `color.surface` | `#FFFFFF` | Latar kartu laporan, container dialog, permukaan modal, navbar. |
-| | `color.background` | `#F8FAFC` | Latar belakang seluruh layar aplikasi (Slate 50). |
-| **Status Semantik** | `color.success` | `#16A34A` | Status "Selesai", verifikasi disetujui, badge sukses (Emerald 600). |
-| | `color.success-subtle` | `#DCFCE7` | Latar badge pill status selesai (Emerald 100). |
-| | `color.success-text` | `#15803D` | Teks badge status selesai (Emerald 700). |
-| | `color.warning` | `#D97706` | Status "Dalam Penanganan", laporan dalam antrean review (Amber 600). |
-| | `color.warning-subtle` | `#FEF3C7` | Latar badge pill status dalam penanganan (Amber 100). |
-| | `color.warning-text` | `#B45309` | Teks badge status dalam penanganan (Amber 700). |
-| | `color.danger` | `#DC2626` | Status "Ditolak/Dibatalkan", tombol aksi destruktif, alert validasi error (Red 600). |
-| | `color.danger-subtle` | `#FEE2E2` | Latar badge pill status ditolak/dibatalkan (Red 100). |
-| | `color.danger-text` | `#B91C1C` | Teks badge status ditolak/dibatalkan (Red 700). |
-| | `color.info` | `#0284C7` | Status "Baru" / "Diterima", pengumuman resmi administrator (Sky 600). |
-| | `color.info-subtle` | `#E0F2FE` | Latar badge pill status baru/info (Sky 100). |
-| | `color.info-text` | `#0369A1` | Teks badge status baru/info (Sky 700). |
+| Kategori Token | Token | Mode Terang (Light) | Mode Gelap (Dark) | Peran & Penggunaan |
+| :--- | :--- | :---: | :---: | :--- |
+| **Brand Primary** | `color.primary` | `#2563EB` *(Blue 600)* | `#3B82F6` *(Blue 500)* | Warna identitas utama, tombol aksi submit, link aktif, border fokus formulir. Dibuat sedikit lebih cerah pada mode gelap untuk kontras WCAG > 5.5:1. |
+| | `color.primary-dark` | `#1D4ED8` *(Blue 700)* | `#2563EB` *(Blue 600)* | State hover/pressed pada tombol utama. |
+| | `color.primary-light` | `#3B82F6` *(Blue 500)* | `#60A5FA` *(Blue 400)* | Aksen sekunder, indikator progres aktif, fokus ring. |
+| | `color.primary-subtle` | `#EFF6FF` *(Blue 50)* | `#1E3A8A` / `0.18 Primary` | Latar pill chip terpilih, latar belakang seleksi aktif. |
+| **Netral, Teks & Kanvas** | `color.text-title` | `#0F172A` *(Slate 900)* | `#F8FAFC` *(Slate 50)* | Judul layar utama, heading kartu laporan, label field input. |
+| | `color.text-body` | `#334155` *(Slate 700)* | `#CBD5E1` *(Slate 300)* | Teks isi laporan, isi komentar, pesan panduan. |
+| | `color.text-muted` | `#64748B` *(Slate 500)* | `#94A3B8` *(Slate 400)* | Waktu relatif, caption lokasi, placeholder text, ikon sekunder. |
+| | `color.border` | `#E2E8F0` *(Slate 200)* | `#334155` *(Slate 700)* | Garis pembatas kartu, separator list, border default input (1px hairline). |
+| | `color.border-subtle` | `#F1F5F9` *(Slate 100)* | `#1E293B` *(Slate 800)* | Garis pemisah internal antar elemen sekunder. |
+| | `color.surface` | `#FFFFFF` *(White)* | `#1E293B` *(Slate 800)* | Latar kartu laporan, container dialog, permukaan modal, navbar, appbar. |
+| | `color.surface-elevated` | `#F8FAFC` *(Slate 50)* | `#0F172A` *(Slate 900)* | Latar dalam input field, inner container, media uploader box. |
+| | `color.background` | `#F8FAFC` *(Slate 50)* | `#0B1120` *(Slate 950)* | Latar belakang seluruh kanvas layar aplikasi (Scaffold). |
+| **Status Semantik** | `color.success` | `#16A34A` *(Emerald 600)* | `#22C55E` *(Emerald 500)* | Status "Selesai", verifikasi disetujui, badge sukses. |
+| | `color.success-subtle` | `#DCFCE7` *(Emerald 100)* | `#064E3B` / `0.18 Emerald` | Latar badge pill status selesai. |
+| | `color.success-text` | `#15803D` *(Emerald 700)* | `#86EFAC` *(Emerald 300)* | Teks badge status selesai. |
+| | `color.warning` | `#D97706` *(Amber 600)* | `#F59E0B` *(Amber 500)* | Status "Dalam Penanganan", laporan dalam antrean review. |
+| | `color.warning-subtle` | `#FEF3C7` *(Amber 100)* | `#78350F` / `0.18 Amber` | Latar badge pill status dalam penanganan. |
+| | `color.warning-text` | `#B45309` *(Amber 700)* | `#FDE68A` *(Amber 200)* | Teks badge status dalam penanganan. |
+| | `color.danger` | `#DC2626` *(Red 600)* | `#EF4444` *(Red 500)* | Status "Ditolak/Dibatalkan", tombol aksi destruktif, alert validasi error. |
+| | `color.danger-subtle` | `#FEE2E2` *(Red 100)* | `#7F1D1D` / `0.18 Red` | Latar badge pill status ditolak/dibatalkan. |
+| | `color.danger-text` | `#B91C1C` *(Red 700)* | `#FCA5A5` *(Red 300)* | Teks badge status ditolak/dibatalkan. |
+| | `color.info` | `#0284C7` *(Sky 600)* | `#38BDF8` *(Sky 400)* | Status "Baru" / "Diterima", pengumuman resmi administrator. |
+| | `color.info-subtle` | `#E0F2FE` *(Sky 100)* | `#0C4A6E` / `0.18 Sky` | Latar badge pill status baru/info. |
+| | `color.info-text` | `#0369A1` *(Sky 700)* | `#BAE6FD` *(Sky 200)* | Teks badge status baru/info. |
+
+---
+
+### 3.3.1 Arsitektur & Spesifikasi Mode Gelap (Dark Mode Architecture & Luminance Layering)
+
+Mode Gelap pada Laporin didesain dengan teliti untuk kenyamanan visual di lingkungan rendah cahaya tanpa mengorbankan ketegasan estetika Flat UI dan komponen rounded:
+
+1. **Hierarki Luminansi Slate (Luminance Layering):**
+   - Menghindari penggunaan warna hitam murni (`#000000`) yang menyebabkan mata cepat lelah dan menimbulkan kontras tajam tak alami (*halation effect*).
+   - Menggunakan sistem pelapisan Slate bertingkat:
+     - **Tingkat 0 (Kanvas Scaffold / Background):** `#0B1120` (Slate 950) — dasar paling dalam.
+     - **Tingkat 1 (Kartu Konten & Modal / Surface):** `#1E293B` (Slate 800) — permukaan kartu, dialog, dan sheet yang tampak terangkat secara visual berkat perbedaan warna netral.
+     - **Tingkat 2 (Kotak Input & Inner Containers):** `#0F172A` (Slate 900) — ceruk input form dan container sekunder.
+     - **Tingkat 3 (Crisp Hairline Borders):** `#334155` (Slate 700) — batas tepi mikro 1 px tegas yang membingkai seluruh komponen tanpa silau.
+2. **Kepatuhan Aksesibilitas WCAG 2.2 AA:**
+   - **Teks Judul (`#F8FAFC`):** Rasio kontras **13.8:1** di atas latar `#1E293B` (standar AA minimal 4.5:1).
+   - **Teks Tubuh (`#CBD5E1`):** Rasio kontras **8.9:1**.
+   - **Teks Muted/Keterangan (`#94A3B8`):** Rasio kontras **4.8:1**.
+   - **Brand Primary (`#3B82F6`):** Rasio kontras **5.2:1** terhadap latar kartu gelap.
+3. **Formula Badge Status Semantik Terbalik (Inverted Tinted Pills):**
+   - Latar belakang badge menggunakan warna status gelap dengan opasitas 18% (`color.withValues(alpha: 0.18)` atau tingkat 900).
+   - Border badge menggunakan warna semantik solid tingkat 600/700 selebar 1 px.
+   - Teks badge menggunakan warna pastel terang tingkat 200/300 yang menjamin keterbacaan instan dan kontras tinggi.
 
 ---
 
@@ -171,34 +200,34 @@ Menggunakan skala modular berbasis 4 px / 8 px untuk konsistensi ritme tata leta
 
 ### 4.1 Tombol Modern (`AppButton`)
 
-Tombol dirancang ergonomis dengan sudut membulat 12 px (`AppRadius.md`) atau bentuk pill penuh (`StadiumBorder`) untuk tombol floating:
+Tombol dirancang ergonomis dengan sudut membulat 12 px (`AppRadius.md`) atau bentuk pill penuh (`StadiumBorder`) untuk tombol floating, dengan adaptasi warna presisi pada kedua mode tampilan:
 
 1. **Primary Button:**
    - **Bentuk:** Rounded rectangle dengan sudut `12 px` (`BorderRadius.circular(12)`).
-   - **Latar:** Solid `color.primary` (`#2563EB`).
+   - **Latar:** Solid `color.primary` (`#2563EB` pada Light Mode, `#3B82F6` pada Dark Mode).
    - **Teks:** Putih bersih (`#FFFFFF`), `type.body-medium` (Font Weight 600).
-   - **Elevasi & Shadow:** Flat UI (`elevation: 0`, tanpa drop shadow).
+   - **Elevasi & Shadow:** Flat UI (`elevation: 0`, tanpa drop shadow di kedua mode).
    - **Target Sentuh:** Tinggi 48 px untuk mobile, padding horizontal 20 px.
-   - **State Tekan/Hover:** Transisi warna halus ke `#1D4ED8`.
+   - **State Tekan/Hover:** Transisi warna halus ke `#1D4ED8` (Light) atau `#2563EB` (Dark).
 2. **Secondary / Outlined Button:**
    - **Bentuk:** Rounded rectangle `12 px`.
-   - **Latar:** `#FFFFFF` murni.
-   - **Border:** `1.5 px solid #E2E8F0` (berubah menjadi `color.primary` saat hover/fokus).
-   - **Teks:** `#0F172A` (SemiBold).
+   - **Latar:** `#FFFFFF` (Light) atau `#1E293B` (Dark).
+   - **Border:** `1.5 px solid #E2E8F0` (Light) atau `1.5 px solid #334155` (Dark), berubah menjadi `color.primary` saat hover/fokus.
+   - **Teks:** `#0F172A` (Light) atau `#F8FAFC` (Dark) dengan Font Weight 600.
    - **Elevasi:** Flat UI (`elevation: 0`, tanpa drop shadow).
 3. **Pill Action Button:**
    - **Bentuk:** Stadium Border (`BorderRadius.circular(999)`).
    - Digunakan untuk tombol cepat seperti "Lihat di Peta", "Filter", atau Floating Action Button.
 4. **Destructive Button:**
    - **Bentuk:** Rounded rectangle `12 px`.
-   - **Latar:** `#DC2626` (Solid Danger) dengan teks putih, atau latar `#FEE2E2` dengan teks `#B91C1C`.
+   - **Latar:** Solid Danger (`#DC2626` / `#EF4444`) dengan teks putih, atau varian lembut berlatar `#FEE2E2` dengan teks `#B91C1C` (Light) / `#7F1D1D` dengan teks `#FCA5A5` (Dark).
 
 ```dart
-// Contoh Implementasi AppButton di Flutter:
+// Contoh Implementasi AppButton adaptif di Flutter:
 ElevatedButton(
   style: ElevatedButton.styleFrom(
     elevation: 0,
-    backgroundColor: AppColors.primary,
+    backgroundColor: isDark ? const Color(0xFF3B82F6) : AppColors.primary,
     foregroundColor: Colors.white,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12), // Modern rounded corner
@@ -214,23 +243,26 @@ ElevatedButton(
 
 ### 4.2 Formulir & Input Data (Rounded Form Controls)
 
-Formulir dirancang agar pengguna merasa nyaman, jelas, dan percaya diri saat menginput data laporan:
+Formulir dirancang agar pengguna merasa nyaman, jelas, dan percaya diri saat menginput data laporan di kedua kondisi pencahayaan:
 
 1. **Text Field & Multi-Line Area:**
    - **Bentuk:** Rounded rectangle dengan sudut `12 px` (`BorderRadius.circular(12)`).
-   - **Latar Belakang:** `#FFFFFF` (atau `#F8FAFC` dengan transisi ke putih saat fokus).
-   - **Border Default:** `1 px solid #CBD5E1`.
-   - **Border Fokus:** `1.5 px solid #2563EB` dengan soft ambient glow (`0 0 0 3px rgba(37,99,235,0.12)`).
-   - **Border Error:** `1.5 px solid #DC2626` dengan pesan error berwarna merah di bawah field.
-   - **Label Field:** Diletakkan rapi di atas kotak input dengan teks `type.label` berwarna `#0F172A` dan tanda bintang merah `*` untuk kolom wajib.
+   - **Latar Belakang:**
+     - *Light Mode:* `#FFFFFF` murni (atau `#F8FAFC` dengan transisi ke putih saat fokus).
+     - *Dark Mode:* `#0F172A` (Slate 900) ceruk kontras terhadap kartu `#1E293B`.
+   - **Border Default:** `1 px solid #CBD5E1` (Light) atau `1 px solid #334155` (Dark).
+   - **Border Fokus:** `1.5 px solid #2563EB` (Light) atau `1.5 px solid #3B82F6` (Dark) dengan soft ambient ring.
+   - **Border Error:** `1.5 px solid #DC2626` (Light) atau `1.5 px solid #EF4444` (Dark) dengan pesan error di bawah field.
+   - **Label Field:** Diletakkan rapi di atas kotak input dengan teks `type.label` berwarna `#0F172A` (Light) atau `#F8FAFC` (Dark), serta tanda bintang merah `*` untuk kolom wajib.
+   - **Warna Teks & Placeholder:** Teks input `#0F172A` (Light) / `#F8FAFC` (Dark); placeholder `#64748B` (Light) / `#94A3B8` (Dark).
    - **Padding Internal:** `EdgeInsets.symmetric(horizontal: 16, vertical: 14)`.
 2. **Dropdown Selection:**
-   - Kotak rounded `12 px` dengan ikon chevron yang halus dan menu popup melayang beradius `12 px` + soft shadow.
+   - Kotak rounded `12 px` dengan chevron halus dan popup menu melayang beradius `12 px` berlatar `#FFFFFF` (Light) atau `#1E293B` (Dark) dengan hairline border 1 px.
 3. **Map Location Picker Container:**
    - Kontainer peta mini dengan sudut melengkung `16 px` (`BorderRadius.circular(16)`), di-clip menggunakan `ClipRRect`.
-   - Dilengkapi hairline border `1 px solid #E2E8F0`, pin lokasi modern, dan tombol pill rounded "Ubah Titik Lokasi".
+   - Dilengkapi hairline border `1 px solid #E2E8F0` (Light) atau `1 px solid #334155` (Dark), pin lokasi modern, dan tombol pill rounded "Ubah Titik Lokasi".
 4. **Media Uploader Container:**
-   - Kotak uploader foto/video beradius `16 px` dengan garis tepi putus-putus (*dashed border*) bertekstur halus dan latar `#F8FAFC`.
+   - Kotak uploader foto/video beradius `16 px` dengan garis tepi putus-putus (*dashed border*) bertekstur halus dan latar `#F8FAFC` (Light) atau `#0F172A` (Dark).
    - Thumbnail foto hasil unggahan ditampilkan dalam rasio 1:1 atau 16:9 dengan sudut rounded `12 px` (`ClipRRect(borderRadius: BorderRadius.circular(12))`) dan tombol hapus berbentuk lingkaran di sudut kanan atas.
 
 ---
@@ -240,27 +272,27 @@ Formulir dirancang agar pengguna merasa nyaman, jelas, dan percaya diri saat men
 Kartu laporan pada feed publik dan daftar laporan pengguna menyajikan data dengan estetika kontemporer yang rapi:
 
 - **Bentuk & Permukaan:**
-  - Latar: `#FFFFFF` murni.
+  - Latar: `#FFFFFF` murni (Light Mode) atau `#1E293B` Slate 800 (Dark Mode).
   - Sudut: **`16 px` (`BorderRadius.circular(16)`)**.
-  - Garis Tepi: `1 px solid #E2E8F0` (tegas dan bersih).
-  - Bayangan: Flat UI (tanpa drop shadow).
+  - Garis Tepi: `1 px solid #E2E8F0` (Light) atau `1 px solid #334155` (Dark).
+  - Bayangan: Flat UI (tanpa drop shadow di kedua mode).
   - Margin Antar Kartu: `EdgeInsets.symmetric(horizontal: 16, vertical: 8)`.
   - Padding Konten: `16 px`.
 - **Tata Letak & Hierarki:**
   1. **Header Baris Atas:**
-     - Kiri: Avatar pelapor berbentuk lingkaran (`BoxShape.circle`, 36x36 dp) + Nama Pelapor + Waktu Relatif.
+     - Kiri: Avatar pelapor berbentuk lingkaran (`BoxShape.circle`, 36x36 dp) + Nama Pelapor (`#0F172A` di Light / `#F8FAFC` di Dark) + Waktu Relatif (`#64748B` di Light / `#94A3B8` di Dark).
      - Kanan: Badge Status Penanganan berbentuk **Pill Kapsul** (`AppRadius.pill`).
   2. **Judul & Kategori:**
      - Tag Kategori berbentuk chip pill mungil (misal: "Jalan & Jembatan", "Sampah").
-     - Judul Laporan: 16 px SemiBold (`#0F172A`), maksimal 2 baris dengan pemotongan teks elegan.
+     - Judul Laporan: 16 px SemiBold (`#0F172A` di Light / `#F8FAFC` di Dark), maksimal 2 baris dengan pemotongan teks elegan.
   3. **Media Gambar / Thumbnail:**
      - Rasio 16:9, lebar penuh di dalam padding kartu.
      - Sudut gambar melengkung halus: **`12 px` (`ClipRRect(borderRadius: BorderRadius.circular(12))`)**.
      - Indikator jumlah foto (misal: "+3 Foto") berbentuk pill gelap transparan di sudut kanan bawah foto.
   4. **Lokasi Kejadian:**
-     - Ikon pin lokasi berwarna `color.primary` dan teks alamat ringkas yang terpotong rapi.
+     - Ikon pin lokasi berwarna `color.primary` dan teks alamat ringkas (`#64748B` di Light / `#94A3B8` di Dark) yang terpotong rapi.
   5. **Footer Bar Interaksi:**
-     - Tombol Upvote & Downvote: Pill container rounded (`BorderRadius.circular(999)`) dengan angka vote yang jelas. State aktif diberi warna aksen terang.
+     - Tombol Upvote & Downvote: Pill container rounded (`BorderRadius.circular(999)`) dengan angka vote yang jelas. Latar aktif menggunakan `color.primary-subtle` dengan border aksen.
      - Tombol Komentar: Ikon chat rounded dengan counter jumlah diskusi warga.
      - Tombol Share / Menu Aksi: Ikon tombol melingkar yang halus.
 
@@ -274,16 +306,25 @@ Menggunakan bentuk kapsul/pill membulat penuh yang modern (*stadium shape* / `Bo
   - **Bentuk:** `StadiumBorder()` / `BorderRadius.circular(999)`.
   - **Padding:** `5 px vertical, 12 px horizontal`.
   - **Tipografi:** `11 px SemiBold`.
-  - **Varian Semantik:**
+  - **Varian Semantik Mode Terang (Light Mode):**
     - *Baru / Diterima:* Latar `#E0F2FE`, Teks `#0369A1`, Border `1 px solid #BAE6FD`.
     - *Dalam Penanganan:* Latar `#FEF3C7`, Teks `#B45309`, Border `1 px solid #FDE68A`.
     - *Selesai:* Latar `#DCFCE7`, Teks `#15803D`, Border `1 px solid #BBF7D0`.
     - *Ditolak / Dibatalkan:* Latar `#FEE2E2`, Teks `#B91C1C`, Border `1 px solid #FECACA`.
+  - **Varian Semantik Mode Gelap (Dark Mode):**
+    - *Baru / Diterima:* Latar `#0C4A6E` / `0.18 Sky`, Teks `#BAE6FD`, Border `1 px solid #0284C7`.
+    - *Dalam Penanganan:* Latar `#78350F` / `0.18 Amber`, Teks `#FDE68A`, Border `1 px solid #D97706`.
+    - *Selesai:* Latar `#064E3B` / `0.18 Emerald`, Teks `#86EFAC`, Border `1 px solid #059669`.
+    - *Ditolak / Dibatalkan:* Latar `#7F1D1D` / `0.18 Red`, Teks `#FCA5A5`, Border `1 px solid #DC2626`.
 - **Filter Chips Bar (Kategori & Wilayah):**
   - Baris horizontal yang dapat digeser (*horizontal scrollable chip list*).
   - **Bentuk:** Pill kapsul membulat penuh (`BorderRadius.circular(999)`).
-  - **State Tidak Aktif:** Latar `#FFFFFF`, Border `1 px solid #E2E8F0`, Teks `#475569`, Flat (tanpa shadow).
-  - **State Aktif:** Latar `#2563EB` (Primary), Border `1.5 px solid #2563EB`, Teks `#FFFFFF`, Flat.
+  - **State Tidak Aktif:**
+    - *Light Mode:* Latar `#FFFFFF`, Border `1 px solid #E2E8F0`, Teks `#475569`, Flat (0 elevation).
+    - *Dark Mode:* Latar `#1E293B`, Border `1 px solid #334155`, Teks `#94A3B8`, Flat (0 elevation).
+  - **State Aktif:**
+    - *Light Mode:* Latar `#2563EB` (Primary), Border `1.5 px solid #2563EB`, Teks `#FFFFFF`.
+    - *Dark Mode:* Latar `#3B82F6` (Primary), Border `1.5 px solid #3B82F6`, Teks `#FFFFFF`.
 
 ---
 
@@ -291,13 +332,17 @@ Menggunakan bentuk kapsul/pill membulat penuh yang modern (*stadium shape* / `Bo
 
 - **Dialog Konfirmasi (misal: Hapus Laporan, Tolak Laporan, Konfirmasi Selesai):**
   - **Bentuk:** Rounded rectangle dengan sudut **`20 px` (`BorderRadius.circular(20)`)**.
-  - **Latar:** `#FFFFFF` murni dengan border tegas `1 px solid #E2E8F0` (Flat UI, tanpa drop shadow).
+  - **Latar & Garis Tepi:**
+    - *Light Mode:* `#FFFFFF` murni dengan border tegas `1 px solid #E2E8F0`.
+    - *Dark Mode:* `#1E293B` (Slate 800) dengan border tegas `1 px solid #334155`.
+  - **Elevasi:** Flat UI (tanpa drop shadow di kedua mode).
   - **Ikon Ilustrasi:** Berada di dalam lingkaran background warna lembut (48x48 dp) di bagian atas dialog.
   - **Tombol Aksi:** Tombol batal (outlined 12 px) dan tombol konfirmasi (solid 12 px) diletakkan bersisian secara proporsional.
 - **Bottom Sheet (Mobile):**
   - **Bentuk:** Sudut atas melengkung anggun **`24 px` (`BorderRadius.vertical(top: Radius.circular(24))`)**.
-  - **Drag Handle:** Batang indikator sentuh berbentuk pill di bagian tengah atas (`width: 40 px`, `height: 4 px`, `color: #CBD5E1`, `borderRadius: circular(4)`).
-  - **Latar:** `#FFFFFF` murni.
+  - **Drag Handle:** Batang indikator sentuh berbentuk pill di bagian tengah atas (`width: 40 px`, `height: 4 px`, `color: #CBD5E1` di Light atau `#475569` di Dark, `borderRadius: circular(4)`).
+  - **Latar:** `#FFFFFF` (Light) atau `#1E293B` (Dark).
+  - **Pemisah Internal:** Garis 1 px `#E2E8F0` (Light) atau `#334155` (Dark).
 
 ---
 
@@ -305,8 +350,9 @@ Menggunakan bentuk kapsul/pill membulat penuh yang modern (*stadium shape* / `Bo
 
 - **Peta Interaktif (OpenStreetMap via `flutter_map`):**
   - Ditampilkan dalam kartu melengkung dengan sudut **`16 px` (`ClipRRect(borderRadius: BorderRadius.circular(16))`)**.
-  - Pin penanda (*custom marker*) berbentuk pin tegak lurus konsisten, menampilkan ikon kategori di tengahnya.
-  - Floating map controls (tombol reset kompas, tombol lokasi saya) berbentuk lingkaran sempurna (`BoxShape.circle`) dengan latar putih, 0 elevation, dan border 1 px tegas.
+  - Hairline border container: `1 px solid #E2E8F0` (Light) atau `1 px solid #334155` (Dark).
+  - Pin penanda (*custom marker*) berbentuk pin tegak lurus konsisten, menampilkan ikon kategori di tengahnya dengan warna kontras tinggi yang mencolok di kedua tema.
+  - Floating map controls (tombol reset kompas, tombol lokasi saya GPS) berbentuk lingkaran sempurna (`BoxShape.circle`) dengan latar `#FFFFFF` (Light) atau `#1E293B` (Dark), ikon `color.primary`, 0 elevation, dan border 1 px tegas (`#E2E8F0` di Light / `#334155` di Dark).
 
 ---
 
@@ -314,10 +360,10 @@ Menggunakan bentuk kapsul/pill membulat penuh yang modern (*stadium shape* / `Bo
 
 - **Foto Profil Pengguna (`UserAvatar`):**
   - Selalu berbentuk **lingkaran sempurna (`BoxShape.circle` / `CircleAvatar`)**.
-  - Dilengkapi border halus `1.5 px solid #FFFFFF` saat berada di atas gambar atau background kontras.
-  - Jika foto tidak tersedia, menampilkan inisial pengguna di atas latar belakang warna pastel dengan teks kontras tinggi.
+  - Dilengkapi border halus `1.5 px solid #FFFFFF` (Light) atau `1.5 px solid #1E293B` (Dark) saat berada di atas gambar atau background kontras.
+  - Jika foto tidak tersedia, menampilkan inisial pengguna di atas latar belakang warna pastel lembut (Light) atau warna gelap bertransparansi (Dark) dengan teks kontras tinggi.
 - **Logo Brand Laporin:**
-  - Lingkaran atau squircle membulat (radius 16px) dengan lambang grafis yang ramah dan tepercaya.
+  - Lingkaran atau squircle membulat (radius 16px) dengan lambang grafis yang ramah dan tepercaya, mempertahankan saturasi warna biru ikonik di kedua mode tampilan.
 
 ---
 
@@ -440,95 +486,360 @@ class AppRadius {
 
 ---
 
-### 8.2 Konfigurasi Global Theme (`lib/core/theme/app_theme.dart`)
+### 8.2 Token Warna Flutter (`lib/core/theme/app_colors.dart`)
 
 ```dart
-ThemeData get appTheme {
-  const borderSide = BorderSide(color: Color(0xFFE2E8F0), width: 1.0);
+import 'package:flutter/material.dart';
 
-  return ThemeData(
-    useMaterial3: true,
-    scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-    
-    // Card Theme: Sudut membulat 16px, background putih bersih, hairline border
-    cardTheme: CardThemeData(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: borderSide,
-      ),
-      margin: EdgeInsets.zero,
-      color: Colors.white,
-    ),
+/// Design tokens for colors based on DESIGN.md Section 3.3 (Light & Dark Mode)
+class AppColors {
+  AppColors._();
 
-    // Elevated & Filled Button Theme: Sudut membulat 12px
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      ),
-    ),
+  // Brand Primary (Mode Terang)
+  static const Color primary = Color(0xFF2563EB); // Blue 600
+  static const Color primaryHover = Color(0xFF1D4ED8); // Blue 700
+  static const Color primaryStrong = Color(0xFF1D4ED8);
+  static const Color primaryLight = Color(0xFF3B82F6); // Blue 500
+  static const Color primarySoft = Color(0xFFEFF6FF); // Blue 50
+  static const Color primarySubtle = Color(0xFFEFF6FF);
+  static const Color accent = Color(0xFF2563EB);
 
-    // Outlined Button Theme: Sudut membulat 12px
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        side: borderSide,
-        foregroundColor: const Color(0xFF0F172A),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      ),
-    ),
+  // Brand Primary (Mode Gelap)
+  static const Color darkPrimary = Color(0xFF3B82F6); // Blue 500 (Higher contrast)
+  static const Color darkPrimaryHover = Color(0xFF2563EB); // Blue 600
+  static const Color darkPrimaryLight = Color(0xFF60A5FA); // Blue 400
+  static const Color darkPrimarySoft = Color(0xFF1E3A8A); // Blue 900
+  static const Color darkPrimarySubtle = Color(0xFF1E3A8A);
 
-    // Input Decoration Theme: Sudut membulat 12px
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: borderSide,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: borderSide,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    ),
+  // Status & Semantics (Mode Terang)
+  static const Color success = Color(0xFF16A34A); // Emerald 600
+  static const Color successSubtle = Color(0xFFDCFCE7); // Emerald 100
+  static const Color successText = Color(0xFF15803D); // Emerald 700
 
-    // Dialog Theme: Sudut membulat 20px
-    dialogTheme: DialogThemeData(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: borderSide,
-      ),
-      backgroundColor: Colors.white,
-    ),
+  static const Color warning = Color(0xFFD97706); // Amber 600
+  static const Color warningSubtle = Color(0xFFFEF3C7); // Amber 100
+  static const Color warningText = Color(0xFFB45309); // Amber 700
 
-    // Bottom Sheet Theme: Sudut atas membulat 24px
-    bottomSheetTheme: const BottomSheetThemeData(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Colors.white,
-    ),
+  static const Color danger = Color(0xFFDC2626); // Red 600
+  static const Color dangerSubtle = Color(0xFFFEE2E2); // Red 100
+  static const Color dangerText = Color(0xFFB91C1C); // Red 700
+
+  static const Color info = Color(0xFF0284C7); // Sky 600
+  static const Color infoSubtle = Color(0xFFE0F2FE); // Sky 100
+  static const Color infoText = Color(0xFF0369A1); // Sky 700
+
+  // Status & Semantics (Mode Gelap)
+  static const Color darkSuccess = Color(0xFF22C55E); // Emerald 500
+  static const Color darkSuccessSubtle = Color(0xFF064E3B); // Emerald 900
+  static const Color darkSuccessText = Color(0xFF86EFAC); // Emerald 300
+
+  static const Color darkWarning = Color(0xFFF59E0B); // Amber 500
+  static const Color darkWarningSubtle = Color(0xFF78350F); // Amber 900
+  static const Color darkWarningText = Color(0xFFFDE68A); // Amber 200
+
+  static const Color darkDanger = Color(0xFFEF4444); // Red 500
+  static const Color darkDangerSubtle = Color(0xFF7F1D1D); // Red 900
+  static const Color darkDangerText = Color(0xFFFCA5A5); // Red 300
+
+  static const Color darkInfo = Color(0xFF38BDF8); // Sky 400
+  static const Color darkInfoSubtle = Color(0xFF0C4A6E); // Sky 900
+  static const Color darkInfoText = Color(0xFFBAE6FD); // Sky 200
+
+  // Neutrals, Text & Surfaces (Mode Terang)
+  static const Color textPrimary = Color(0xFF0F172A); // Slate 900
+  static const Color textTitle = Color(0xFF0F172A);
+  static const Color textBody = Color(0xFF334155); // Slate 700
+  static const Color textSecondary = Color(0xFF64748B); // Slate 500
+  static const Color textMuted = Color(0xFF64748B);
+  static const Color border = Color(0xFFE2E8F0); // Slate 200
+  static const Color borderSubtle = Color(0xFFF1F5F9); // Slate 100
+  static const Color surface = Color(0xFFFFFFFF); // White
+  static const Color background = Color(0xFFF8FAFC); // Slate 50
+  static const Color disabled = Color(0xFF94A3B8); // Slate 400
+
+  // Neutrals, Text & Surfaces (Mode Gelap)
+  static const Color darkTextPrimary = Color(0xFFF8FAFC); // Slate 50
+  static const Color darkTextTitle = Color(0xFFF8FAFC);
+  static const Color darkTextBody = Color(0xFFCBD5E1); // Slate 300
+  static const Color darkTextSecondary = Color(0xFF94A3B8); // Slate 400
+  static const Color darkTextMuted = Color(0xFF94A3B8);
+  static const Color darkBorder = Color(0xFF334155); // Slate 700 (1px hairline)
+  static const Color darkBorderSubtle = Color(0xFF1E293B); // Slate 800
+  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
+  static const Color darkSurfaceElevated = Color(0xFF0F172A); // Slate 900 (Inputs)
+  static const Color darkBackground = Color(0xFF0B1120); // Slate 950 (Canvas)
+  static const Color darkDisabled = Color(0xFF64748B); // Slate 500
+
+  // Flat UI Design Tokens: Zero drop shadow di kedua mode
+  static const BoxShadow cardShadow = BoxShadow(
+    color: Colors.transparent,
+    blurRadius: 0,
+    offset: Offset.zero,
   );
+
+  static const BoxShadow modalShadow = BoxShadow(
+    color: Colors.transparent,
+    blurRadius: 0,
+    offset: Offset.zero,
+  );
+}
+```
+
+---
+
+### 8.3 Konfigurasi Global Theme (`lib/core/theme/app_theme.dart`)
+
+```dart
+import 'package:flutter/material.dart';
+
+import 'app_colors.dart';
+import 'app_radius.dart';
+import 'app_text_styles.dart';
+
+/// Central ThemeData implementation matching DESIGN.md Section 8.2 & 8.3
+/// (Modern, Rounded, Friendly & Professional Civic-Tech — Light & Dark Mode)
+class AppTheme {
+  AppTheme._();
+
+  // ==========================================
+  // MODE TERANG (LIGHT THEME)
+  // ==========================================
+  static ThemeData get lightTheme {
+    const borderSide = BorderSide(color: AppColors.border, width: 1.0);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.background,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        primary: AppColors.primary,
+        surface: AppColors.surface,
+        error: AppColors.danger,
+        brightness: Brightness.light,
+      ),
+
+      // App Bar: Clean surface, 0 elevation, 1px bottom border
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        titleTextStyle: AppTextStyles.pageTitle,
+      ),
+
+      // Card Theme: Sudut membulat 16px, background putih, hairline border (Flat UI)
+      cardTheme: const CardThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.card,
+          side: borderSide,
+        ),
+        margin: EdgeInsets.zero,
+        color: AppColors.surface,
+      ),
+
+      // Elevated & Filled Button Theme: Sudut membulat 12px
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTextStyles.button,
+        ),
+      ),
+
+      // Outlined Button Theme: Sudut membulat 12px, border 1px solid
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          elevation: 0,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          side: borderSide,
+          foregroundColor: AppColors.textPrimary,
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTextStyles.button.copyWith(color: AppColors.textPrimary),
+        ),
+      ),
+
+      // Input Decoration Theme: Sudut membulat 12px, hairline border
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: borderSide,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: borderSide,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.danger, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.danger, width: 1.5),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: AppTextStyles.bodySecondary,
+        labelStyle: AppTextStyles.label,
+      ),
+
+      // Dialog & Modal Theme: Sudut membulat 20px, border 1px
+      dialogTheme: const DialogThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.dialog,
+          side: borderSide,
+        ),
+        backgroundColor: AppColors.surface,
+      ),
+
+      // Bottom Sheet Theme: Sudut atas membulat 24px
+      bottomSheetTheme: const BottomSheetThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.sheet),
+        backgroundColor: AppColors.surface,
+      ),
+
+      // Divider Theme: 1 px hairline border
+      dividerTheme: const DividerThemeData(
+        color: AppColors.borderSubtle,
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
+
+  // ==========================================
+  // MODE GELAP (DARK THEME)
+  // ==========================================
+  static ThemeData get darkTheme {
+    const darkBorderSide = BorderSide(color: AppColors.darkBorder, width: 1.0);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.darkPrimary,
+        primary: AppColors.darkPrimary,
+        surface: AppColors.darkSurface,
+        error: AppColors.darkDanger,
+        brightness: Brightness.dark,
+      ),
+
+      // App Bar: Slate 800 surface, 0 elevation, 1px bottom border
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.darkSurface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
+        titleTextStyle: AppTextStyles.pageTitle,
+      ),
+
+      // Card Theme: Sudut membulat 16px, background Slate 800, hairline border Slate 700 (Flat UI)
+      cardTheme: const CardThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.card,
+          side: darkBorderSide,
+        ),
+        margin: EdgeInsets.zero,
+        color: AppColors.darkSurface,
+      ),
+
+      // Elevated & Filled Button Theme: Sudut membulat 12px
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          backgroundColor: AppColors.darkPrimary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTextStyles.button,
+        ),
+      ),
+
+      // Outlined Button Theme: Sudut membulat 12px, border Slate 700 1px solid
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          elevation: 0,
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+          side: darkBorderSide,
+          foregroundColor: AppColors.darkTextPrimary,
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTextStyles.button.copyWith(color: AppColors.darkTextPrimary),
+        ),
+      ),
+
+      // Input Decoration Theme: Latar Slate 900, sudut membulat 12px, border Slate 700
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.darkSurfaceElevated,
+        border: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: darkBorderSide,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: darkBorderSide,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.darkPrimary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.darkDanger, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: BorderSide(color: AppColors.darkDanger, width: 1.5),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: TextStyle(color: AppColors.darkTextSecondary, fontSize: 14),
+        labelStyle: TextStyle(color: AppColors.darkTextPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+
+      // Dialog & Modal Theme: Latar Slate 800, sudut membulat 20px, border Slate 700
+      dialogTheme: const DialogThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.dialog,
+          side: darkBorderSide,
+        ),
+        backgroundColor: AppColors.darkSurface,
+      ),
+
+      // Bottom Sheet Theme: Sudut atas membulat 24px, latar Slate 800
+      bottomSheetTheme: const BottomSheetThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.sheet),
+        backgroundColor: AppColors.darkSurface,
+      ),
+
+      // Divider Theme: 1 px hairline border Slate 700
+      dividerTheme: const DividerThemeData(
+        color: AppColors.darkBorder,
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
 }
 ```
 
@@ -536,15 +847,15 @@ ThemeData get appTheme {
 
 ## 9. Prompt Standar Eksekusi Kode untuk AI Coding Agent / Developer
 
-Gunakan prompt berikut saat menerapkan desain modern rounded ini ke dalam kode sumber aplikasi:
+Gunakan prompt berikut saat menerapkan desain modern rounded dan adaptasi Dark Mode ke dalam kode sumber aplikasi:
 
 ```markdown
-### INSTRUKSI REFACTOR UI: Modern, Rounded & Professional Civic-Tech Design
+### INSTRUKSI REFACTOR UI: Modern, Rounded & Dual-Theme (Light & Dark Mode) Design
 
-Kamu adalah Senior Flutter UI/UX Engineer. Tugasmu adalah mengimplementasikan gaya desain MODERN & ROUNDED pada antarmuka aplikasi Flutter "Laporin", mengacu penuh pada panduan resmi di DESIGN.md.
+Kamu adalah Senior Flutter UI/UX Engineer. Tugasmu adalah mengimplementasikan gaya desain MODERN & ROUNDED serta DUKUNGAN ADAPTIF MODE GELAP (DARK MODE) pada antarmuka aplikasi Flutter "Laporin", mengacu penuh pada panduan resmi di DESIGN.md.
 
 #### 1. Tujuan & Karakter Visual
-- Terapkan estetika antarmuka yang modern, ramah, dan profesional dengan sudut membulat proporsional (*rounded components*) dan gaya Flat UI murni (tanpa drop shadow, 0 elevation).
+- Terapkan estetika antarmuka yang modern, ramah, dan profesional dengan sudut membulat proporsional (*rounded components*) dan gaya Flat UI murni (tanpa drop shadow, 0 elevation) pada KEDUA mode: Mode Terang (Light) dan Mode Gelap (Dark).
 - Ganti sudut siku-siku kaku (0 px) dengan skala radius modern:
   - Tombol standar (`AppButton`, `ElevatedButton`, `OutlinedButton`): `BorderRadius.circular(12)`.
   - Formulir (`TextFormField`, `InputDecorationTheme`, Dropdown): `BorderRadius.circular(12)`.
@@ -553,8 +864,11 @@ Kamu adalah Senior Flutter UI/UX Engineer. Tugasmu adalah mengimplementasikan ga
   - Bottom Sheet: Sudut atas membulat `BorderRadius.vertical(top: Radius.circular(24))` dengan drag handle berbentuk pill.
   - Avatar pengguna: Tetap berbentuk lingkaran sempurna (`BoxShape.circle`).
 
-#### 2. Kualitas Visual & Finishing
-- Gunakan hairline borders tegas (`1px solid #E2E8F0`) untuk batas kartu dan container tanpa menggunakan drop shadow.
+#### 2. Kualitas Visual & Finishing Mode Gelap
+- Terapkan hierarki luminansi Slate bertingkat pada Mode Gelap: Kanvas `#0B1120`, Permukaan Kartu `#1E293B`, Inner Input `#0F172A`, dan Hairline Border `#334155`.
+- Jaga kontras teks WCAG 2.2 AA (Teks Utama `#F8FAFC`, Teks Bodi `#CBD5E1`, Teks Muted `#94A3B8`).
+- Gunakan formula Inverted Tinted Pills untuk badge status di mode gelap (latar semi-transparan dengan teks pastel kontras).
+- Gunakan hairline borders tegas 1 px solid untuk batas kartu dan container tanpa menggunakan drop shadow.
 - Pastikan seluruh foto thumbnail di dalam kartu di-clip rapi dengan `ClipRRect(borderRadius: BorderRadius.circular(12))`.
 - Jaga target tap minimal 48x48 dp pada layar sentuh mobile.
 

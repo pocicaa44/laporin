@@ -72,25 +72,30 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
       activeIndex = 0;
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
+
     return Container(
-      color: AppColors.background,
+      color: bgColor,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 720),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: bgColor,
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: borderColor, width: 1),
             ),
           ),
           child: Scaffold(
             drawer: const AppDrawer(),
             body: IndexedStack(index: activeIndex, children: _screens),
             bottomNavigationBar: Container(
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
+              decoration: BoxDecoration(
+                color: surfaceColor,
                 border: Border(
-                  top: BorderSide(color: AppColors.border, width: 1),
+                  top: BorderSide(color: borderColor, width: 1),
                 ),
               ),
               child: SafeArea(
@@ -159,7 +164,10 @@ class _AdminNavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.textSecondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isSelected
+        ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary);
 
     return InkWell(
       onTap: onTap,

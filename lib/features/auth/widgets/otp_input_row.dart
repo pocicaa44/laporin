@@ -112,11 +112,15 @@ class OtpInputRow extends StatelessWidget {
   Widget _buildDigitBox(BuildContext context, int index) {
     final controller = controllers[index];
     final focusNode = focusNodes[index];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final borderColor = hasError ? AppColors.danger : AppColors.border;
+    final borderColor =
+        hasError ? AppColors.dangerOf(context) : AppColors.borderOf(context);
     final backgroundColor = hasError
-        ? const Color(0xFFFDECEE)
-        : AppColors.surface;
+        ? (isDark
+            ? AppColors.darkDanger.withValues(alpha: 0.15)
+            : const Color(0xFFFDECEE))
+        : AppColors.surfaceOf(context);
 
     return SizedBox(
       width: 44,
@@ -139,9 +143,11 @@ class OtpInputRow extends StatelessWidget {
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
           maxLength: 1,
-          style: AppTextStyles.pageTitle.copyWith(
+          style: AppTextStyles.pageTitleOf(context).copyWith(
             fontSize: 20,
-            color: hasError ? AppColors.danger : AppColors.textPrimary,
+            color: hasError
+                ? AppColors.dangerOf(context)
+                : AppColors.textPrimaryOf(context),
           ),
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
@@ -175,7 +181,9 @@ class OtpInputRow extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: const BorderRadius.all(Radius.circular(12)),
               borderSide: BorderSide(
-                color: hasError ? AppColors.danger : AppColors.primary,
+                color: hasError
+                    ? AppColors.dangerOf(context)
+                    : AppColors.primaryOf(context),
                 width: 2.0,
               ),
             ),

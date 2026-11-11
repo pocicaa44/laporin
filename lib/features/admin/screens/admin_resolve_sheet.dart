@@ -78,6 +78,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
   }
 
   Future<void> _showImageSourcePicker(BuildContext context) async {
+    final primaryColor = AppColors.primaryOf(context);
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
@@ -87,20 +88,20 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Pilih Sumber Foto Bukti',
-                style: AppTextStyles.sectionTitle,
+                style: AppTextStyles.sectionTitleOf(context),
               ),
               const SizedBox(height: 12),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                leading: Icon(Icons.camera_alt, color: primaryColor),
                 title: const Text('Ambil Foto dari Kamera'),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.photo_library,
-                  color: AppColors.primary,
+                  color: primaryColor,
                 ),
                 title: const Text('Pilih dari Galeri Perangkat'),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
@@ -190,6 +191,15 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
     final hasProof =
         _selectedImage != null || (_proofUrl != null && _proofUrl!.isNotEmpty);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : const Color(0xFFFDECEE);
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -207,9 +217,9 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Selesaikan Laporan',
-                    style: AppTextStyles.pageTitle,
+                    style: AppTextStyles.pageTitleOf(context),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -220,22 +230,22 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
               const SizedBox(height: 8),
               Text(
                 '${widget.report.reportNumber} - ${widget.report.title}',
-                style: AppTextStyles.bodySecondary,
+                style: AppTextStyles.captionOf(context),
               ),
               const SizedBox(height: 16),
 
               // Mandatory Proof Image Header
               Row(
                 children: [
-                  const Text(
+                  Text(
                     'Foto Bukti Penyelesaian',
-                    style: AppTextStyles.label,
+                    style: AppTextStyles.labelOf(context),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     '* (Wajib)',
                     style: TextStyle(
-                      color: AppColors.danger,
+                      color: dangerColor,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -258,13 +268,13 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                     ),
                     decoration: BoxDecoration(
                       color: _proofError != null
-                          ? const Color(0xFFFDECEE)
-                          : AppColors.surface,
+                          ? dangerSubtle
+                          : surfaceColor,
                       borderRadius: AppRadius.card,
                       border: Border.all(
                         color: _proofError != null
-                            ? AppColors.danger
-                            : AppColors.border,
+                            ? dangerColor
+                            : borderColor,
                         width: _proofError != null ? 1.5 : 1,
                       ),
                     ),
@@ -275,8 +285,8 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                           Icons.add_a_photo_outlined,
                           size: 36,
                           color: _proofError != null
-                              ? AppColors.danger
-                              : AppColors.primary,
+                              ? dangerColor
+                              : primaryColor,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -285,17 +295,17 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: _proofError != null
-                                ? AppColors.danger
-                                : AppColors.textPrimary,
+                                ? dangerColor
+                                : textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Wajib menyertakan foto hasil pekerjaan selesai (Kamera/Galeri)',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.captionOf(context).copyWith(
                             color: _proofError != null
-                                ? AppColors.danger
-                                : AppColors.textSecondary,
+                                ? dangerColor
+                                : textSecondary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -400,8 +410,8 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                 Text(
                   _proofError!,
                   key: const Key('admin_proof_error_text'),
-                  style: const TextStyle(
-                    color: AppColors.danger,
+                  style: TextStyle(
+                    color: dangerColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -412,11 +422,11 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
               // Template Catatan Penyelesaian
               Row(
                 children: [
-                  const Icon(Icons.bolt, size: 16, color: AppColors.primary),
+                  Icon(Icons.bolt, size: 16, color: primaryColor),
                   const SizedBox(width: 4),
                   Text(
                     'Pilih Template Catatan:',
-                    style: AppTextStyles.label.copyWith(fontSize: 13),
+                    style: AppTextStyles.labelOf(context).copyWith(fontSize: 13),
                   ),
                 ],
               ),
@@ -437,13 +447,13 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary
-                            : AppColors.surface,
+                            ? primaryColor
+                            : surfaceColor,
                         borderRadius: AppRadius.pill,
                         border: Border.all(
                           color: isSelected
-                              ? AppColors.primary
-                              : AppColors.border,
+                              ? primaryColor
+                              : borderColor,
                         ),
                       ),
                       child: Row(
@@ -456,7 +466,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                             size: 14,
                             color: isSelected
                                 ? Colors.white
-                                : AppColors.primary,
+                                : primaryColor,
                           ),
                           const SizedBox(width: 6),
                           Flexible(
@@ -469,7 +479,7 @@ class _AdminResolveSheetState extends State<AdminResolveSheet> {
                                     : FontWeight.normal,
                                 color: isSelected
                                     ? Colors.white
-                                    : AppColors.textPrimary,
+                                    : textPrimary,
                               ),
                             ),
                           ),

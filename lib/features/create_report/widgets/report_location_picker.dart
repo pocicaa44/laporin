@@ -127,6 +127,16 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final dangerColor = isDark ? AppColors.darkDanger : AppColors.danger;
+    final dangerSubtle = isDark ? AppColors.darkDangerSubtle : AppColors.dangerSubtle;
+    final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
+
     final hasLocation = widget.address.isNotEmpty;
     final isValidRegion =
         hasLocation &&
@@ -141,26 +151,26 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Titik Lokasi Kejadian *', style: AppTextStyles.label),
+            Text('Titik Lokasi Kejadian *', style: AppTextStyles.labelOf(context)),
             if (hasLocation)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: isValidRegion
-                      ? AppColors.primarySubtle
-                      : AppColors.dangerSubtle,
+                      ? (isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle)
+                      : dangerSubtle,
                   borderRadius: AppRadius.pill,
                   border: Border.all(
                     color: isValidRegion
-                        ? const Color(0xFFBFDBFE)
-                        : const Color(0xFFFECACA),
+                        ? (isDark ? primaryColor.withValues(alpha: 0.3) : const Color(0xFFBFDBFE))
+                        : (isDark ? dangerColor.withValues(alpha: 0.3) : const Color(0xFFFECACA)),
                     width: 1,
                   ),
                 ),
                 child: Text(
                   isValidRegion ? widget.areaName : 'Di Luar Wilayah Indonesia',
-                  style: AppTextStyles.caption.copyWith(
-                    color: isValidRegion ? AppColors.primary : AppColors.danger,
+                  style: AppTextStyles.captionOf(context).copyWith(
+                    color: isValidRegion ? primaryColor : dangerColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -171,12 +181,12 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: surfaceColor,
             borderRadius: AppRadius.card,
             border: Border.all(
               color: hasLocation && !isValidRegion
-                  ? AppColors.danger
-                  : AppColors.border,
+                  ? dangerColor
+                  : borderColor,
             ),
           ),
           child: Column(
@@ -189,9 +199,9 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                     FontAwesomeIcons.locationDot,
                     color: hasLocation
                         ? (isValidRegion
-                              ? AppColors.danger
-                              : AppColors.disabled)
-                        : AppColors.textSecondary,
+                              ? dangerColor
+                              : (isDark ? AppColors.darkDisabled : AppColors.disabled))
+                        : textSecondary,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
@@ -203,11 +213,11 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                           hasLocation
                               ? widget.address
                               : 'Belum memilih lokasi kejadian',
-                          style: AppTextStyles.sectionTitle.copyWith(
+                          style: AppTextStyles.sectionTitleOf(context).copyWith(
                             fontSize: 14,
                             color: hasLocation
-                                ? AppColors.textPrimary
-                                : AppColors.textSecondary,
+                                ? textPrimary
+                                : textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -217,10 +227,10 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                                     ? 'Koordinat: ${widget.latitude.toStringAsFixed(4)}, ${widget.longitude.toStringAsFixed(4)} (Cakupan: ${widget.areaName})'
                                     : 'Koordinat di luar wilayah Indonesia')
                               : 'Buka peta interaktif atau gunakan sensor GPS perangkat Anda.',
-                          style: AppTextStyles.caption.copyWith(
+                          style: AppTextStyles.captionOf(context).copyWith(
                             color: isValidRegion
-                                ? AppColors.success
-                                : AppColors.danger,
+                                ? successColor
+                                : dangerColor,
                           ),
                         ),
                       ],
@@ -230,11 +240,11 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
               ),
               if (hasLocation && !isValidRegion) ...[
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   BoundaryService.outsideIndonesiaErrorMessage,
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.danger,
+                    color: dangerColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -256,8 +266,8 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                             ),
                       label: Text(_isLoadingGps ? 'Mencari...' : 'Gunakan GPS'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
+                        foregroundColor: primaryColor,
+                        side: BorderSide(color: primaryColor),
                         shape: const RoundedRectangleBorder(
                           borderRadius: AppRadius.button,
                         ),
@@ -277,7 +287,7 @@ class _ReportLocationPickerState extends State<ReportLocationPicker> {
                         hasLocation ? 'Ubah di Peta' : 'Pilih di Peta',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: const RoundedRectangleBorder(

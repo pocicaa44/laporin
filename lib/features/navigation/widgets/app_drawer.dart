@@ -69,8 +69,10 @@ class AppDrawer extends StatelessWidget {
         .watch<NotificationController>()
         .unreadCount;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Drawer(
-      backgroundColor: AppColors.surface,
+      backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: SafeArea(
         top: false,
@@ -329,11 +331,16 @@ class _DrawerMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeBg = isSelected ? AppColors.primarySoft : Colors.transparent;
-    final iconColor = isSelected ? AppColors.primary : AppColors.textSecondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeBg = isSelected
+        ? (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft)
+        : Colors.transparent;
+    final iconColor = isSelected
+        ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary);
     final textColor = isSelected
-        ? AppColors.primaryStrong
-        : AppColors.textPrimary;
+        ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryStrong)
+        : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary);
     final textWeight = isSelected ? FontWeight.w700 : FontWeight.w500;
 
     return Padding(

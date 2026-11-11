@@ -95,16 +95,17 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final isOnline = context.isOnline;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      color: AppColors.background,
+      color: AppColors.backgroundOf(context),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
+          decoration: BoxDecoration(
+            color: AppColors.backgroundOf(context),
             border: Border.symmetric(
-              vertical: BorderSide(color: AppColors.border, width: 1),
+              vertical: BorderSide(color: AppColors.borderOf(context), width: 1),
             ),
           ),
           child: Scaffold(
@@ -136,16 +137,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Selamat Datang Kembali',
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.pageTitle,
+                        style: AppTextStyles.pageTitleOf(context),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Masuk untuk memantau status laporan dan berdiskusi dengan komunitas.',
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.bodySecondary,
+                        style: AppTextStyles.bodySecondaryOf(context),
                       ),
                       const SizedBox(height: 32),
 
@@ -155,16 +156,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: AppColors.dangerSubtle,
+                            color: isDark
+                                ? AppColors.darkDanger.withValues(alpha: 0.15)
+                                : AppColors.dangerSubtle,
                             borderRadius: const BorderRadius.all(
                               Radius.circular(8),
                             ),
-                            border: Border.all(color: const Color(0xFFFECACA)),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkDanger.withValues(alpha: 0.4)
+                                  : const Color(0xFFFECACA),
+                            ),
                           ),
                           child: Text(
                             auth.errorMessage!,
-                            style: const TextStyle(
-                              color: AppColors.danger,
+                            style: TextStyle(
+                              color: AppColors.dangerOf(context),
                               fontSize: 13,
                             ),
                           ),
@@ -239,10 +246,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Lupa password?',
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: AppColors.primaryOf(context),
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -259,14 +266,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 20),
 
                       // Divider "atau"
-                      const Row(
+                      Row(
                         children: [
-                          Expanded(child: Divider()),
+                          const Expanded(child: Divider()),
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('atau', style: AppTextStyles.caption),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('atau', style: AppTextStyles.captionOf(context)),
                           ),
-                          Expanded(child: Divider()),
+                          const Expanded(child: Divider()),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -289,9 +296,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Belum punya akun? ',
-                            style: AppTextStyles.bodySecondary,
+                            style: AppTextStyles.bodySecondaryOf(context),
                           ),
                           GestureDetector(
                             onTap: auth.isLoading
@@ -309,8 +316,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               'Daftar Sekarang',
                               style: TextStyle(
                                 color: auth.isLoading
-                                    ? AppColors.textSecondary
-                                    : AppColors.primary,
+                                    ? AppColors.textSecondaryOf(context)
+                                    : AppColors.primaryOf(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

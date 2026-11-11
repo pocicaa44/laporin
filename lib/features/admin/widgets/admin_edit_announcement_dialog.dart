@@ -141,7 +141,10 @@ class _AdminEditAnnouncementDialogState
                   },
                 ),
                 const SizedBox(height: 12),
-                const Text('Kategori Pengumuman', style: AppTextStyles.label),
+                Text(
+                  'Kategori Pengumuman',
+                  style: AppTextStyles.labelOf(context),
+                ),
                 const SizedBox(height: 6),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -157,18 +160,18 @@ class _AdminEditAnnouncementDialogState
                               fontSize: 12,
                               color: isSelected
                                   ? Colors.white
-                                  : AppColors.textPrimary,
+                                  : AppColors.textPrimaryOf(context),
                             ),
                           ),
                           selected: isSelected,
-                          selectedColor: AppColors.primary,
-                          backgroundColor: AppColors.surface,
+                          selectedColor: AppColors.primaryOf(context),
+                          backgroundColor: AppColors.surfaceOf(context),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppRadius.pill,
                             side: BorderSide(
                               color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? AppColors.primaryOf(context)
+                                  : AppColors.borderOf(context),
                             ),
                           ),
                           onSelected: _isUpdating

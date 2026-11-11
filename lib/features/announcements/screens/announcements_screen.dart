@@ -108,6 +108,21 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
   void _showAnnouncementDetail(AnnouncementModel announcement) {
     final isAdmin = context.read<AuthController>().isAdmin;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final contentBg =
+        isDark ? AppColors.darkSurfaceElevated : AppColors.background;
+    final categoryBg =
+        isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft;
+    final categoryFg =
+        isDark ? AppColors.darkPrimaryLight : AppColors.primaryStrong;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -118,8 +133,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           maxWidth: 720,
         ),
         margin: const EdgeInsets.only(top: 48),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: sheetBg,
           borderRadius: AppRadius.sheet,
         ),
         child: Column(
@@ -133,7 +148,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: borderColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -149,16 +164,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       horizontal: 10,
                       vertical: 4,
                     ),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primarySoft,
+                    decoration: BoxDecoration(
+                      color: categoryBg,
                       borderRadius: AppRadius.pill,
                     ),
                     child: Text(
                       announcement.category,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primaryStrong,
+                        color: categoryFg,
                       ),
                     ),
                   ),
@@ -171,7 +186,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 ],
               ),
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: borderColor),
 
             // Content body
             Flexible(
@@ -180,34 +195,34 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 children: [
                   Text(
                     announcement.title,
-                    style: AppTextStyles.pageTitle.copyWith(fontSize: 20),
+                    style: AppTextStyles.pageTitleOf(context).copyWith(fontSize: 20),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.verified_user_rounded,
                         size: 16,
-                        color: AppColors.primary,
+                        color: primaryColor,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         announcement.authorName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: textPrimary,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         '•',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: textSecondary),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         announcement.createdAt.toDisplayDateTime(),
-                        style: AppTextStyles.caption,
+                        style: AppTextStyles.captionOf(context),
                       ),
                     ],
                   ),
@@ -226,20 +241,20 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: contentBg,
                       borderRadius: AppRadius.card,
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: borderColor),
                     ),
                     child: SelectableText(
                       announcement.content,
-                      style: AppTextStyles.body.copyWith(height: 1.6),
+                      style: AppTextStyles.bodyOf(context).copyWith(height: 1.6),
                     ),
                   ),
                   if (isAdmin) ...[
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: const RoundedRectangleBorder(
@@ -287,6 +302,12 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
               .where((a) => a.category == _selectedCategory)
               .toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
@@ -300,14 +321,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         ],
       ),
       body: Container(
-        color: const Color(0xFFF0F2F5),
+        color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
         child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 720),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
+            decoration: BoxDecoration(
+              color: bgColor,
               border: Border.symmetric(
-                vertical: BorderSide(color: AppColors.border, width: 1),
+                vertical: BorderSide(color: borderColor, width: 1),
               ),
             ),
             child: RefreshIndicator(
@@ -324,18 +345,18 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
+                      color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft,
                       borderRadius: AppRadius.card,
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.25),
+                        color: primaryColor.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: BoxDecoration(
+                            color: primaryColor,
                             shape: BoxShape.circle,
                           ),
                           child: const FaIcon(
@@ -345,7 +366,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -354,15 +375,15 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
-                                  color: AppColors.primaryStrong,
+                                  color: isDark ? AppColors.darkPrimary : AppColors.primaryStrong,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Informasi resmi dari pemerintah dan petugas daerah untuk seluruh warga.',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textPrimary,
+                                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                                 ),
                               ),
                             ],
@@ -390,20 +411,24 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                 setState(() => _selectedCategory = cat);
                               }
                             },
-                            selectedColor: AppColors.primary,
-                            backgroundColor: AppColors.surface,
+                            selectedColor: primaryColor,
+                            backgroundColor: surfaceColor,
                             labelStyle: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : AppColors.textPrimary,
+                                  : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.w500,
                               fontSize: 12,
                             ),
-                            shape: const RoundedRectangleBorder(
+                            shape: RoundedRectangleBorder(
                               borderRadius: AppRadius.pill,
-                              side: BorderSide.none,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : (isDark ? AppColors.darkBorder : AppColors.border),
+                              ),
                             ),
                           ),
                         );
@@ -486,7 +511,13 @@ class _AnnouncementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final catColor = _getCategoryColor(announcement.category);
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.surface;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,
@@ -494,9 +525,9 @@ class _AnnouncementCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: cardBg,
           borderRadius: AppRadius.card,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: cardBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +541,7 @@ class _AnnouncementCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: 0.1),
+                    color: catColor.withValues(alpha: isDark ? 0.2 : 0.1),
                     borderRadius: AppRadius.pill,
                   ),
                   child: Text(
@@ -523,15 +554,15 @@ class _AnnouncementCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Icon(
+                Icon(
                   Icons.access_time_rounded,
                   size: 14,
-                  color: AppColors.textSecondary,
+                  color: textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   announcement.createdAt.toRelativeTime(),
-                  style: AppTextStyles.caption,
+                  style: AppTextStyles.captionOf(context),
                 ),
                 if (isAdmin && onEdit != null) ...[
                   const SizedBox(width: 8),
@@ -544,27 +575,27 @@ class _AnnouncementCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
+                        color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft,
                         borderRadius: AppRadius.pill,
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: primaryColor.withValues(alpha: 0.3),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.edit_outlined,
                             size: 12,
-                            color: AppColors.primaryStrong,
+                            color: primaryColor,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
                             'Edit',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryStrong,
+                              color: primaryColor,
                             ),
                           ),
                         ],
@@ -579,7 +610,7 @@ class _AnnouncementCard extends StatelessWidget {
             // Title
             Text(
               announcement.title,
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
+              style: AppTextStyles.sectionTitleOf(context).copyWith(fontSize: 16),
             ),
             const SizedBox(height: 8),
 
@@ -588,8 +619,8 @@ class _AnnouncementCard extends StatelessWidget {
               announcement.content,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.body.copyWith(
-                color: const Color(0xFF4A5568),
+              style: AppTextStyles.bodyOf(context).copyWith(
+                color: isDark ? AppColors.darkTextBody : const Color(0xFF4A5568),
                 height: 1.45,
               ),
             ),
@@ -609,34 +640,34 @@ class _AnnouncementCard extends StatelessWidget {
             // Footer: Author & Read more indicator
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.verified_user_rounded,
                   size: 15,
-                  color: AppColors.primary,
+                  color: primaryColor,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   announcement.authorName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
                 const Spacer(),
-                const Text(
+                Text(
                   'Baca Selengkapnya',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: primaryColor,
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 11,
-                  color: AppColors.primary,
+                  color: primaryColor,
                 ),
               ],
             ),
