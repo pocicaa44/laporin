@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/announcement_model.dart';
 import '../services/supabase_service.dart';
+import 'notification_repository.dart';
 
 /// Repository untuk pengelolaan pengumuman resmi per PRD.md FR-09
 class AnnouncementRepository {
@@ -284,6 +285,12 @@ class AnnouncementRepository {
           final serverAnnouncement = AnnouncementModel.fromJson(response);
           _announcements.insert(0, serverAnnouncement);
           notifyListeners();
+          try {
+            NotificationRepository.instance.notifyAnnouncement(
+              announcementTitle: cleanTitle,
+              announcementContent: cleanContent,
+            );
+          } catch (_) {}
           return serverAnnouncement;
         }
       } catch (e) {
@@ -294,6 +301,12 @@ class AnnouncementRepository {
 
     _announcements.insert(0, newAnnouncement);
     notifyListeners();
+    try {
+      NotificationRepository.instance.notifyAnnouncement(
+        announcementTitle: cleanTitle,
+        announcementContent: cleanContent,
+      );
+    } catch (_) {}
     return newAnnouncement;
   }
 

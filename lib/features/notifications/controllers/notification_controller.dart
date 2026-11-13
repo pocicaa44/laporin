@@ -2,17 +2,61 @@ import 'package:flutter/material.dart';
 
 import '../../../data/models/notification_model.dart';
 import '../../../data/repositories/notification_repository.dart';
+import '../../settings/controllers/settings_controller.dart';
 
 /// Controller for managing in-app notifications
 class NotificationController extends ChangeNotifier {
-  NotificationController({required this.repository}) {
+  NotificationController({
+    required this.repository,
+    this.settingsController,
+    bool isAdmin = false,
+  }) {
+    _isAdmin = isAdmin;
+    _settingsListener = () {
+      notifyListeners();
+    };
+    settingsController?.addListener(_settingsListener!);
+
+    _repositoryListener = () {
+      fetchNotifications(silent: true);
+    };
+    repository.addListener(_repositoryListener!);
+
     fetchNotifications();
   }
 
   final NotificationRepository repository;
+  final SettingsController? settingsController;
+  bool _isAdmin = false;
+  bool get isAdmin => _isAdmin;
+
+  set isAdmin(bool value) {
+    if (_isAdmin != value) {
+      _isAdmin = value;
+      notifyListeners();
+    }
+  }
+
+  VoidCallback? _settingsListener;
+  VoidCallback? _repositoryListener;
 
   List<NotificationModel> _notifications = [];
-  List<NotificationModel> get notifications => _notifications;
+
+  /// Daftar seluruh notifikasi mentah (unfiltered)
+  List<NotificationModel> get allNotifications => _notifications;
+
+  /// Daftar notifikasi aktif yang disaring sesuai pengaturan pengguna di Halaman Pengaturan
+  List<NotificationModel> get notifications {
+    if (settingsController != null) {
+      return _notifications.where((n) {
+        return settingsController!.isNotificationAllowed(
+          n.type,
+          isAdmin: _isAdmin,
+        );
+      }).toList();
+    }
+    return _notifications;
+  }
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -21,6 +65,12 @@ class NotificationController extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_settingsListener != null) {
+      settingsController?.removeListener(_settingsListener!);
+    }
+    if (_repositoryListener != null) {
+      repository.removeListener(_repositoryListener!);
+    }
     _isDisposed = true;
     super.dispose();
   }
@@ -32,11 +82,14 @@ class NotificationController extends ChangeNotifier {
     }
   }
 
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  /// Menghitung jumlah notifikasi belum dibaca HANYA untuk jenis notifikasi yang diizinkan aktif
+  int get unreadCount => notifications.where((n) => !n.isRead).length;
 
-  Future<void> fetchNotifications() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> fetchNotifications({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     try {
       final list = await repository.getNotifications();
@@ -70,10 +123,14 @@ class NotificationController extends ChangeNotifier {
   Future<void> markAllAsRead() async {
     if (_notifications.isEmpty || unreadCount == 0) return;
 
-    // 1. Optimistic update: langsung jadikan semua isRead = true agar UI merespons instan
-    _notifications = _notifications
-        .map((n) => n.copyWith(isRead: true))
-        .toList();
+    // 1. Optimistic update: tandai semua notifikasi aktif sebagai sudah dibaca
+    final activeIds = notifications.map((n) => n.id).toSet();
+    _notifications = _notifications.map((n) {
+      if (activeIds.contains(n.id)) {
+        return n.copyWith(isRead: true);
+      }
+      return n;
+    }).toList();
     notifyListeners();
 
     // 2. Simpan perubahan ke repository dan database

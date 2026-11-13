@@ -309,8 +309,16 @@ async function handleReportStatusChanged(
   };
 
   const statusLabel = statusLabels[report.handling_status] || report.handling_status;
-  const title = "Status Laporan Diperbarui!";
-  const notifBody = `laporan ${report.title} ${statusLabel}`;
+  let title = "Status laporan Anda diperbarui!";
+  let notifBody = `Laporan ${report.title} ${statusLabel}`;
+
+  if (report.handling_status === "completed") {
+    title = "Laporan Anda telah diselesaikan!";
+    notifBody = `Laporan ${report.title} telah selesai ditangani. Terima kasih atas partisipasi Anda!`;
+  } else if (report.handling_status === "rejected") {
+    title = "Laporan Anda ditolak!";
+    notifBody = `Laporan ${report.title} tidak dapat diproses${report.rejection_reason ? `: ${report.rejection_reason}` : "."}`;
+  }
 
   const { data: tokens } = await supabase
     .from("device_tokens")
@@ -346,8 +354,8 @@ async function handleAnnouncementPublished(
     throw new Error(`Announcement not found or not published: ${announcementId}`);
   }
 
-  const title = "Pengumuman Baru Diterbitkan!";
-  const preview = "lihat pengumuman sekarang.";
+  const title = "Pengumuman baru diterbitkan!";
+  const preview = announcement.title || "Lihat pengumuman sekarang.";
 
   const { data: tokens } = await supabase
     .from("device_tokens")

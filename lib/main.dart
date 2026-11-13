@@ -162,10 +162,23 @@ class LaporinApp extends StatelessWidget {
             autoDetectGps: true,
           ),
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider2<SettingsController, AuthController, NotificationController>(
           create: (context) => NotificationController(
             repository: context.read<NotificationRepository>(),
+            settingsController: context.read<SettingsController>(),
+            isAdmin: context.read<AuthController>().isAdmin,
           ),
+          update: (context, settings, auth, previous) {
+            if (previous != null) {
+              previous.isAdmin = auth.isAdmin;
+              return previous;
+            }
+            return NotificationController(
+              repository: context.read<NotificationRepository>(),
+              settingsController: settings,
+              isAdmin: auth.isAdmin,
+            );
+          },
         ),
         ChangeNotifierProvider(create: (context) => NavigationController()),
         ChangeNotifierProvider(

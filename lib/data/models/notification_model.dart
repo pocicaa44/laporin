@@ -12,10 +12,32 @@ enum NotificationType {
   final String label;
 
   static NotificationType fromString(String? val) {
-    return NotificationType.values.firstWhere(
-      (e) => e.value == val,
-      orElse: () => NotificationType.statusChanged,
-    );
+    if (val == null) return NotificationType.statusChanged;
+    switch (val) {
+      case 'status_changed':
+      case 'report_status_changed':
+        return NotificationType.statusChanged;
+      case 'new_comment':
+        return NotificationType.newComment;
+      case 'reply_comment':
+        return NotificationType.replyComment;
+      case 'upvoted':
+      case 'report_upvoted':
+        return NotificationType.upvoted;
+      case 'moderation':
+        return NotificationType.moderation;
+      case 'announcement':
+      case 'announcement_published':
+        return NotificationType.announcement;
+      case 'new_report':
+      case 'new_report_created':
+        return NotificationType.newReport;
+      default:
+        return NotificationType.values.firstWhere(
+          (e) => e.value == val,
+          orElse: () => NotificationType.statusChanged,
+        );
+    }
   }
 }
 

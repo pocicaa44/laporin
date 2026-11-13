@@ -8,11 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/notification_model.dart';
 import '../../data/services/supabase_service.dart';
 import '../../features/announcements/screens/announcements_screen.dart';
+import '../../features/auth/controllers/auth_controller.dart';
 import '../../features/notifications/controllers/notification_controller.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/report_detail/screens/report_detail_screen.dart';
+import '../../features/settings/controllers/settings_controller.dart';
 
 /// Top-level background message handler sesuai standar Firebase Messaging
 @pragma('vm:entry-point')
@@ -271,8 +274,13 @@ class FcmService {
         (message.data['title'] as String?) ??
         'Notifikasi Baru';
     final body = notification?.body ?? (message.data['body'] as String?) ?? '';
+    final typeStr = (message.data['type'] as String?) ??
+        (message.data['notification_type'] as String?);
+    final notifType = NotificationType.fromString(typeStr);
 
     final context = navigatorKey.currentContext;
+    bool isAllowedBySettings = true;
+
     if (context != null) {
       // 1. Refresh otomatis riwayat notifikasi in-app dan unread badge counter
       try {
@@ -282,10 +290,24 @@ class FcmService {
         );
         notifController.fetchNotifications();
       } catch (_) {}
+
+      // 2. Evaluasi apakah jenis notifikasi ini diizinkan di SettingsScreen
+      try {
+        final settings = Provider.of<SettingsController>(
+          context,
+          listen: false,
+        );
+        final auth = Provider.of<AuthController?>(context, listen: false);
+        final isAdmin = auth?.isAdmin ?? false;
+        isAllowedBySettings = settings.isNotificationAllowed(
+          notifType,
+          isAdmin: isAdmin,
+        );
+      } catch (_) {}
     }
 
-    // 2. Tampilkan notifikasi pop-up sistem di Android (Heads-Up Banner)
-    if (title.isNotEmpty || body.isNotEmpty) {
+    // 3. Tampilkan notifikasi pop-up sistem di Android (Heads-Up Banner) hanya jika diizinkan oleh pengaturan
+    if (isAllowedBySettings && (title.isNotEmpty || body.isNotEmpty)) {
       final notificationId =
           message.messageId?.hashCode ??
           DateTime.now().millisecondsSinceEpoch.remainder(100000);
@@ -310,6 +332,12 @@ class FcmService {
         payload: jsonEncode(message.data),
       );
     }
+  }
+
+  /// Helper untuk pengujian unit & widget
+  @visibleForTesting
+  void handleForegroundMessageForTesting(RemoteMessage message) {
+    _handleForegroundMessage(message);
   }
 
   /// Penanganan saat pengguna menekan notifikasi (background / terminated / foreground)

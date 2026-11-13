@@ -9,6 +9,7 @@ import '../../core/services/media_service.dart';
 import '../models/report_model.dart';
 import '../models/report_statistics_model.dart';
 import '../services/supabase_service.dart';
+import 'notification_repository.dart';
 
 /// Repository for reports with strict enforcement of business invariants
 /// (Dual state machine, public visibility, downvote thresholds, terminal archive window).
@@ -843,6 +844,14 @@ class ReportRepository {
     }
 
     _reports.insert(0, newReport);
+    if (!newReport.isDraft) {
+      try {
+        NotificationRepository.instance.notifyNewReport(
+          reportId: newReport.id,
+          reportTitle: newReport.title,
+        );
+      } catch (_) {}
+    }
     return newReport;
   }
 
@@ -1042,6 +1051,16 @@ class ReportRepository {
     }
 
     _reports[index] = updated;
+    if (voteType == 'up' &&
+        updated.currentUserVote == 'up' &&
+        userId != current.authorId) {
+      try {
+        NotificationRepository.instance.notifyUpvoted(
+          reportId: updated.id,
+          reportTitle: updated.title,
+        );
+      } catch (_) {}
+    }
     return updated;
   }
 
@@ -1160,6 +1179,14 @@ class ReportRepository {
     }
 
     _reports[index] = updated;
+    try {
+      NotificationRepository.instance.notifyStatusChanged(
+        reportId: updated.id,
+        reportTitle: updated.title,
+        statusLabel: updated.handlingStatus.label,
+        status: updated.handlingStatus,
+      );
+    } catch (_) {}
     return updated;
   }
 

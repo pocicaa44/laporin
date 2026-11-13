@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models/comment_model.dart';
 import '../models/user_profile_model.dart';
 import '../services/supabase_service.dart';
+import 'notification_repository.dart';
 
 /// Repository for handling comments on reports with Supabase integration
 /// and in-memory fallback for offline/test environments.
@@ -151,6 +152,22 @@ class CommentRepository {
           created = created.copyWith(authorAvatarUrl: resolvedAvatarUrl);
         }
         _memoryFallbackComments.add(created);
+        try {
+          if (parentCommentId != null) {
+            NotificationRepository.instance.notifyReplyComment(
+              reportId: reportId,
+              replierName: authorName,
+              replyBody: body.trim(),
+            );
+          } else {
+            NotificationRepository.instance.notifyNewComment(
+              reportId: reportId,
+              reportTitle: 'laporan',
+              commenterName: authorName,
+              commentBody: body.trim(),
+            );
+          }
+        } catch (_) {}
         return created;
       } catch (e) {
         debugPrint('Error addComment Supabase: $e');
@@ -172,6 +189,22 @@ class CommentRepository {
       parentCommentId: parentCommentId,
     );
     _memoryFallbackComments.add(newComment);
+    try {
+      if (parentCommentId != null) {
+        NotificationRepository.instance.notifyReplyComment(
+          reportId: reportId,
+          replierName: authorName,
+          replyBody: body.trim(),
+        );
+      } else {
+        NotificationRepository.instance.notifyNewComment(
+          reportId: reportId,
+          reportTitle: 'laporan',
+          commenterName: authorName,
+          commentBody: body.trim(),
+        );
+      }
+    } catch (_) {}
     return newComment;
   }
 

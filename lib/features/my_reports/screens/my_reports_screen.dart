@@ -15,6 +15,7 @@ import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../create_report/screens/create_report_screen.dart';
+import '../../feed/controllers/feed_controller.dart';
 import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
 import '../../report_detail/screens/report_detail_screen.dart';
@@ -145,14 +146,6 @@ class _MyReportsViewState extends State<_MyReportsView> {
   }
 
   void _navigateToCreateReport() {
-    try {
-      final nav = context.read<NavigationController?>();
-      if (nav != null) {
-        nav.setIndex(2);
-        return;
-      }
-    } catch (_) {}
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -161,6 +154,9 @@ class _MyReportsViewState extends State<_MyReportsView> {
     ).then((_) {
       if (mounted) {
         context.read<MyReportsController>().fetchMyReports(forceRefresh: true);
+        try {
+          context.read<FeedController>().fetchFeed();
+        } catch (_) {}
       }
     });
   }
