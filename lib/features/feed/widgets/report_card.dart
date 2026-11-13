@@ -38,11 +38,11 @@ class ReportCard extends StatelessWidget {
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final chipBg =
-        isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle;
+        isDark ? AppColors.darkSurfaceElevated : AppColors.primarySubtle;
     final chipBorder =
         isDark ? AppColors.darkBorder : const Color(0xFFBFDBFE);
     final chipText =
-        isDark ? AppColors.darkPrimaryLight : AppColors.primary;
+        isDark ? AppColors.darkTextBody : AppColors.primary;
 
     final isDesktop = MediaQuery.sizeOf(context).width > 800;
 

@@ -286,11 +286,10 @@ class SettingsScreen extends StatelessWidget {
                       height: 52,
                       decoration: BoxDecoration(
                         color: isDark ? AppColors.darkSurfaceElevated : AppColors.primarySoft,
-                        borderRadius: AppRadius.card,
+                        shape: BoxShape.circle,
                         border: Border.all(color: borderColor),
                       ),
-                      child: ClipRRect(
-                        borderRadius: AppRadius.card,
+                      child: ClipOval(
                         child: Image.asset(
                           'assets/logo_laporin.png',
                           width: 52,
@@ -443,7 +442,7 @@ class _ThemeOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final activePrimary = isDark ? AppColors.darkPrimary : AppColors.primary;
     final activeBg = isDark
-        ? const Color(0xFF1E3A8A).withValues(alpha: 0.3)
+        ? AppColors.darkPrimarySubtle
         : AppColors.primarySoft;
     final inactiveBg = isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF8FAFC);
     final borderColor = isSelected

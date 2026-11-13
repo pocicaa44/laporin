@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/network_service.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'app_button.dart';
 
@@ -59,12 +60,13 @@ class _OfflineFallbackViewState extends State<OfflineFallbackView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconBg =
-        isDark ? const Color(0xFF334155).withValues(alpha: 0.3) : const Color(0xFF23272F).withValues(alpha: 0.08);
+    final iconBg = isDark
+        ? AppColors.darkSurfaceElevated
+        : const Color(0xFF23272F).withValues(alpha: 0.08);
     final iconColor =
-        isDark ? const Color(0xFFCBD5E1) : const Color(0xFF23272F);
+        isDark ? AppColors.darkTextBody : const Color(0xFF23272F);
     final messageColor =
-        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B);
 
     return Center(
       child: SingleChildScrollView(

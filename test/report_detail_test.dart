@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:laporin/core/widgets/app_profile_bar.dart';
 import 'package:laporin/core/widgets/user_avatar.dart';
 import 'package:laporin/data/models/comment_model.dart';
 import 'package:laporin/data/models/report_model.dart';
@@ -12,6 +13,8 @@ import 'package:laporin/features/feed/widgets/report_card.dart';
 import 'package:laporin/features/report_detail/controllers/report_detail_controller.dart';
 import 'package:laporin/features/report_detail/screens/report_detail_screen.dart';
 import 'package:laporin/features/report_detail/widgets/comment_tile.dart';
+import 'package:laporin/features/report_detail/widgets/status_timeline.dart';
+import 'package:laporin/features/report_detail/widgets/vote_action_bar.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -577,6 +580,90 @@ void main() {
 
         expect(find.text('Komentar berhasil dihapus'), findsOneWidget);
         expect(find.text('Komentar saya di halaman detail'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Desktop Layout: ReportDetailScreen renders 2 columns with detail, progress, vote on left and comments on right',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final desktopReport = ReportModel(
+          id: 'rep-desk-1',
+          reportNumber: 'LPR-2026-DESK',
+          authorId: 'user-1',
+          authorName: 'Budi Santoso',
+          authorUsername: 'budisantoso',
+          areaId: 'area-jateng',
+          areaName: 'Kota Semarang',
+          title: 'Perbaikan Lampu Jalan Simpang Lima',
+          description:
+              'Lampu jalan mati total sepanjang 200 meter di area Simpang Lima.',
+          category: 'Penerangan Jalan',
+          latitude: -6.9924,
+          longitude: 110.4225,
+          locationAddress: 'Jl. Simpang Lima, Semarang',
+          handlingStatus: HandlingStatus.inProgress,
+          publicationState: PublicationState.published,
+          createdAt: DateTime(2026, 10, 22, 10, 0),
+          updatedAt: DateTime(2026, 10, 22, 10, 0),
+        );
+
+        final authRepo = AuthRepository();
+        final reportRepo = ReportRepository();
+        final commentRepo = CommentRepository();
+        authRepo.setCurrentUserProfileForTesting(
+          const UserProfileModel(
+            id: 'user-curr',
+            email: 'user@test.id',
+            fullName: 'User Penguji',
+            username: 'userpenguji',
+            role: UserRole.user,
+          ),
+        );
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              Provider.value(value: authRepo),
+              Provider.value(value: reportRepo),
+              Provider.value(value: commentRepo),
+              ChangeNotifierProvider(
+                create: (_) => AuthController(authRepository: authRepo),
+              ),
+            ],
+            child: MaterialApp(
+              home: ReportDetailScreen(
+                reportId: desktopReport.id,
+                initialReport: desktopReport,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // 1. Verifikasi AppProfileBar di AppBar pada mode desktop
+        expect(find.byType(AppProfileBar), findsOneWidget);
+
+        // 2. Verifikasi pemisah vertikal antar kolom (VerticalDivider)
+        expect(find.byType(VerticalDivider), findsOneWidget);
+
+        // 3. Verifikasi Bagian Kiri: Detail Laporan, Progress (StatusTimeline), dan Vote (VoteActionBar)
+        expect(find.text('Perbaikan Lampu Jalan Simpang Lima'), findsOneWidget);
+        expect(find.text('LPR-2026-DESK'), findsOneWidget);
+        expect(find.byType(StatusTimeline), findsOneWidget);
+        expect(find.byType(VoteActionBar), findsOneWidget);
+
+        // 4. Verifikasi Bagian Kanan: Header Diskusi & Komentar serta Composer TextField
+        expect(find.textContaining('Diskusi & Komentar'), findsOneWidget);
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.text('Tulis komentar atau tanggapan...'), findsOneWidget);
       },
     );
   });

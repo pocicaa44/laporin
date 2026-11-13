@@ -203,7 +203,7 @@ class _FeedScreenState extends State<FeedScreen> {
               final surfaceColor =
                   isDark ? AppColors.darkSurface : AppColors.surface;
               final elevatedColor = isDark
-                  ? AppColors.darkSurfaceElevated
+                  ? AppColors.darkSurfaceRecessed
                   : AppColors.surface;
               final textColor =
                   isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;

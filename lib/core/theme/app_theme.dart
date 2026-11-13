@@ -186,7 +186,7 @@ class AppTheme {
   }
 
   // ==========================================
-  // MODE GELAP (DARK THEME)
+  // MODE GELAP (DARK THEME - Neutral Charcoal & Deep Black)
   // ==========================================
   static ThemeData get darkTheme {
     const darkBorderSide = BorderSide(color: AppColors.darkBorder, width: 1.0);
@@ -207,6 +207,10 @@ class AppTheme {
         onError: Colors.white,
         surface: AppColors.darkSurface,
         onSurface: AppColors.darkTextPrimary,
+        surfaceContainerHighest: AppColors.darkSurfaceElevated,
+        surfaceContainer: AppColors.darkSurface,
+        outline: AppColors.darkBorder,
+        outlineVariant: AppColors.darkBorderSubtle,
       ),
 
       // Text Theme: Dark mode text hierarchy with WCAG AA compliance
@@ -239,7 +243,7 @@ class AppTheme {
         indicatorColor: AppColors.darkPrimary,
       ),
 
-      // App Bar: Slate 800 surface, 0 elevation, 1px bottom border
+      // App Bar: Dark Charcoal (#1A1A1E) surface, 0 elevation, 1px bottom border (#2E2E34)
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkTextPrimary,
@@ -252,7 +256,7 @@ class AppTheme {
         ),
       ),
 
-      // Card Theme: Sudut membulat 16px, background Slate 800, hairline border Slate 700 (Flat UI)
+      // Card Theme: Sudut membulat 16px, background Dark Charcoal (#1A1A1E), hairline border (#2E2E34)
       cardTheme: const CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -263,7 +267,7 @@ class AppTheme {
         color: AppColors.darkSurface,
       ),
 
-      // Elevated & Filled Button Theme: Sudut membulat 12px
+      // Elevated & Filled Button Theme: Sudut membulat 12px, warna aksen primary
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -276,13 +280,14 @@ class AppTheme {
         ),
       ),
 
-      // Outlined Button Theme: Sudut membulat 12px, border Slate 700 1px solid
+      // Outlined Button Theme: Sudut membulat 12px, latar Dark Charcoal, border netral 1px solid
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           elevation: 0,
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
           side: darkBorderSide,
           foregroundColor: AppColors.darkTextPrimary,
+          backgroundColor: AppColors.darkSurface,
           minimumSize: const Size.fromHeight(48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           textStyle: AppTextStyles.button.copyWith(
@@ -311,10 +316,10 @@ class AppTheme {
         foregroundColor: Colors.white,
       ),
 
-      // Input Decoration Theme: Latar Slate 900, sudut membulat 12px, border Slate 700
+      // Input Decoration Theme: Latar Recessed Charcoal (#141416), sudut membulat 12px, border netral (#2E2E34)
       inputDecorationTheme: const InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.darkSurfaceElevated,
+        fillColor: AppColors.darkSurfaceRecessed,
         border: OutlineInputBorder(
           borderRadius: AppRadius.input,
           borderSide: darkBorderSide,
@@ -344,7 +349,7 @@ class AppTheme {
         ),
       ),
 
-      // Dialog & Modal Theme: Latar Slate 800, sudut membulat 20px, border Slate 700
+      // Dialog & Modal Theme: Latar Dark Charcoal (#1A1A1E), sudut membulat 20px, border netral (#2E2E34)
       dialogTheme: const DialogThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -354,14 +359,14 @@ class AppTheme {
         backgroundColor: AppColors.darkSurface,
       ),
 
-      // Bottom Sheet Theme: Sudut atas membulat 24px, latar Slate 800
+      // Bottom Sheet Theme: Sudut atas membulat 24px, latar Dark Charcoal (#1A1A1E)
       bottomSheetTheme: const BottomSheetThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.sheet),
         backgroundColor: AppColors.darkSurface,
       ),
 
-      // Divider Theme: 1 px hairline border Slate 700
+      // Divider Theme: 1 px hairline border netral (#2E2E34)
       dividerTheme: const DividerThemeData(
         color: AppColors.darkBorder,
         thickness: 1,

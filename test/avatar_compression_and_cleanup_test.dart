@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:laporin/core/services/media_service.dart';
+import 'package:laporin/core/theme/app_colors.dart';
 import 'package:laporin/data/models/user_profile_model.dart';
 import 'package:laporin/data/repositories/auth_repository.dart';
 import 'package:laporin/features/auth/controllers/auth_controller.dart';
@@ -399,13 +400,13 @@ void main() {
         );
         expect(headerTitleFinder, findsOneWidget);
         final headerText = tester.widget<Text>(headerTitleFinder);
-        expect(headerText.style?.color, equals(const Color(0xFFF8FAFC)));
+        expect(headerText.style?.color, equals(AppColors.darkTextPrimary));
 
         // 2. Verify 'Informasi Akun' card container uses darkSurface and darkBorder
         expect(find.text('Informasi Akun'), findsOneWidget);
         expect(find.text('user_dark@laporin.id'), findsOneWidget);
         final emailText = tester.widget<Text>(find.text('user_dark@laporin.id'));
-        expect(emailText.style?.color, equals(const Color(0xFFF8FAFC)));
+        expect(emailText.style?.color, equals(AppColors.darkTextPrimary));
 
         // 3. Verify card container decoration color is darkSurface
         final cardContainerFinder = find.ancestor(
@@ -414,7 +415,7 @@ void main() {
         ).first;
         final cardContainer = tester.widget<Container>(cardContainerFinder);
         final decoration = cardContainer.decoration as BoxDecoration;
-        expect(decoration.color, equals(const Color(0xFF1E293B)));
+        expect(decoration.color, equals(AppColors.darkSurface));
       },
     );
   });

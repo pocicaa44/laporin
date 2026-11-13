@@ -124,6 +124,15 @@ void main() {
         expect(find.text('Panel'), findsOneWidget);
         expect(find.text('Pengumuman'), findsOneWidget);
         expect(find.text('Profil'), findsOneWidget);
+
+        // 4. AdminSidebar brand logo uses circular clip (ClipOval)
+        expect(
+          find.descendant(
+            of: find.byType(AdminSidebar),
+            matching: find.byType(ClipOval),
+          ),
+          findsOneWidget,
+        );
       },
     );
 

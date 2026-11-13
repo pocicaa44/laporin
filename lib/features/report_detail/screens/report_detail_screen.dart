@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
@@ -664,10 +665,10 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return Container(
-      color: bgColor,
+      color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
       child: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: isDesktop ? 860 : 720),
+          constraints: BoxConstraints(maxWidth: isDesktop ? 1280 : 720),
           decoration: BoxDecoration(
             color: bgColor,
             border: Border.symmetric(
@@ -897,1053 +898,1406 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                   ),
                 ] else
                   const SizedBox(width: 12),
+                if (isDesktop) const AppProfileBar(),
               ],
             ),
-            body: Column(
-              children: [
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () => controller.loadData(),
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        // Draft banner jika laporan masih dalam status draft
-                        if (report.isDraft) ...[
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: warningSubtle,
-                              borderRadius: AppRadius.borderSm,
-                              border: Border.all(
-                                color: warningBorder,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.edit_note_rounded,
-                                      color: warningText,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Draft Laporan',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: warningText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Laporan ini masih disimpan sebagai draft dan belum dapat dilihat publik atau ditangani petugas.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF78350F),
-                                    height: 1.35,
-                                  ),
-                                ),
-                                if (isOwner) ...[
-                                  const SizedBox(height: 10),
-                                  ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(38),
-                                      backgroundColor: primaryColor,
-                                      foregroundColor: Colors.white,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: AppRadius.button,
-                                      ),
-                                      elevation: 0,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.public_rounded,
-                                      size: 16,
-                                    ),
-                                    label: const Text(
-                                      'Publikasikan Sekarang',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () =>
-                                        _handlePublishDraft(report),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-
-                        // Banner pemberitahuan jika laporan sudah dihapus oleh pelapor
-                        if (isAdmin && report.deletedByUser) ...[
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: dangerSubtle,
-                              borderRadius: AppRadius.borderSm,
-                              border: Border.all(
-                                color: dangerBorder,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.person_off_outlined,
-                                      color: dangerColor,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Laporan Telah Dihapus Oleh Pelapor',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: dangerColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Pelapor telah menghapus laporan ini dari akunnya. Tekan tombol di bawah untuk menghapus permanen dari database dan membersihkan media di server.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF991B1B),
-                                    height: 1.35,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(38),
-                                    backgroundColor: dangerColor,
-                                    foregroundColor: Colors.white,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: AppRadius.button,
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  icon: const Icon(
-                                    Icons.delete_forever_rounded,
-                                    size: 16,
-                                  ),
-                                  label: const Text(
-                                    'Hapus Permanen Laporan',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  onPressed: () => _showDeleteDialog(
-                                    report,
-                                    currentUserId,
-                                    isAdmin: true,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-
-                        // Author Header & Category
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: surfaceColor,
-                            borderRadius: AppRadius.card,
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Row(
-                            children: [
-                              UserAvatar(
-                                name: report.authorName,
-                                username: report.authorUsername,
-                                avatarUrl: report.authorAvatarUrl,
-                                radius: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      report.displayAuthorUsername,
-                                      style: AppTextStyles.label.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${report.authorName} • ${report.createdAt.toDisplayDateTime()}',
-                                      style: AppTextStyles.captionOf(context),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle,
-                                  borderRadius: AppRadius.pill,
-                                  border: Border.all(
-                                    color: isDark ? primaryColor.withValues(alpha: 0.3) : const Color(0xFFBFDBFE),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  report.category,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: primaryColor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Title
-                        Text(report.title, style: AppTextStyles.pageTitleOf(context)),
-                        const SizedBox(height: 8),
-
-                        // Location row
-                        InkWell(
-                          borderRadius: AppRadius.borderSm,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ReportMapViewerScreen(report: report),
-                              ),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: primaryColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    report.locationAddress,
-                                    style: AppTextStyles.captionOf(context).copyWith(
-                                      color: primaryColor,
-                                      fontWeight: FontWeight.w600,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.open_in_new,
-                                  size: 14,
-                                  color: primaryColor,
-                                ),
-                              ],
+            body: isDesktop
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. BAGIAN KIRI: Detail Laporan, Progress, dan Vote (flex: 6)
+                      Expanded(
+                        flex: 6,
+                        child: RefreshIndicator(
+                          onRefresh: () => controller.loadData(),
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(24, 20, 20, 32),
+                            children: _buildReportDetailItems(
+                              report: report,
+                              controller: controller,
+                              auth: auth,
+                              isDark: isDark,
+                              primaryColor: primaryColor,
+                              surfaceColor: surfaceColor,
+                              borderColor: borderColor,
+                              borderSubtle: borderSubtle,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              textBody: textBody,
+                              dangerColor: dangerColor,
+                              dangerSubtle: dangerSubtle,
+                              dangerBorder: dangerBorder,
+                              warningSubtle: warningSubtle,
+                              warningBorder: warningBorder,
+                              warningText: warningText,
+                              successColor: successColor,
+                              successSubtle: successSubtle,
+                              successBorder: successBorder,
+                              isOwner: isOwner,
+                              isAdmin: isAdmin,
+                              isFinalized: isFinalized,
+                              currentUserId: currentUserId,
+                              isOnline: isOnline,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                      ),
 
-                        // Photo gallery
-                        if (report.photoUrls.isNotEmpty) ...[
-                          _buildPhotoGallery(report.photoUrls),
-                          const SizedBox(height: 16),
-                        ],
+                      // Garis pemisah vertikal antar kolom
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: borderColor,
+                      ),
 
-                        // Description
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: surfaceColor,
-                            borderRadius: AppRadius.card,
-                            border: Border.all(color: borderColor),
-                          ),
+                      // 2. BAGIAN KANAN: Section Diskusi dan Komentar (flex: 5)
+                      Expanded(
+                        flex: 5,
+                        child: Container(
+                          color: surfaceColor,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
-                                'Deskripsi Masalah',
-                                style: AppTextStyles.sectionTitleOf(context),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                report.description,
-                                style: AppTextStyles.bodyOf(context).copyWith(
-                                  color: textBody,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Status Timeline
-                        StatusTimeline(report: report),
-                        const SizedBox(height: 16),
-
-                        // Admin Status Action Card
-                        if (isAdmin) ...[
-                          if (isFinalized)
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF8FAFC),
-                                borderRadius: AppRadius.card,
-                                border: Border.all(color: borderColor),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 18,
-                                    color: textSecondary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Laporan ini telah ${report.handlingStatus.label.toLowerCase()} dan statusnya tidak dapat diubah lagi.',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  OutlinedButton.icon(
-                                    icon: Icon(
-                                      Icons.delete_outline_rounded,
-                                      size: 16,
-                                      color: dangerColor,
-                                    ),
-                                    label: const Text('Hapus'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: dangerColor,
-                                      side: BorderSide(
-                                        color: dangerBorder,
-                                        width: 1,
-                                      ),
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: AppRadius.button,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 0,
-                                      ),
-                                      minimumSize: const Size(0, 34),
-                                      textStyle: const TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    onPressed: () => _showDeleteDialog(
-                                      report,
-                                      currentUserId,
-                                      isAdmin: true,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: warningSubtle,
-                                borderRadius: AppRadius.card,
-                                border: Border.all(
-                                  color: warningBorder,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.admin_panel_settings,
-                                        size: 18,
-                                        color: warningText,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Aksi Penanganan Petugas',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: warningText,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton.icon(
-                                          icon: Icon(
-                                            Icons.edit_note_rounded,
-                                            size: 17,
-                                            color: primaryColor,
-                                          ),
-                                          label: const Text('Ubah Status'),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: primaryColor,
-                                            side: BorderSide(
-                                              color: isDark ? primaryColor.withValues(alpha: 0.5) : const Color(0xFF9CA3AF),
-                                              width: 1,
-                                            ),
-                                            shape: const RoundedRectangleBorder(
-                                              borderRadius: AppRadius.button,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 0,
-                                            ),
-                                            minimumSize: const Size(0, 38),
-                                            textStyle: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          onPressed: () =>
-                                              _openAdminStatusSheet(report),
-                                        ),
-                                      ),
-                                      if (report.handlingStatus !=
-                                          HandlingStatus.completed) ...[
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: ElevatedButton.icon(
-                                            icon: const Icon(
-                                              Icons
-                                                  .check_circle_outline_rounded,
-                                              size: 17,
-                                              color: Colors.white,
-                                            ),
-                                            label: const Text('Selesaikan'),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: successColor,
-                                              foregroundColor: Colors.white,
-                                              elevation: 0,
-                                              shape:
-                                                  const RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        AppRadius.button,
-                                                  ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 0,
-                                                  ),
-                                              minimumSize: const Size(0, 38),
-                                              textStyle: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            onPressed: () =>
-                                                _openAdminResolveSheet(report),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Completion Proof & Resolution Notes if completed
-                        if (report.handlingStatus == HandlingStatus.completed &&
-                            (report.completionProofUrl != null ||
-                                (report.completionNotes != null &&
-                                    report.completionNotes!
-                                        .trim()
-                                        .isNotEmpty))) ...[
-                          Container(
-                            key: const Key('completion_resolution_card'),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: successSubtle,
-                              borderRadius: AppRadius.card,
-                              border: Border.all(
-                                color: successBorder,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                              // Header Diskusi
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 18, 20, 14),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Icon(
-                                      Icons.verified,
-                                      color: successColor,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Penyelesaian Pekerjaan',
-                                      style: AppTextStyles.sectionTitleOf(context),
-                                    ),
-                                    const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: successColor,
-                                        borderRadius: AppRadius.pill,
-                                      ),
-                                      child: const Text(
-                                        'Selesai',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Catatan Penyelesaian Petugas
-                                if (report.completionNotes != null &&
-                                    report.completionNotes!
-                                        .trim()
-                                        .isNotEmpty) ...[
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
-                                      borderRadius: AppRadius.button,
-                                      border: Border.all(
-                                        color: successBorder,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons
-                                                  .assignment_turned_in_outlined,
-                                              size: 16,
-                                              color: successColor,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Catatan Penyelesaian:',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: textPrimary,
-                                              ),
-                                            ),
-                                          ],
+                                        Icon(
+                                          Icons.chat_bubble_outline_rounded,
+                                          size: 18,
+                                          color: primaryColor,
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(width: 8),
                                         Text(
-                                          report.completionNotes!,
-                                          key: const Key(
-                                            'report_completion_notes_text',
-                                          ),
-                                          style: AppTextStyles.bodyOf(context).copyWith(
-                                            fontSize: 13,
+                                          'Diskusi & Komentar (${_formatCommentCount(controller.comments.length)})',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
                                             color: textPrimary,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  if (report.completionProofUrl != null)
-                                    const SizedBox(height: 12),
-                                ],
-
-                                // Foto Bukti Pekerjaan Selesai
-                                if (report.completionProofUrl != null) ...[
-                                  Text(
-                                    'Foto Bukti Pekerjaan:',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  GestureDetector(
-                                    onTap: () => _openPhotoViewer(
-                                      [report.completionProofUrl!],
-                                      0,
-                                      title: 'Bukti Penyelesaian',
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: AppRadius.input,
-                                      child: AspectRatio(
-                                        aspectRatio: 16 / 9,
-                                        child: Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            _buildPhoto(
-                                              report.completionProofUrl!,
-                                            ),
-                                            Positioned(
-                                              bottom: 8,
-                                              right: 8,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.black54,
-                                                  borderRadius: AppRadius.pill,
-                                                ),
-                                                child: const Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.zoom_in_rounded,
-                                                      color: Colors.white,
-                                                      size: 14,
-                                                    ),
-                                                    SizedBox(width: 4),
-                                                    Text(
-                                                      'Perbesar',
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Upvote & Downvote actions (Only if report is active public)
-                        if (report.isPubliclyVisible && !report.isTerminal)
-                          VoteActionBar(
-                            report: report,
-                            isEnabled: isOnline && report.isVotingActive,
-                            disabledReason: !isOnline
-                                ? 'Tidak tersedia dalam mode offline'
-                                : (report.handlingStatus ==
-                                          HandlingStatus.completed
-                                      ? 'Penilaian suara ditutup (Laporan Selesai)'
-                                      : null),
-                            onUpvote: () => _handleVote('up'),
-                            onDownvote: () => _handleVote('down'),
-                          ),
-                        const SizedBox(height: 24),
-
-                        // Comments header: Komentar & Diskusi (2.586)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Komentar & Diskusi (${_formatCommentCount(controller.comments.length)})',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: textPrimary,
-                              ),
-                            ),
-                            if (controller.isLoadingComments &&
-                                controller.comments.isNotEmpty)
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    primaryColor,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Comments list
-                        Builder(
-                          builder: (context) {
-                            if (controller.isLoadingComments &&
-                                controller.comments.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 36,
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft)
-                                              .withValues(alpha: 0.5),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: SizedBox(
-                                          width: 28,
-                                          height: 28,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.8,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  primaryColor,
-                                                ),
+                                    if (controller.isLoadingComments &&
+                                        controller.comments.isNotEmpty)
+                                      SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            primaryColor,
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Memuat komentar & diskusi...',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          color: textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-
-                            if (controller.comments.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 24),
-                                child: Center(
-                                  child: Text(
-                                    'Belum ada komentar. Jadilah yang pertama menanggapi.',
-                                    style: AppTextStyles.captionOf(context),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final threads = CommentThreadItem.buildThreads(
-                              controller.comments,
-                            );
-
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: surfaceColor,
-                                borderRadius: AppRadius.card,
-                                border: Border.all(
-                                  color: borderColor,
-                                  width: 1,
+                                  ],
                                 ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: borderSubtle,
+                              ),
+
+                              // Area Komentar Scrollable
+                              Expanded(
+                                child: _buildDesktopCommentsContent(
+                                  controller: controller,
+                                  report: report,
+                                  auth: auth,
+                                  isDark: isDark,
+                                  primaryColor: primaryColor,
+                                  textPrimary: textPrimary,
+                                  textSecondary: textSecondary,
+                                  borderSubtle: borderSubtle,
+                                ),
+                              ),
+
+                              // Composer Komentar di bagian bawah panel kanan
+                              _buildCommentComposer(
+                                report: report,
+                                controller: controller,
+                                isDark: isDark,
+                                primaryColor: primaryColor,
+                                surfaceColor: surfaceColor,
+                                borderColor: borderColor,
+                                textSecondary: textSecondary,
+                                isOnline: isOnline,
+                                currentUserId: currentUserId,
+                                isOwner: isOwner,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: () => controller.loadData(),
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              ..._buildReportDetailItems(
+                                report: report,
+                                controller: controller,
+                                auth: auth,
+                                isDark: isDark,
+                                primaryColor: primaryColor,
+                                surfaceColor: surfaceColor,
+                                borderColor: borderColor,
+                                borderSubtle: borderSubtle,
+                                textPrimary: textPrimary,
+                                textSecondary: textSecondary,
+                                textBody: textBody,
+                                dangerColor: dangerColor,
+                                dangerSubtle: dangerSubtle,
+                                dangerBorder: dangerBorder,
+                                warningSubtle: warningSubtle,
+                                warningBorder: warningBorder,
+                                warningText: warningText,
+                                successColor: successColor,
+                                successSubtle: successSubtle,
+                                successBorder: successBorder,
+                                isOwner: isOwner,
+                                isAdmin: isAdmin,
+                                isFinalized: isFinalized,
+                                currentUserId: currentUserId,
+                                isOnline: isOnline,
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Comments header: Komentar & Diskusi
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  for (int i = 0; i < threads.length; i++) ...[
-                                    if (i > 0)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 14,
-                                        ),
-                                        child: Divider(
-                                          color: borderSubtle,
-                                          height: 1,
-                                          thickness: 1,
-                                        ),
-                                      ),
-                                    CommentThreadTile(
-                                      thread: threads[i],
-                                      reportAuthorId: report.authorId,
-                                      isExpanded: _expandedThreadIds.contains(
-                                        threads[i].root.id,
-                                      ),
-                                      onToggleExpanded: () {
-                                        setState(() {
-                                          if (_expandedThreadIds.contains(
-                                            threads[i].root.id,
-                                          )) {
-                                            _expandedThreadIds.remove(
-                                              threads[i].root.id,
-                                            );
-                                          } else {
-                                            _expandedThreadIds.add(
-                                              threads[i].root.id,
-                                            );
-                                          }
-                                        });
-                                      },
-                                      onReply: _startReply,
-                                      currentUserId: auth.currentUser?.id,
-                                      onDelete: _handleDeleteComment,
+                                  Text(
+                                    'Komentar & Diskusi (${_formatCommentCount(controller.comments.length)})',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
                                     ),
-                                  ],
+                                  ),
+                                  if (controller.isLoadingComments &&
+                                      controller.comments.isNotEmpty)
+                                    SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          primaryColor,
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
-                            );
-                          },
+                              const SizedBox(height: 16),
+
+                              _buildMobileCommentsContent(
+                                controller: controller,
+                                report: report,
+                                auth: auth,
+                                isDark: isDark,
+                                primaryColor: primaryColor,
+                                textSecondary: textSecondary,
+                                surfaceColor: surfaceColor,
+                                borderColor: borderColor,
+                                borderSubtle: borderSubtle,
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
+
+                      // Comment Composer di bagian bawah layar mobile
+                      _buildCommentComposer(
+                        report: report,
+                        controller: controller,
+                        isDark: isDark,
+                        primaryColor: primaryColor,
+                        surfaceColor: surfaceColor,
+                        borderColor: borderColor,
+                        textSecondary: textSecondary,
+                        isOnline: isOnline,
+                        currentUserId: currentUserId,
+                        isOwner: isOwner,
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Membangun seluruh item detail laporan, progress, dan vote (digunakan di kiri pada desktop, dan di atas pada mobile)
+  List<Widget> _buildReportDetailItems({
+    required ReportModel report,
+    required ReportDetailController controller,
+    required AuthController auth,
+    required bool isDark,
+    required Color primaryColor,
+    required Color surfaceColor,
+    required Color borderColor,
+    required Color borderSubtle,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color textBody,
+    required Color dangerColor,
+    required Color dangerSubtle,
+    required Color dangerBorder,
+    required Color warningSubtle,
+    required Color warningBorder,
+    required Color warningText,
+    required Color successColor,
+    required Color successSubtle,
+    required Color successBorder,
+    required bool isOwner,
+    required bool isAdmin,
+    required bool isFinalized,
+    required String currentUserId,
+    required bool isOnline,
+  }) {
+    return [
+      // 1. Draft banner jika laporan masih dalam status draft
+      if (report.isDraft) ...[
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: warningSubtle,
+            borderRadius: AppRadius.borderSm,
+            border: Border.all(
+              color: warningBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.edit_note_rounded,
+                    color: warningText,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Draft Laporan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: warningText,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Laporan ini masih disimpan sebagai draft dan belum dapat dilihat publik atau ditangani petugas.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AppColors.darkTextSecondary : const Color(0xFF78350F),
+                  height: 1.35,
+                ),
+              ),
+              if (isOwner) ...[
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(38),
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.button,
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(
+                    Icons.public_rounded,
+                    size: 16,
+                  ),
+                  label: const Text(
+                    'Publikasikan Sekarang',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () => _handlePublishDraft(report),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+
+      // 2. Banner pemberitahuan jika laporan sudah dihapus oleh pelapor
+      if (isAdmin && report.deletedByUser) ...[
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: dangerSubtle,
+            borderRadius: AppRadius.borderSm,
+            border: Border.all(
+              color: dangerBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_off_outlined,
+                    color: dangerColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Laporan Telah Dihapus Oleh Pelapor',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: dangerColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Pelapor telah menghapus laporan ini dari akunnya. Tekan tombol di bawah untuk menghapus permanen dari database dan membersihkan media di server.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AppColors.darkTextSecondary : const Color(0xFF991B1B),
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(38),
+                  backgroundColor: dangerColor,
+                  foregroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.button,
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(
+                  Icons.delete_forever_rounded,
+                  size: 16,
+                ),
+                label: const Text(
+                  'Hapus Permanen Laporan',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () => _showDeleteDialog(
+                  report,
+                  currentUserId,
+                  isAdmin: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+
+      // 3. Author Header & Category
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: AppRadius.card,
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          children: [
+            UserAvatar(
+              name: report.authorName,
+              username: report.authorUsername,
+              avatarUrl: report.authorAvatarUrl,
+              radius: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    report.displayAuthorUsername,
+                    style: AppTextStyles.label.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${report.authorName} • ${report.createdAt.toDisplayDateTime()}',
+                    style: AppTextStyles.captionOf(context),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkPrimarySoft : AppColors.primarySubtle,
+                borderRadius: AppRadius.pill,
+                border: Border.all(
+                  color: isDark ? primaryColor.withValues(alpha: 0.3) : const Color(0xFFBFDBFE),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                report.category,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // 4. Title
+      Text(report.title, style: AppTextStyles.pageTitleOf(context)),
+      const SizedBox(height: 8),
+
+      // 5. Location row
+      InkWell(
+        borderRadius: AppRadius.borderSm,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReportMapViewerScreen(report: report),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: primaryColor,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  report.locationAddress,
+                  style: AppTextStyles.captionOf(context).copyWith(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.open_in_new,
+                size: 14,
+                color: primaryColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // 6. Photo gallery
+      if (report.photoUrls.isNotEmpty) ...[
+        _buildPhotoGallery(report.photoUrls),
+        const SizedBox(height: 16),
+      ],
+
+      // 7. Description
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: AppRadius.card,
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Deskripsi Masalah',
+              style: AppTextStyles.sectionTitleOf(context),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              report.description,
+              style: AppTextStyles.bodyOf(context).copyWith(
+                color: textBody,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // 8. Status Timeline (Progress)
+      StatusTimeline(report: report),
+      const SizedBox(height: 16),
+
+      // 9. Admin Status Action Card
+      if (isAdmin) ...[
+        if (isFinalized)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF8FAFC),
+              borderRadius: AppRadius.card,
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lock_outline_rounded,
+                  size: 18,
+                  color: textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Laporan ini telah ${report.handlingStatus.label.toLowerCase()} dan statusnya tidak dapat diubah lagi.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: textSecondary,
                     ),
                   ),
                 ),
-
-                // Comment Composer atau Banner Diskusi Ditutup
-                if (report.isPubliclyVisible && !report.isTerminal)
-                  report.canAddComment
-                      ? Container(
-                          decoration: BoxDecoration(
-                            color: surfaceColor,
-                            border: Border(
-                              top: BorderSide(color: borderColor),
-                            ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 16,
+                    color: dangerColor,
+                  ),
+                  label: const Text('Hapus'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: dangerColor,
+                    side: BorderSide(
+                      color: dangerBorder,
+                      width: 1,
+                    ),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.button,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 0,
+                    ),
+                    minimumSize: const Size(0, 34),
+                    textStyle: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () => _showDeleteDialog(
+                    report,
+                    currentUserId,
+                    isAdmin: true,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: warningSubtle,
+              borderRadius: AppRadius.card,
+              border: Border.all(
+                color: warningBorder,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.admin_panel_settings,
+                      size: 18,
+                      color: warningText,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Aksi Penanganan Petugas',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: warningText,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: Icon(
+                          Icons.edit_note_rounded,
+                          size: 17,
+                          color: primaryColor,
+                        ),
+                        label: const Text('Ubah Status'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primaryColor,
+                          side: BorderSide(
+                            color: isDark ? primaryColor.withValues(alpha: 0.5) : const Color(0xFF9CA3AF),
+                            width: 1,
                           ),
-                          child: SafeArea(
-                            top: false,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Reply Header Banner (Membalas @username)
-                                if (_replyingToComment != null) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF3F4F6),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.reply_rounded,
-                                          size: 16,
-                                          color: primaryColor,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text.rich(
-                                            TextSpan(
-                                              children: [
-                                                TextSpan(
-                                                  text: 'Membalas ',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: textSecondary,
-                                                  ),
-                                                ),
-                                                TextSpan(
-                                                  text:
-                                                      _replyingToComment!
-                                                          .authorName
-                                                          .trim()
-                                                          .startsWith('@')
-                                                      ? _replyingToComment!
-                                                            .authorName
-                                                            .trim()
-                                                      : '@${_replyingToComment!.authorName.trim()}',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: primaryColor,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        InkWell(
-                                          onTap: _cancelReply,
-                                          borderRadius: AppRadius.borderSm,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(4),
-                                            child: Icon(
-                                              Icons.close_rounded,
-                                              size: 16,
-                                              color: textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Divider(
-                                    height: 1,
-                                    thickness: 1,
-                                    color: borderColor,
-                                  ),
-                                ],
-
-                                // Input Row
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _commentController,
-                                          focusNode: _commentFocusNode,
-                                          enabled: isOnline,
-                                          textInputAction: TextInputAction.send,
-                                          onSubmitted: isOnline
-                                              ? (_) => _sendComment()
-                                              : null,
-                                          decoration: InputDecoration(
-                                            hintText: !isOnline
-                                                ? 'Komentar dinonaktifkan saat offline'
-                                                : (_replyingToComment != null
-                                                      ? 'Tulis balasan untuk ${_replyingToComment!.authorName.trim().startsWith('@') ? _replyingToComment!.authorName.trim() : '@${_replyingToComment!.authorName.trim()}'}...'
-                                                      : 'Tulis komentar atau tanggapan...'),
-                                            hintStyle: AppTextStyles.captionOf(context),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 14,
-                                                  vertical: 10,
-                                                ),
-                                            border: OutlineInputBorder(
-                                              borderRadius: AppRadius.input,
-                                              borderSide: BorderSide(
-                                                color: borderColor,
-                                              ),
-                                            ),
-                                            enabledBorder:
-                                                OutlineInputBorder(
-                                                  borderRadius: AppRadius.input,
-                                                  borderSide: BorderSide(
-                                                    color: borderColor,
-                                                  ),
-                                                ),
-                                            focusedBorder:
-                                                OutlineInputBorder(
-                                                  borderRadius: AppRadius.input,
-                                                  borderSide: BorderSide(
-                                                    color: primaryColor,
-                                                    width: 1.5,
-                                                  ),
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: controller.isSendingComment
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
-                                              )
-                                            : Icon(
-                                                Icons.send_rounded,
-                                                color: isOnline
-                                                    ? primaryColor
-                                                    : (isDark ? AppColors.darkDisabled : AppColors.disabled),
-                                              ),
-                                        onPressed:
-                                            (isOnline &&
-                                                !controller.isSendingComment)
-                                            ? _sendComment
-                                            : null,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.button,
                           ),
-                        )
-                      : Container(
-                          width: double.infinity,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                            horizontal: 12,
+                            vertical: 0,
                           ),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF9FAFB),
-                            border: Border(
-                              top: BorderSide(color: borderColor),
-                            ),
-                          ),
-                          child: SafeArea(
-                            top: false,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.lock_outline_rounded,
-                                  size: 16,
-                                  color: textSecondary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    report.handlingStatus ==
-                                            HandlingStatus.completed
-                                        ? (isOwner
-                                              ? 'Diskusi dinonaktifkan (Laporan Selesai). Anda dapat mengaktifkannya kembali melalui menu opsi di atas.'
-                                              : 'Diskusi telah dinonaktifkan karena laporan telah selesai.')
-                                        : 'Diskusi telah dinonaktifkan oleh pemilik laporan.',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: textSecondary,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          minimumSize: const Size(0, 38),
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                        onPressed: () => _openAdminStatusSheet(report),
+                      ),
+                    ),
+                    if (report.handlingStatus != HandlingStatus.completed) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 17,
+                            color: Colors.white,
+                          ),
+                          label: const Text('Selesaikan'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: successColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.button,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 0,
+                            ),
+                            minimumSize: const Size(0, 38),
+                            textStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () => _openAdminResolveSheet(report),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
+        const SizedBox(height: 16),
+      ],
+
+      // 10. Completion Proof & Resolution Notes if completed (Progress)
+      if (report.handlingStatus == HandlingStatus.completed &&
+          (report.completionProofUrl != null ||
+              (report.completionNotes != null &&
+                  report.completionNotes!.trim().isNotEmpty))) ...[
+        Container(
+          key: const Key('completion_resolution_card'),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: successSubtle,
+            borderRadius: AppRadius.card,
+            border: Border.all(
+              color: successBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.verified,
+                    color: successColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Penyelesaian Pekerjaan',
+                      style: AppTextStyles.sectionTitleOf(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: successColor,
+                      borderRadius: AppRadius.pill,
+                    ),
+                    child: const Text(
+                      'Selesai',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Catatan Penyelesaian Petugas
+              if (report.completionNotes != null &&
+                  report.completionNotes!.trim().isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+                    borderRadius: AppRadius.button,
+                    border: Border.all(
+                      color: successBorder,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.assignment_turned_in_outlined,
+                            size: 16,
+                            color: successColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Catatan Penyelesaian:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        report.completionNotes!,
+                        key: const Key(
+                          'report_completion_notes_text',
+                        ),
+                        style: AppTextStyles.bodyOf(context).copyWith(
+                          fontSize: 13,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (report.completionProofUrl != null)
+                  const SizedBox(height: 12),
+              ],
+
+              // Foto Bukti Pekerjaan Selesai
+              if (report.completionProofUrl != null) ...[
+                Text(
+                  'Foto Bukti Pekerjaan:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => _openPhotoViewer(
+                    [report.completionProofUrl!],
+                    0,
+                    title: 'Bukti Penyelesaian',
+                  ),
+                  child: ClipRRect(
+                    borderRadius: AppRadius.input,
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _buildPhoto(
+                            report.completionProofUrl!,
+                          ),
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: AppRadius.pill,
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.zoom_in_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Perbesar',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+
+      // 11. Upvote & Downvote actions (Vote)
+      if (report.isPubliclyVisible && !report.isTerminal) ...[
+        VoteActionBar(
+          report: report,
+          isEnabled: isOnline && report.isVotingActive,
+          disabledReason: !isOnline
+              ? 'Tidak tersedia dalam mode offline'
+              : (report.handlingStatus == HandlingStatus.completed
+                  ? 'Penilaian suara ditutup (Laporan Selesai)'
+                  : null),
+          onUpvote: () => _handleVote('up'),
+          onDownvote: () => _handleVote('down'),
+        ),
+      ],
+    ];
+  }
+
+  /// Membangun daftar komentar scrollable untuk panel kanan desktop
+  Widget _buildDesktopCommentsContent({
+    required ReportDetailController controller,
+    required ReportModel report,
+    required AuthController auth,
+    required bool isDark,
+    required Color primaryColor,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color borderSubtle,
+  }) {
+    if (controller.isLoadingComments && controller.comments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft)
+                    .withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.8,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    primaryColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Memuat komentar & diskusi...',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (controller.comments.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.forum_outlined,
+                size: 44,
+                color: textSecondary.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Belum Ada Diskusi',
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Jadilah yang pertama menyampaikan tanggapan atau masukan pada laporan ini.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final threads = CommentThreadItem.buildThreads(controller.comments);
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+      itemCount: threads.length,
+      separatorBuilder: (_, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Divider(
+          color: borderSubtle,
+          height: 1,
+          thickness: 1,
+        ),
+      ),
+      itemBuilder: (context, index) {
+        final thread = threads[index];
+        return CommentThreadTile(
+          thread: thread,
+          reportAuthorId: report.authorId,
+          isExpanded: _expandedThreadIds.contains(thread.root.id),
+          onToggleExpanded: () {
+            setState(() {
+              if (_expandedThreadIds.contains(thread.root.id)) {
+                _expandedThreadIds.remove(thread.root.id);
+              } else {
+                _expandedThreadIds.add(thread.root.id);
+              }
+            });
+          },
+          onReply: _startReply,
+          currentUserId: auth.currentUser?.id,
+          onDelete: _handleDeleteComment,
+        );
+      },
+    );
+  }
+
+  /// Membangun kontainer komentar untuk tata letak mobile
+  Widget _buildMobileCommentsContent({
+    required ReportDetailController controller,
+    required ReportModel report,
+    required AuthController auth,
+    required bool isDark,
+    required Color primaryColor,
+    required Color textSecondary,
+    required Color surfaceColor,
+    required Color borderColor,
+    required Color borderSubtle,
+  }) {
+    if (controller.isLoadingComments && controller.comments.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (isDark ? AppColors.darkPrimarySoft : AppColors.primarySoft)
+                      .withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.8,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Memuat komentar & diskusi...',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (controller.comments.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Text(
+            'Belum ada komentar. Jadilah yang pertama menanggapi.',
+            style: AppTextStyles.captionOf(context),
+          ),
+        ),
+      );
+    }
+
+    final threads = CommentThreadItem.buildThreads(controller.comments);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: borderColor,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < threads.length; i++) ...[
+            if (i > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                ),
+                child: Divider(
+                  color: borderSubtle,
+                  height: 1,
+                  thickness: 1,
+                ),
+              ),
+            CommentThreadTile(
+              thread: threads[i],
+              reportAuthorId: report.authorId,
+              isExpanded: _expandedThreadIds.contains(
+                threads[i].root.id,
+              ),
+              onToggleExpanded: () {
+                setState(() {
+                  if (_expandedThreadIds.contains(
+                    threads[i].root.id,
+                  )) {
+                    _expandedThreadIds.remove(
+                      threads[i].root.id,
+                    );
+                  } else {
+                    _expandedThreadIds.add(
+                      threads[i].root.id,
+                    );
+                  }
+                });
+              },
+              onReply: _startReply,
+              currentUserId: auth.currentUser?.id,
+              onDelete: _handleDeleteComment,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Komponen composer komentar atau banner saat diskusi ditutup
+  Widget _buildCommentComposer({
+    required ReportModel report,
+    required ReportDetailController controller,
+    required bool isDark,
+    required Color primaryColor,
+    required Color surfaceColor,
+    required Color borderColor,
+    required Color textSecondary,
+    required bool isOnline,
+    required String currentUserId,
+    required bool isOwner,
+  }) {
+    if (!report.isPubliclyVisible || report.isTerminal) {
+      return const SizedBox.shrink();
+    }
+
+    if (!report.canAddComment) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF9FAFB),
+          border: Border(
+            top: BorderSide(color: borderColor),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline_rounded,
+                size: 16,
+                color: textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  report.handlingStatus == HandlingStatus.completed
+                      ? (isOwner
+                            ? 'Diskusi dinonaktifkan (Laporan Selesai). Anda dapat mengaktifkannya kembali melalui menu opsi di atas.'
+                            : 'Diskusi telah dinonaktifkan karena laporan telah selesai.')
+                      : 'Diskusi telah dinonaktifkan oleh pemilik laporan.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border(
+          top: BorderSide(color: borderColor),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Reply Header Banner (Membalas @username)
+            if (_replyingToComment != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                color: isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF3F4F6),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.reply_rounded,
+                      size: 16,
+                      color: primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Membalas ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: textSecondary,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  _replyingToComment!
+                                      .authorName
+                                      .trim()
+                                      .startsWith('@')
+                                  ? _replyingToComment!
+                                        .authorName
+                                        .trim()
+                                  : '@${_replyingToComment!.authorName.trim()}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: _cancelReply,
+                      borderRadius: AppRadius.borderSm,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: borderColor,
+              ),
+            ],
+
+            // Input Row
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      focusNode: _commentFocusNode,
+                      enabled: isOnline,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: isOnline
+                          ? (_) => _sendComment()
+                          : null,
+                      decoration: InputDecoration(
+                        hintText: !isOnline
+                            ? 'Komentar dinonaktifkan saat offline'
+                            : (_replyingToComment != null
+                                  ? 'Tulis balasan untuk ${_replyingToComment!.authorName.trim().startsWith('@') ? _replyingToComment!.authorName.trim() : '@${_replyingToComment!.authorName.trim()}'}...'
+                                  : 'Tulis komentar atau tanggapan...'),
+                        hintStyle: AppTextStyles.captionOf(context),
+                        contentPadding:
+                            const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                        border: OutlineInputBorder(
+                          borderRadius: AppRadius.input,
+                          borderSide: BorderSide(
+                            color: borderColor,
+                          ),
+                        ),
+                        enabledBorder:
+                            OutlineInputBorder(
+                              borderRadius: AppRadius.input,
+                              borderSide: BorderSide(
+                                color: borderColor,
+                              ),
+                            ),
+                        focusedBorder:
+                            OutlineInputBorder(
+                              borderRadius: AppRadius.input,
+                              borderSide: BorderSide(
+                                color: primaryColor,
+                                width: 1.5,
+                              ),
+                            ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: controller.isSendingComment
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child:
+                                CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                          )
+                        : Icon(
+                            Icons.send_rounded,
+                            color: isOnline
+                                ? primaryColor
+                                : (isDark ? AppColors.darkDisabled : AppColors.disabled),
+                          ),
+                    onPressed:
+                        (isOnline &&
+                            !controller.isSendingComment)
+                        ? _sendComment
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

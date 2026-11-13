@@ -64,24 +64,31 @@ class UserSidebar extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: AppRadius.borderSm,
-                  child: Image.asset(
-                    'assets/logo_laporin.png',
-                    width: 36,
-                    height: 36,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/logo_laporin.png',
                       width: 36,
                       height: 36,
-                      decoration: BoxDecoration(
-                        color: primaryColor,
-                        borderRadius: AppRadius.borderSm,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.campaign_rounded,
-                          color: Colors.white,
-                          size: 20,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.campaign_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),

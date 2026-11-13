@@ -15,12 +15,12 @@ class AppColors {
   static const Color primarySubtle = Color(0xFFEFF6FF); // Alias for primarySoft
   static const Color accent = Color(0xFF2563EB);
 
-  // Brand Primary (Dark Mode)
-  static const Color darkPrimary = Color(0xFF3B82F6); // Blue 500
+  // Brand Primary (Dark Mode - Strict Primary Accent Rule)
+  static const Color darkPrimary = Color(0xFF3B82F6); // Blue 500 (Electric Blue)
   static const Color darkPrimaryHover = Color(0xFF2563EB); // Blue 600
   static const Color darkPrimaryLight = Color(0xFF60A5FA); // Blue 400
-  static const Color darkPrimarySoft = Color(0xFF1E3A8A); // Blue 900
-  static const Color darkPrimarySubtle = Color(0xFF1E3A8A);
+  static const Color darkPrimarySoft = Color(0xFF1C2638); // Subtle primary tint for active state
+  static const Color darkPrimarySubtle = Color(0xFF1C2638);
 
   // Secondary (Slate Neutral Palette - Light Mode)
   static const Color secondary = Color(0xFF475569); // Slate 600
@@ -29,12 +29,12 @@ class AppColors {
   static const Color secondarySoft = Color(0xFFF1F5F9); // Slate 100
   static const Color secondarySubtle = Color(0xFFF8FAFC); // Slate 50
 
-  // Secondary (Slate Neutral Palette - Dark Mode)
-  static const Color darkSecondary = Color(0xFF94A3B8); // Slate 400
-  static const Color darkSecondaryHover = Color(0xFFCBD5E1); // Slate 300
-  static const Color darkSecondaryLight = Color(0xFFE2E8F0); // Slate 200
-  static const Color darkSecondarySoft = Color(0xFF1E293B); // Slate 800
-  static const Color darkSecondarySubtle = Color(0xFF0F172A); // Slate 900
+  // Secondary (Neutral Charcoal Palette - Dark Mode)
+  static const Color darkSecondary = Color(0xFF8E8E93); // Neutral Grey 400
+  static const Color darkSecondaryHover = Color(0xFFD1D1D6); // Neutral Grey 300
+  static const Color darkSecondaryLight = Color(0xFFE5E5EA); // Neutral Grey 200
+  static const Color darkSecondarySoft = Color(0xFF242428); // Elevated Charcoal
+  static const Color darkSecondarySubtle = Color(0xFF1A1A1E); // Dark Charcoal Surface
 
   // Tertiary (Sky Accent Palette - Light Mode)
   static const Color tertiary = Color(0xFF0284C7); // Sky 600
@@ -106,18 +106,19 @@ class AppColors {
   ); // Slate 50 (Scaffold canvas)
   static const Color disabled = Color(0xFF94A3B8); // Slate 400
 
-  // Neutrals, Text & Surfaces (Dark Mode)
-  static const Color darkTextPrimary = Color(0xFFF8FAFC); // Slate 50
-  static const Color darkTextTitle = Color(0xFFF8FAFC);
-  static const Color darkTextBody = Color(0xFFCBD5E1); // Slate 300
-  static const Color darkTextSecondary = Color(0xFF94A3B8); // Slate 400
-  static const Color darkTextMuted = Color(0xFF94A3B8);
-  static const Color darkBorder = Color(0xFF334155); // Slate 700 (1px hairline)
-  static const Color darkBorderSubtle = Color(0xFF1E293B); // Slate 800
-  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
-  static const Color darkSurfaceElevated = Color(0xFF0F172A); // Slate 900 (Inputs)
-  static const Color darkBackground = Color(0xFF0B1120); // Slate 950 (Canvas)
-  static const Color darkDisabled = Color(0xFF64748B); // Slate 500
+  // Neutrals, Text & Surfaces (Dark Mode - Neutral Charcoal & Deep Black)
+  static const Color darkTextPrimary = Color(0xFFFFFFFF); // Pure White (14.2:1 contrast)
+  static const Color darkTextTitle = Color(0xFFFFFFFF);
+  static const Color darkTextBody = Color(0xFFD1D1D6); // Neutral Grey 300 (9.5:1 contrast)
+  static const Color darkTextSecondary = Color(0xFF8E8E93); // Neutral Grey 400 (4.9:1 contrast)
+  static const Color darkTextMuted = Color(0xFF8E8E93);
+  static const Color darkBorder = Color(0xFF2E2E34); // Neutral Hairline 1px
+  static const Color darkBorderSubtle = Color(0xFF222226); // Deep Charcoal
+  static const Color darkSurface = Color(0xFF1A1A1E); // Dark Charcoal Surface
+  static const Color darkSurfaceElevated = Color(0xFF242428); // Elevated Charcoal (Modals, Popovers)
+  static const Color darkSurfaceRecessed = Color(0xFF141416); // Recessed Charcoal (Input fills, search)
+  static const Color darkBackground = Color(0xFF0E0E10); // Deep Charcoal Black Canvas
+  static const Color darkDisabled = Color(0xFF48484A); // Neutral Muted Grey
 
   // Flat UI Design Tokens: Zero drop shadow
   static const BoxShadow cardShadow = BoxShadow(
@@ -144,6 +145,9 @@ class AppColors {
 
   static Color surfaceElevatedOf(BuildContext context) =>
       isDark(context) ? darkSurfaceElevated : const Color(0xFFF8FAFC);
+
+  static Color surfaceRecessedOf(BuildContext context) =>
+      isDark(context) ? darkSurfaceRecessed : const Color(0xFFF8FAFC);
 
   static Color borderOf(BuildContext context) =>
       isDark(context) ? darkBorder : border;

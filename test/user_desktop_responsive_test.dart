@@ -132,6 +132,15 @@ void main() {
         // 4. AppProfileBar is rendered in the top app titlebar with citizen name
         expect(find.byType(AppProfileBar), findsOneWidget);
         expect(find.text('Budi Santoso'), findsOneWidget);
+
+        // 5. UserSidebar brand logo uses circular clip (ClipOval)
+        expect(
+          find.descendant(
+            of: find.byType(UserSidebar),
+            matching: find.byType(ClipOval),
+          ),
+          findsOneWidget,
+        );
       },
     );
 
@@ -359,6 +368,40 @@ void main() {
         final cardSize = tester.getSize(card1Finder);
         expect(cardSize.width, greaterThan(300));
         expect(cardSize.width, lessThan(650));
+
+        // Metric KPI summary cards are rendered
+        expect(find.text('Total Laporan'), findsOneWidget);
+        expect(find.text('Menunggu'), findsOneWidget);
+        expect(find.text('Diproses'), findsNWidgets(2)); // metric card + status badge
+        expect(find.text('Selesai'), findsOneWidget);
+
+        // Header "+ Buat Laporan" action button exists on desktop
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.text('Buat Laporan'),
+          ),
+          findsOneWidget,
+        );
+
+        // Filter chips exist and filtering works
+        expect(find.text('Semua (2)'), findsOneWidget);
+        expect(find.text('Menunggu (1)'), findsOneWidget);
+        expect(find.text('Diproses (1)'), findsOneWidget);
+
+        // Tap filter "Menunggu (1)" -> only LAP-2026-001 is shown
+        await tester.tap(find.text('Menunggu (1)'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('LAP-2026-001'), findsOneWidget);
+        expect(find.text('LAP-2026-002'), findsNothing);
+
+        // Tap filter "Semua (2)" -> all reports shown again
+        await tester.tap(find.text('Semua (2)'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('LAP-2026-001'), findsOneWidget);
+        expect(find.text('LAP-2026-002'), findsOneWidget);
       },
     );
 
@@ -433,6 +476,15 @@ void main() {
 
         expect(find.text('Pengaturan'), findsOneWidget);
         expect(find.text('Tema & Tampilan'), findsOneWidget);
+
+        // SettingsScreen About logo uses circular clip (ClipOval)
+        expect(
+          find.descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byType(ClipOval),
+          ),
+          findsOneWidget,
+        );
       },
     );
   });
