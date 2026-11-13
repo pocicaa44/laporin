@@ -661,12 +661,13 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
     final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
     final successSubtle = isDark ? AppColors.darkSuccessSubtle : AppColors.successSubtle;
     final successBorder = isDark ? successColor.withValues(alpha: 0.3) : const Color(0xFFBBF7D0);
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return Container(
       color: bgColor,
       child: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: BoxConstraints(maxWidth: isDesktop ? 860 : 720),
           decoration: BoxDecoration(
             color: bgColor,
             border: Border.symmetric(

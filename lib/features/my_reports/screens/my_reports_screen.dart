@@ -7,6 +7,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
@@ -26,11 +27,14 @@ class MyReportsScreen extends StatelessWidget {
     final auth = context.watch<AuthController>();
     final userId = auth.currentUser?.id ?? '';
 
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
     if (!auth.isAuthenticated || userId.isEmpty) {
       return Scaffold(
-        drawer: const AppDrawer(),
+        drawer: isDesktop ? null : const AppDrawer(),
         appBar: AppBar(
-          leading: const DrawerMenuButton(),
+          leading: isDesktop ? null : const DrawerMenuButton(),
+          automaticallyImplyLeading: !isDesktop,
           title: const Text('Laporan Saya'),
         ),
         body: const EmptyState(
@@ -120,99 +124,159 @@ class _MyReportsViewState extends State<_MyReportsView> {
     super.dispose();
   }
 
+  void _openDetail(ReportModel report) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReportDetailScreen(
+          reportId: report.id,
+          initialReport: report,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) {
+        context.read<MyReportsController>().fetchMyReports();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<MyReportsController>();
     final isOnline = context.isOnline;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
-    return Scaffold(
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: const DrawerMenuButton(),
-        title: const Text('Laporan Saya'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => controller.fetchMyReports(),
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
+    return Container(
+      color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
+      child: Center(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : 840),
+          decoration: BoxDecoration(
+            color: bgColor,
+            border: Border.symmetric(
+              vertical: BorderSide(color: borderColor, width: 1),
+            ),
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => controller.fetchMyReports(),
-        child: controller.isLoading && controller.reports.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : controller.reports.isEmpty
-            ? (!isOnline
-                  ? OfflineFallbackView(
-                      onRetry: () =>
-                          controller.fetchMyReports(forceRefresh: true),
-                    )
-                  : LayoutBuilder(
-                      builder: (context, constraints) => SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
-                          ),
-                          child: const Center(
-                            child: EmptyState(
-                              title: 'Belum Ada Laporan',
-                              message: 'Anda belum memiliki riwayat laporan fasilitas publik.',
+          child: Scaffold(
+            drawer: isDesktop ? null : const AppDrawer(),
+            appBar: AppBar(
+              leading: isDesktop ? null : const DrawerMenuButton(),
+              automaticallyImplyLeading: !isDesktop,
+              title: const Text('Laporan Saya'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  tooltip: 'Segarkan Laporan',
+                  onPressed: () => controller.fetchMyReports(),
+                ),
+                if (isDesktop) const AppProfileBar(),
+              ],
+            ),
+            body: RefreshIndicator(
+              onRefresh: () => controller.fetchMyReports(),
+              child: controller.isLoading && controller.reports.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : controller.reports.isEmpty
+                  ? (!isOnline
+                        ? OfflineFallbackView(
+                            onRetry: () =>
+                                controller.fetchMyReports(forceRefresh: true),
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) => SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: const Center(
+                                  child: EmptyState(
+                                    title: 'Belum Ada Laporan',
+                                    message:
+                                        'Anda belum memiliki riwayat laporan fasilitas publik.',
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ))
+                  : ListView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isDesktop ? 24 : 16,
+                        vertical: isDesktop ? 20 : 12,
+                      ),
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, innerConstraints) {
+                            final isMultiColumn =
+                                isDesktop && innerConstraints.maxWidth >= 700;
+                            if (!isMultiColumn) {
+                              return Column(
+                                children: controller.reports.map((report) {
+                                  return _MyReportItem(
+                                    key: ValueKey(report.id),
+                                    report: report,
+                                    onTap: () => _openDetail(report),
+                                  );
+                                }).toList(),
+                              );
+                            }
+                            return Wrap(
+                              spacing: 14,
+                              runSpacing: 14,
+                              children: controller.reports.map((report) {
+                                return SizedBox(
+                                  width: (innerConstraints.maxWidth - 14) / 2,
+                                  child: _MyReportItem(
+                                    key: ValueKey(report.id),
+                                    report: report,
+                                    isGridItem: true,
+                                    onTap: () => _openDetail(report),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                        if (controller.isLoadingMore)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ))
-            : ListView.builder(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                itemCount:
-                    controller.reports.length +
-                    (controller.isLoadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == controller.reports.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        ),
-                      ),
-                    );
-                  }
-                  final report = controller.reports[index];
-                  return _MyReportItem(
-                    report: report,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ReportDetailScreen(
-                            reportId: report.id,
-                            initialReport: report,
-                          ),
-                        ),
-                      ).then((_) => controller.fetchMyReports());
-                    },
-                  );
-                },
-              ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
 class _MyReportItem extends StatelessWidget {
-  const _MyReportItem({required this.report, required this.onTap});
+  const _MyReportItem({
+    super.key,
+    required this.report,
+    required this.onTap,
+    this.isGridItem = false,
+  });
 
   final ReportModel report;
   final VoidCallback onTap;
+  final bool isGridItem;
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +286,7 @@ class _MyReportItem extends StatelessWidget {
     final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: isGridItem ? 0 : 12),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: AppRadius.card,

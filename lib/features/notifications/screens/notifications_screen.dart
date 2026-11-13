@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/notification_model.dart';
@@ -132,6 +133,82 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         controller.notifications.isNotEmpty &&
         _selectedIds.length == controller.notifications.length;
 
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
+    final bodyContent = RefreshIndicator(
+      onRefresh: () => controller.fetchNotifications(),
+      child: controller.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : controller.notifications.isEmpty
+          ? (!isOnline
+                ? OfflineFallbackView(
+                    onRetry: () => controller.fetchNotifications(),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) =>
+                        SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: const Center(
+                              child: EmptyState(
+                                title: 'Belum Ada Notifikasi',
+                                message:
+                                    'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
+                                icon: Icons.notifications_none_rounded,
+                              ),
+                            ),
+                          ),
+                        ),
+                  ))
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              itemCount: controller.notifications.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = controller.notifications[index];
+                final isSelected = _selectedIds.contains(item.id);
+
+                return _NotificationItem(
+                  item: item,
+                  isSelectionMode: _isSelectionMode,
+                  isSelected: isSelected,
+                  onToggleSelect: () => _toggleSelection(item.id),
+                  onTap: () {
+                    if (_isSelectionMode) {
+                      _toggleSelection(item.id);
+                      return;
+                    }
+
+                    controller.markAsRead(item.id);
+                    if (item.reportId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ReportDetailScreen(reportId: item.reportId!),
+                        ),
+                      );
+                    } else if (item.type == NotificationType.announcement) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AnnouncementsScreen(),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+    );
+
     return PopScope(
       canPop: !_isSelectionMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -140,7 +217,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
       },
       child: Scaffold(
-        drawer: _isSelectionMode ? null : const AppDrawer(),
+        drawer: (_isSelectionMode || isDesktop) ? null : const AppDrawer(),
         appBar: AppBar(
           leading: _isSelectionMode
               ? IconButton(
@@ -148,7 +225,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   tooltip: 'Batal',
                   onPressed: _exitSelectionMode,
                 )
-              : const DrawerMenuButton(),
+              : (isDesktop ? null : const DrawerMenuButton()),
+          automaticallyImplyLeading: !isDesktop && !_isSelectionMode,
           title: Text(
             _isSelectionMode
                 ? (_selectedIds.isEmpty
@@ -173,6 +251,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ? null
                     : _enterSelectionMode,
               ),
+              if (isDesktop) const AppProfileBar(),
             ] else ...[
               TextButton(
                 onPressed: _exitSelectionMode,
@@ -187,78 +266,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ],
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: () => controller.fetchNotifications(),
-          child: controller.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : controller.notifications.isEmpty
-              ? (!isOnline
-                    ? OfflineFallbackView(
-                        onRetry: () => controller.fetchNotifications(),
-                      )
-                    : LayoutBuilder(
-                        builder: (context, constraints) =>
-                            SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: const Center(
-                                  child: EmptyState(
-                                    title: 'Belum Ada Notifikasi',
-                                    message: 'Pembaruan tentang laporan dan pengumuman akan muncul di sini.',
-                                    icon: Icons.notifications_none_rounded,
-                                  ),
-                                ),
-                              ),
-                            ),
-                      ))
-              : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  itemCount: controller.notifications.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final item = controller.notifications[index];
-                    final isSelected = _selectedIds.contains(item.id);
-
-                    return _NotificationItem(
-                      item: item,
-                      isSelectionMode: _isSelectionMode,
-                      isSelected: isSelected,
-                      onToggleSelect: () => _toggleSelection(item.id),
-                      onTap: () {
-                        if (_isSelectionMode) {
-                          _toggleSelection(item.id);
-                          return;
-                        }
-
-                        controller.markAsRead(item.id);
-                        if (item.reportId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ReportDetailScreen(reportId: item.reportId!),
-                            ),
-                          );
-                        } else if (item.type == NotificationType.announcement) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AnnouncementsScreen(),
-                            ),
-                          );
-                        }
-                      },
-                    );
-                  },
+        body: isDesktop
+            ? Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: bodyContent,
                 ),
-        ),
+              )
+            : bodyContent,
         bottomNavigationBar:
             _isSelectionMode && controller.notifications.isNotEmpty
             ? SafeArea(
@@ -277,7 +292,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ? AppColors.darkPrimary
                         : AppColors.primary;
 
-                    return Container(
+                    final barContent = Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
@@ -372,6 +387,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ],
                       ),
                     );
+
+                    if (isDesktop) {
+                      return Container(
+                        color: barBg,
+                        child: Center(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 760),
+                            child: barContent,
+                          ),
+                        ),
+                      );
+                    }
+                    return barContent;
                   },
                 ),
               )

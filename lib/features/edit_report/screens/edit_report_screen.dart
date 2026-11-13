@@ -152,6 +152,7 @@ class _EditReportFormState extends State<_EditReportForm> {
   Widget build(BuildContext context) {
     final controller = context.watch<EditReportController>();
     final isOnline = context.isOnline;
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return PopScope(
       canPop: !_isFormDirty(controller) || controller.isLoading,
@@ -165,9 +166,12 @@ class _EditReportFormState extends State<_EditReportForm> {
       child: Scaffold(
         appBar: AppBar(title: const Text('Edit Laporan')),
         body: SafeArea(
-          child: Form(
-            key: _formKey,
-            child: ListView(
+          child: Center(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: isDesktop ? 760 : double.infinity),
+              child: Form(
+                key: _formKey,
+                child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
@@ -291,6 +295,8 @@ class _EditReportFormState extends State<_EditReportForm> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

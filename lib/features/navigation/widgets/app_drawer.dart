@@ -249,12 +249,21 @@ class AppDrawer extends StatelessWidget {
                       onTap: () => _navigateToTab(context, 2),
                     ),
 
-                    // 4. Profil Petugas (Tab 3 Admin)
+                    // 4. Statistik Laporan (Tab 3 Admin)
+                    _DrawerMenuItem(
+                      icon: FontAwesomeIcons.chartSimple,
+                      title: 'Statistik',
+                      badgeCount: 0,
+                      isSelected: currentTab == 3,
+                      onTap: () => _navigateToTab(context, 3),
+                    ),
+
+                    // 5. Profil Petugas (Tab 4 Admin)
                     _DrawerMenuItem(
                       icon: FontAwesomeIcons.user,
                       title: 'Profil',
-                      isSelected: currentTab == 3,
-                      onTap: () => _navigateToTab(context, 3),
+                      isSelected: currentTab == 4,
+                      onTap: () => _navigateToTab(context, 4),
                     ),
                   ] else ...[
                     // MENU REGULER WARGA / CITIZEN (5 Menu)
@@ -403,6 +412,11 @@ class DrawerMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+    if (isDesktop) {
+      return const SizedBox.shrink();
+    }
+
     final auth = context.watch<AuthController>();
     int unreadAnnouncements = 0;
     // Admin TIDAK mendapatkan badge icon saat ada pengumuman baru

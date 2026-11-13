@@ -5,6 +5,7 @@ import '../../../core/services/location_service.dart';
 import '../../../core/services/network_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/report_model.dart';
@@ -134,6 +135,7 @@ class _FeedScreenState extends State<FeedScreen> {
     final auth = context.watch<AuthController>();
     final currentUserId = auth.currentUser?.id;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     if (auth.currentUser?.id != null &&
         controller.currentUserId != auth.currentUser?.id) {
@@ -143,10 +145,11 @@ class _FeedScreenState extends State<FeedScreen> {
     }
 
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: isDesktop ? null : const AppDrawer(),
       appBar: AppBar(
-        leading: const DrawerMenuButton(),
-        titleSpacing: 0,
+        leading: isDesktop ? null : const DrawerMenuButton(),
+        automaticallyImplyLeading: !isDesktop,
+        titleSpacing: isDesktop ? 16 : 0,
         title: Text(
           'Laporin',
           style: TextStyle(
@@ -179,11 +182,17 @@ class _FeedScreenState extends State<FeedScreen> {
             tooltip: 'Segarkan Laporan',
             onPressed: () => controller.fetchFeed(currentUserId),
           ),
+          if (isDesktop) const AppProfileBar(),
         ],
       ),
-      body: Column(
-        children: [
-          // Search & Sort bar
+      body: Center(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: isDesktop ? 760 : double.infinity,
+          ),
+          child: Column(
+            children: [
+              // Search & Sort bar
           Builder(
             builder: (context) {
               final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -420,7 +429,9 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildScopeSelectorMenu(

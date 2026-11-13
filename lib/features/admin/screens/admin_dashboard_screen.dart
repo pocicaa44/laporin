@@ -11,6 +11,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../data/models/report_model.dart';
 import '../../../data/repositories/report_repository.dart';
 import '../../../core/widgets/access_denied_screen.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
@@ -123,12 +124,13 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return Container(
       color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
       child: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 840),
+          constraints: BoxConstraints(maxWidth: isDesktop ? 1280 : 840),
           decoration: BoxDecoration(
             color: bgColor,
             border: Border.symmetric(
@@ -136,10 +138,10 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
             ),
           ),
           child: Scaffold(
-            drawer: const AppDrawer(),
+            drawer: isDesktop ? null : const AppDrawer(),
             appBar: AppBar(
-              leading: widget.isEmbedded ? const DrawerMenuButton() : null,
-              automaticallyImplyLeading: !widget.isEmbedded,
+              leading: (widget.isEmbedded && !isDesktop) ? const DrawerMenuButton() : null,
+              automaticallyImplyLeading: !widget.isEmbedded && !isDesktop,
               title: const Text('Panel Laporan'),
               actions: [
                 IconButton(
@@ -147,6 +149,7 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
                   tooltip: 'Segarkan Data',
                   onPressed: () => controller.fetchReports(forceRefresh: true),
                 ),
+                if (isDesktop) const AppProfileBar(),
               ],
             ),
             body: controller.isLoading && controller.reports.isEmpty
@@ -155,105 +158,20 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
                     onRefresh: () => controller.fetchReports(),
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isDesktop ? 24 : 16,
+                        vertical: isDesktop ? 20 : 16,
+                      ),
                       children: [
-                        // Dropdown Filter Wilayah Provinsi (Task 3)
-                        AdminProvinceFilterDropdown(controller: controller),
-                        const SizedBox(height: 12),
-
-                        // KPI Metric Cards
-                        Row(
-                          children: [
-                            _MetricCard(
-                              title: 'Total Laporan',
-                              value: '${controller.totalReports}',
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            _MetricCard(
-                              title: 'Baru',
-                              value: '${controller.newCount}',
-                              color: const Color(0xFF2563EB),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _MetricCard(
-                              title: 'Diproses',
-                              value: '${controller.inProgressCount}',
-                              color: const Color(0xFFD98205),
-                            ),
-                            const SizedBox(width: 8),
-                            _MetricCard(
-                              title: 'Selesai',
-                              value: '${controller.completedCount}',
-                              color: AppColors.success,
-                            ),
-                          ],
-                        ),
+                        // 1. Filter Dropdown & Status Chips (Responsive Row/Column)
+                        _buildFilterBar(controller, isDesktop),
                         const SizedBox(height: 16),
 
-                        // Filter Chips
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _FilterChip(
-                                label: 'Semua',
-                                isSelected: controller.filter == 'all',
-                                onTap: () => controller.setFilter('all'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'Baru (${controller.newCount})',
-                                isSelected: controller.filter == 'new',
-                                onTap: () => controller.setFilter('new'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'Diterima (${controller.acceptedCount})',
-                                isSelected: controller.filter == 'accepted',
-                                onTap: () => controller.setFilter('accepted'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label:
-                                    'Diproses (${controller.inProgressCount})',
-                                isSelected: controller.filter == 'in_progress',
-                                onTap: () =>
-                                    controller.setFilter('in_progress'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'Selesai (${controller.completedCount})',
-                                isSelected: controller.filter == 'completed',
-                                onTap: () => controller.setFilter('completed'),
-                              ),
-                              const SizedBox(width: 8),
-                              _FilterChip(
-                                label: 'Ditolak (${controller.rejectedCount})',
-                                isSelected: controller.filter == 'rejected',
-                                onTap: () => controller.setFilter('rejected'),
-                              ),
-                              if (controller.deletedByUserCount > 0) ...[
-                                const SizedBox(width: 8),
-                                _FilterChip(
-                                  label:
-                                      'Dihapus Pelapor (${controller.deletedByUserCount})',
-                                  isSelected:
-                                      controller.filter == 'deleted_by_user',
-                                  onTap: () =>
-                                      controller.setFilter('deleted_by_user'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        // 2. KPI Metric Cards (1 baris 4 kolom di desktop, 2x2 di mobile)
+                        _buildMetricCards(controller, isDesktop),
+                        const SizedBox(height: 20),
 
-                        // Reports List
+                        // 3. Reports List (2-kolom responsif di layar lebar desktop)
                         if (controller.reports.isEmpty)
                           (!isOnline
                               ? OfflineFallbackView(
@@ -265,133 +183,37 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
                                   title: 'Tidak Ada Laporan',
                                   message: 'Tidak ada laporan dalam kategori filter ini.',
                                 ))
+                        else if (isDesktop)
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isMultiColumn = constraints.maxWidth >= 760;
+                              if (!isMultiColumn) {
+                                return Column(
+                                  children: controller.reports
+                                      .map((report) => _buildReportItem(context, controller, report))
+                                      .toList(),
+                                );
+                              }
+                              return Wrap(
+                                spacing: 14,
+                                runSpacing: 14,
+                                children: controller.reports.map((report) {
+                                  return SizedBox(
+                                    width: (constraints.maxWidth - 14) / 2,
+                                    child: _buildReportItem(
+                                      context,
+                                      controller,
+                                      report,
+                                      isGridItem: true,
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          )
                         else
                           ...controller.reports.map(
-                            (report) => _AdminReportCard(
-                              report: report,
-                              onDelete: () async {
-                                final auth = context.read<AuthController>();
-                                final adminId = auth.currentUser?.id ?? 'admin';
-                                final deleted = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => DeleteReportDialog(
-                                    reportNumber: report.reportNumber,
-                                    isOtherPartyDeleted: report.deletedByUser,
-                                    onConfirmDelete: () =>
-                                        controller.deleteReport(
-                                          reportId: report.id,
-                                          adminId: adminId,
-                                        ),
-                                  ),
-                                );
-                                if (deleted == true && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Laporan ${report.reportNumber} berhasil dihapus.',
-                                      ),
-                                      backgroundColor: AppColors.success,
-                                    ),
-                                  );
-                                }
-                              },
-                              onUpdateStatus: () async {
-                                final res =
-                                    await showModalBottomSheet<
-                                      Map<String, dynamic>
-                                    >(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: AppRadius.sheet,
-                                      ),
-                                      builder: (_) => AdminStatusUpdateSheet(
-                                        report: report,
-                                      ),
-                                    );
-                                if (res != null && context.mounted) {
-                                  final success = await controller.updateStatus(
-                                    reportId: report.id,
-                                    newStatus: res['status'] as HandlingStatus,
-                                    reason: res['reason'] as String?,
-                                  );
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          success
-                                              ? 'Status laporan berhasil diperbarui.'
-                                              : (controller.errorMessage ??
-                                                    'Gagal memperbarui status laporan. Coba lagi.'),
-                                        ),
-                                        backgroundColor: success
-                                            ? AppColors.success
-                                            : AppColors.danger,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              onResolve: () async {
-                                final res =
-                                    await showModalBottomSheet<
-                                      Map<String, dynamic>
-                                    >(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: AppRadius.sheet,
-                                      ),
-                                      builder: (_) =>
-                                          AdminResolveSheet(report: report),
-                                    );
-                                if (res != null && context.mounted) {
-                                  final success = await controller.updateStatus(
-                                    reportId: report.id,
-                                    newStatus: HandlingStatus.completed,
-                                    reason: res['notes'] as String?,
-                                    proofUrl: res['proofUrl'] as String?,
-                                  );
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          success
-                                              ? 'Laporan berhasil diselesaikan dengan bukti foto.'
-                                              : (controller.errorMessage ??
-                                                    'Gagal menyelesaikan laporan. Coba lagi.'),
-                                        ),
-                                        backgroundColor: success
-                                            ? AppColors.success
-                                            : AppColors.danger,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              onRestorePublication: () async {
-                                final success = await controller
-                                    .restorePublication(
-                                      report.id,
-                                      'Laporan telah ditinjau ulang oleh petugas dan dinyatakan valid.',
-                                    );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        success
-                                            ? 'Publikasi laporan berhasil dipulihkan.'
-                                            : (controller.errorMessage ??
-                                                  'Gagal memulihkan publikasi laporan.'),
-                                      ),
-                                      backgroundColor: success
-                                          ? AppColors.success
-                                          : AppColors.danger,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
+                            (report) => _buildReportItem(context, controller, report),
                           ),
                       ],
                     ),
@@ -399,6 +221,274 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMetricCards(AdminReportController controller, bool isDesktop) {
+    if (isDesktop) {
+      return Row(
+        children: [
+          _MetricCard(
+            title: 'Total Laporan',
+            value: '${controller.totalReports}',
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 12),
+          _MetricCard(
+            title: 'Baru',
+            value: '${controller.newCount}',
+            color: const Color(0xFF2563EB),
+          ),
+          const SizedBox(width: 12),
+          _MetricCard(
+            title: 'Diproses',
+            value: '${controller.inProgressCount}',
+            color: const Color(0xFFD98205),
+          ),
+          const SizedBox(width: 12),
+          _MetricCard(
+            title: 'Selesai',
+            value: '${controller.completedCount}',
+            color: AppColors.success,
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            _MetricCard(
+              title: 'Total Laporan',
+              value: '${controller.totalReports}',
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            _MetricCard(
+              title: 'Baru',
+              value: '${controller.newCount}',
+              color: const Color(0xFF2563EB),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _MetricCard(
+              title: 'Diproses',
+              value: '${controller.inProgressCount}',
+              color: const Color(0xFFD98205),
+            ),
+            const SizedBox(width: 8),
+            _MetricCard(
+              title: 'Selesai',
+              value: '${controller.completedCount}',
+              color: AppColors.success,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterBar(AdminReportController controller, bool isDesktop) {
+    if (isDesktop) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: _buildFilterChipsRow(controller),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 280,
+            child: AdminProvinceFilterDropdown(controller: controller),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AdminProvinceFilterDropdown(controller: controller),
+        const SizedBox(height: 12),
+        _buildFilterChipsRow(controller),
+      ],
+    );
+  }
+
+  Widget _buildFilterChipsRow(AdminReportController controller) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterChip(
+            label: 'Semua',
+            isSelected: controller.filter == 'all',
+            onTap: () => controller.setFilter('all'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Baru (${controller.newCount})',
+            isSelected: controller.filter == 'new',
+            onTap: () => controller.setFilter('new'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Diterima (${controller.acceptedCount})',
+            isSelected: controller.filter == 'accepted',
+            onTap: () => controller.setFilter('accepted'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Diproses (${controller.inProgressCount})',
+            isSelected: controller.filter == 'in_progress',
+            onTap: () => controller.setFilter('in_progress'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Selesai (${controller.completedCount})',
+            isSelected: controller.filter == 'completed',
+            onTap: () => controller.setFilter('completed'),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Ditolak (${controller.rejectedCount})',
+            isSelected: controller.filter == 'rejected',
+            onTap: () => controller.setFilter('rejected'),
+          ),
+          if (controller.deletedByUserCount > 0) ...[
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Dihapus Pelapor (${controller.deletedByUserCount})',
+              isSelected: controller.filter == 'deleted_by_user',
+              onTap: () => controller.setFilter('deleted_by_user'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportItem(
+    BuildContext context,
+    AdminReportController controller,
+    ReportModel report, {
+    bool isGridItem = false,
+  }) {
+    return _AdminReportCard(
+      report: report,
+      isGridItem: isGridItem,
+      onDelete: () async {
+        final auth = context.read<AuthController>();
+        final adminId = auth.currentUser?.id ?? 'admin';
+        final deleted = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => DeleteReportDialog(
+            reportNumber: report.reportNumber,
+            isOtherPartyDeleted: report.deletedByUser,
+            onConfirmDelete: () => controller.deleteReport(
+              reportId: report.id,
+              adminId: adminId,
+            ),
+          ),
+        );
+        if (deleted == true && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Laporan ${report.reportNumber} berhasil dihapus.',
+              ),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      },
+      onUpdateStatus: () async {
+        final res = await showModalBottomSheet<Map<String, dynamic>>(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.sheet,
+          ),
+          builder: (_) => AdminStatusUpdateSheet(report: report),
+        );
+        if (res != null && context.mounted) {
+          final success = await controller.updateStatus(
+            reportId: report.id,
+            newStatus: res['status'] as HandlingStatus,
+            reason: res['reason'] as String?,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  success
+                      ? 'Status laporan berhasil diperbarui.'
+                      : (controller.errorMessage ??
+                            'Gagal memperbarui status laporan. Coba lagi.'),
+                ),
+                backgroundColor:
+                    success ? AppColors.success : AppColors.danger,
+              ),
+            );
+          }
+        }
+      },
+      onResolve: () async {
+        final res = await showModalBottomSheet<Map<String, dynamic>>(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.sheet,
+          ),
+          builder: (_) => AdminResolveSheet(report: report),
+        );
+        if (res != null && context.mounted) {
+          final success = await controller.updateStatus(
+            reportId: report.id,
+            newStatus: HandlingStatus.completed,
+            reason: res['notes'] as String?,
+            proofUrl: res['proofUrl'] as String?,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  success
+                      ? 'Laporan berhasil diselesaikan dengan bukti foto.'
+                      : (controller.errorMessage ??
+                            'Gagal menyelesaikan laporan. Coba lagi.'),
+                ),
+                backgroundColor:
+                    success ? AppColors.success : AppColors.danger,
+              ),
+            );
+          }
+        }
+      },
+      onRestorePublication: () async {
+        final success = await controller.restorePublication(
+          report.id,
+          'Laporan telah ditinjau ulang oleh petugas dan dinyatakan valid.',
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success
+                    ? 'Publikasi laporan berhasil dipulihkan.'
+                    : (controller.errorMessage ??
+                          'Gagal memulihkan publikasi laporan.'),
+              ),
+              backgroundColor:
+                  success ? AppColors.success : AppColors.danger,
+            ),
+          );
+        }
+      },
     );
   }
 }
@@ -504,6 +594,7 @@ class _AdminReportCard extends StatelessWidget {
     required this.onResolve,
     required this.onRestorePublication,
     this.onDelete,
+    this.isGridItem = false,
   });
 
   final ReportModel report;
@@ -511,6 +602,7 @@ class _AdminReportCard extends StatelessWidget {
   final VoidCallback onResolve;
   final VoidCallback onRestorePublication;
   final VoidCallback? onDelete;
+  final bool isGridItem;
 
   @override
   Widget build(BuildContext context) {
@@ -543,7 +635,7 @@ class _AdminReportCard extends StatelessWidget {
         DateTime.now().difference(report.createdAt).inMinutes < 60;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: isGridItem ? EdgeInsets.zero : const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surfaceColor,

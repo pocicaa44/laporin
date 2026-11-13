@@ -8,6 +8,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/access_denied_screen.dart';
 import '../../../core/widgets/app_image.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/repositories/announcement_repository.dart';
@@ -124,80 +125,163 @@ class _AdminAnnouncementsViewState extends State<_AdminAnnouncementsView> {
   Widget build(BuildContext context) {
     final controller = context.watch<AdminAnnouncementController>();
     final primaryColor = AppColors.primaryOf(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
-    return Scaffold(
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: widget.isEmbedded ? const DrawerMenuButton() : null,
-        automaticallyImplyLeading: !widget.isEmbedded,
-        title: const Text('Pengumuman'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Segarkan Pengumuman',
-            onPressed: () => controller.fetchAnnouncements(forceRefresh: true),
+    return Container(
+      color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
+      child: Center(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isDesktop ? 1280 : 840),
+          decoration: BoxDecoration(
+            color: bgColor,
+            border: Border.symmetric(
+              vertical: BorderSide(color: borderColor, width: 1),
+            ),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('admin_add_announcement_fab'),
-        onPressed: () => _handleCreate(context, controller),
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        elevation: 0,
-        focusElevation: 0,
-        hoverElevation: 0,
-        highlightElevation: 0,
-        tooltip: 'Tambah Pengumuman',
-        child: const Icon(Icons.add),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => controller.fetchAnnouncements(forceRefresh: true),
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          children: [
-            Row(
-              children: [
-                FaIcon(
-                  FontAwesomeIcons.bullhorn,
-                  size: 16,
-                  color: primaryColor,
+          child: Scaffold(
+            drawer: isDesktop ? null : const AppDrawer(),
+            appBar: AppBar(
+              leading: (widget.isEmbedded && !isDesktop) ? const DrawerMenuButton() : null,
+              automaticallyImplyLeading: !widget.isEmbedded && !isDesktop,
+              title: const Text('Pengumuman'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  tooltip: 'Segarkan Pengumuman',
+                  onPressed: () => controller.fetchAnnouncements(forceRefresh: true),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Daftar Pengumuman Resmi',
-                    style: AppTextStyles.sectionTitleOf(context),
-                  ),
-                ),
+                if (isDesktop) const AppProfileBar(),
               ],
             ),
-            const SizedBox(height: 12),
-            if (controller.isLoading && controller.announcements.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: CircularProgressIndicator(),
+            floatingActionButton: FloatingActionButton(
+              key: const Key('admin_add_announcement_fab'),
+              onPressed: () => _handleCreate(context, controller),
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              elevation: 0,
+              focusElevation: 0,
+              hoverElevation: 0,
+              highlightElevation: 0,
+              tooltip: 'Tambah Pengumuman',
+              child: const Icon(Icons.add),
+            ),
+            body: RefreshIndicator(
+              onRefresh: () => controller.fetchAnnouncements(forceRefresh: true),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 24 : 16,
+                  vertical: isDesktop ? 20 : 16,
                 ),
-              )
-            else if (controller.announcements.isEmpty)
-              const EmptyState(
-                title: 'Belum Ada Pengumuman',
-                message: 'Pengumuman resmi yang Anda terbitkan akan tampil pada daftar ini.',
-              )
-            else
-              ...controller.announcements.map(
-                (announcement) => _AnnouncementCard(
-                  key: ValueKey(
-                    '${announcement.id}-${announcement.updatedAt.millisecondsSinceEpoch}',
+                children: [
+                  Row(
+                    children: [
+                      FaIcon(
+                        FontAwesomeIcons.bullhorn,
+                        size: 16,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Daftar Pengumuman Resmi',
+                          style: AppTextStyles.sectionTitleOf(context),
+                        ),
+                      ),
+                      if (isDesktop) ...[
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.add, size: 16),
+                          label: const Text('Buat Pengumuman'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.button,
+                            ),
+                            elevation: 0,
+                            minimumSize: const Size(0, 38),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () => _handleCreate(context, controller),
+                        ),
+                      ],
+                    ],
                   ),
-                  announcement: announcement,
-                  controller: controller,
-                ),
+                  const SizedBox(height: 16),
+                  if (controller.isLoading && controller.announcements.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (controller.announcements.isEmpty)
+                    const EmptyState(
+                      title: 'Belum Ada Pengumuman',
+                      message:
+                          'Pengumuman resmi yang Anda terbitkan akan tampil pada daftar ini.',
+                    )
+                  else if (isDesktop)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMultiColumn = constraints.maxWidth >= 760;
+                        if (!isMultiColumn) {
+                          return Column(
+                            children: controller.announcements.map((announcement) {
+                              return _AnnouncementCard(
+                                key: ValueKey(
+                                  '${announcement.id}-${announcement.updatedAt.millisecondsSinceEpoch}',
+                                ),
+                                announcement: announcement,
+                                controller: controller,
+                              );
+                            }).toList(),
+                          );
+                        }
+                        return Wrap(
+                          spacing: 14,
+                          runSpacing: 14,
+                          children: controller.announcements.map((announcement) {
+                            return SizedBox(
+                              width: (constraints.maxWidth - 14) / 2,
+                              child: _AnnouncementCard(
+                                key: ValueKey(
+                                  '${announcement.id}-${announcement.updatedAt.millisecondsSinceEpoch}',
+                                ),
+                                announcement: announcement,
+                                controller: controller,
+                                isGridItem: true,
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    )
+                  else
+                    ...controller.announcements.map(
+                      (announcement) => _AnnouncementCard(
+                        key: ValueKey(
+                          '${announcement.id}-${announcement.updatedAt.millisecondsSinceEpoch}',
+                        ),
+                        announcement: announcement,
+                        controller: controller,
+                      ),
+                    ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -209,10 +293,12 @@ class _AnnouncementCard extends StatelessWidget {
     super.key,
     required this.announcement,
     required this.controller,
+    this.isGridItem = false,
   });
 
   final AnnouncementModel announcement;
   final AdminAnnouncementController controller;
+  final bool isGridItem;
 
   Future<void> _handleEdit(BuildContext context) async {
     final updated = await Navigator.of(context).push<bool>(
@@ -269,7 +355,7 @@ class _AnnouncementCard extends StatelessWidget {
         announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: isGridItem ? EdgeInsets.zero : const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: AppRadius.card,

@@ -7,6 +7,7 @@ import '../../core/config/indonesia_regions.dart';
 import '../../core/services/boundary_service.dart';
 import '../../core/services/media_service.dart';
 import '../models/report_model.dart';
+import '../models/report_statistics_model.dart';
 import '../services/supabase_service.dart';
 
 /// Repository for reports with strict enforcement of business invariants
@@ -19,6 +20,8 @@ class ReportRepository {
 
   // In-memory reports store (starts empty; populated from Supabase or created reports)
   final List<ReportModel> _reports = [];
+  // In-memory archive of permanently deleted reports for persistent statistics retention
+  final List<ReportModel> _deletedHistoricalReports = [];
   // In-memory votes per report and user: reportId -> { userId: voteType }
   final Map<String, Map<String, String>> _reportUserVotes = {};
   final Set<String> _loadedVoteUserIds = {};
@@ -1399,11 +1402,8 @@ class ReportRepository {
         }
       }
 
-      // 3. Hapus dari memori lokal repository
-      _reports.removeAt(index);
-      _reportUserVotes.remove(reportId);
-
-      return current.copyWith(
+      // 3. Simpan ke arsip historis untuk retensi statistik permanen
+      final deletedSnapshot = current.copyWith(
         deletedByUser: true,
         deletedByUserAt: newDeletedByUserAt,
         deletedByAdmin: true,
@@ -1411,6 +1411,13 @@ class ReportRepository {
         deletedAt: current.deletedAt ?? now,
         updatedAt: now,
       );
+      _deletedHistoricalReports.add(deletedSnapshot);
+
+      // 4. Hapus dari memori laporan aktif lokal repository
+      _reports.removeAt(index);
+      _reportUserVotes.remove(reportId);
+
+      return deletedSnapshot;
     } else {
       // Baru salah satu pihak yang menghapus: lakukan soft-delete untuk pihak terkait
       final deleteReason = isCallerAdmin
@@ -1551,5 +1558,224 @@ class ReportRepository {
     }
 
     return updated;
+  }
+
+  /// Set daftar laporan untuk keperluan testing
+  @visibleForTesting
+  void setReportsForTesting(List<ReportModel> reports) {
+    _reports.clear();
+    _reports.addAll(reports);
+  }
+
+  /// Tambahkan laporan terhapus secara manual untuk keperluan unit testing
+  @visibleForTesting
+  void addDeletedReportForTesting(ReportModel report) {
+    _deletedHistoricalReports.add(report);
+  }
+
+  /// Mengambil daftar statistik laporan bulanan.
+  /// Mempertahankan riwayat dan total jumlah laporan pada bulan terkait
+  /// meskipun laporan sudah dihapus permanen dari basis data utama.
+  Future<List<MonthlyReportStats>> getMonthlyStatistics({
+    String? periodYearMonth,
+    bool forceRefresh = false,
+  }) async {
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        final rpcParams = <String, dynamic>{};
+        if (periodYearMonth != null) {
+          rpcParams['p_period_year_month'] = periodYearMonth;
+        }
+
+        final rpcRes = await client.rpc(
+          'get_admin_monthly_statistics',
+          params: rpcParams,
+        );
+
+        if (rpcRes is Map) {
+          final monthlyListRaw = rpcRes['monthly_stats'] as List? ?? [];
+          final categoryListRaw = rpcRes['category_stats'] as List? ?? [];
+
+          final categoryMapByMonth = <String, Map<String, int>>{};
+          for (final c in categoryListRaw) {
+            final ym = c['period_year_month']?.toString() ?? '';
+            final cat = c['category']?.toString() ?? 'Lainnya';
+            final total = (c['total_reports'] as num?)?.toInt() ?? 0;
+            categoryMapByMonth.putIfAbsent(ym, () => {})[cat] = total;
+          }
+
+          final results = <MonthlyReportStats>[];
+          for (final m in monthlyListRaw) {
+            final ym = m['period_year_month']?.toString() ?? '';
+            results.add(
+              MonthlyReportStats.fromJson(
+                m as Map<String, dynamic>,
+                categories: categoryMapByMonth[ym],
+              ),
+            );
+          }
+          if (results.isNotEmpty) return results;
+        }
+      } catch (e) {
+        debugPrint(
+          'Catatan get_admin_monthly_statistics RPC fallback ke in-memory stats: $e',
+        );
+      }
+    }
+
+    // Fallback in-memory / local computation (mendukung offline dan unit test)
+    // Menggabungkan laporan aktif (_reports) dan laporan historis terhapus (_deletedHistoricalReports)
+    final combined = <ReportModel>[..._reports, ..._deletedHistoricalReports];
+
+    final Map<String, List<ReportModel>> grouped = {};
+    for (final r in combined) {
+      final ym =
+          '${r.createdAt.year.toString().padLeft(4, '0')}-${r.createdAt.month.toString().padLeft(2, '0')}';
+      if (periodYearMonth != null && ym != periodYearMonth) continue;
+      grouped.putIfAbsent(ym, () => []).add(r);
+    }
+
+    final stats = <MonthlyReportStats>[];
+    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    for (final ym in sortedKeys) {
+      final list = grouped[ym]!;
+      final parts = ym.split('-');
+      final y = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+
+      int completed = 0;
+      int rejected = 0;
+      int inProgress = 0;
+      int newReports = 0;
+      int deleted = 0;
+      final categoryCounts = <String, int>{};
+
+      for (final r in list) {
+        final isReportDeleted = r.deletedByUser && r.deletedByAdmin;
+        if (isReportDeleted) {
+          deleted++;
+        } else {
+          switch (r.handlingStatus) {
+            case HandlingStatus.completed:
+              completed++;
+              break;
+            case HandlingStatus.rejected:
+              rejected++;
+              break;
+            case HandlingStatus.accepted:
+            case HandlingStatus.inProgress:
+              inProgress++;
+              break;
+            case HandlingStatus.newReport:
+              newReports++;
+              break;
+            case HandlingStatus.cancelled:
+              deleted++;
+              break;
+          }
+        }
+        final cat = r.category.isNotEmpty ? r.category : 'Lainnya';
+        categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+      }
+
+      stats.add(
+        MonthlyReportStats(
+          periodYearMonth: ym,
+          year: y,
+          month: m,
+          periodDate: DateTime(y, m, 1),
+          totalReports: list.length, // Termasuk laporan yang sudah dihapus
+          completedReports: completed,
+          rejectedReports: rejected,
+          inProgressReports: inProgress,
+          newReports: newReports,
+          deletedReports: deleted,
+          categoryCounts: categoryCounts,
+        ),
+      );
+    }
+
+    return stats;
+  }
+
+  /// Mengambil rangkuman statistik menyeluruh untuk seluruh waktu atau periode bulan terpilih
+  Future<ReportStatisticsSummary> getStatisticsSummary({
+    String? selectedPeriod,
+    bool forceRefresh = false,
+  }) async {
+    final allMonthly = await getMonthlyStatistics(forceRefresh: forceRefresh);
+
+    if (allMonthly.isEmpty) {
+      return const ReportStatisticsSummary(
+        totalReports: 0,
+        completedReports: 0,
+        inProgressReports: 0,
+        rejectedReports: 0,
+        newReports: 0,
+        deletedReports: 0,
+        categoryDistribution: {},
+        monthlyTrend: [],
+      );
+    }
+
+    if (selectedPeriod != null && selectedPeriod.isNotEmpty) {
+      final match = allMonthly.firstWhere(
+        (m) => m.periodYearMonth == selectedPeriod,
+        orElse: () => MonthlyReportStats(
+          periodYearMonth: selectedPeriod,
+          year: DateTime.now().year,
+          month: DateTime.now().month,
+          periodDate: DateTime.now(),
+          totalReports: 0,
+        ),
+      );
+      return ReportStatisticsSummary(
+        totalReports: match.totalReports,
+        completedReports: match.completedReports,
+        inProgressReports: match.inProgressReports,
+        rejectedReports: match.rejectedReports,
+        newReports: match.newReports,
+        deletedReports: match.deletedReports,
+        categoryDistribution: match.categoryCounts,
+        monthlyTrend: allMonthly,
+        selectedPeriod: selectedPeriod,
+      );
+    }
+
+    // Semua Bulan (Agregat Total Keseluruhan)
+    int total = 0;
+    int completed = 0;
+    int inProgress = 0;
+    int rejected = 0;
+    int newRep = 0;
+    int deleted = 0;
+    final catDist = <String, int>{};
+
+    for (final m in allMonthly) {
+      total += m.totalReports;
+      completed += m.completedReports;
+      inProgress += m.inProgressReports;
+      rejected += m.rejectedReports;
+      newRep += m.newReports;
+      deleted += m.deletedReports;
+
+      m.categoryCounts.forEach((cat, cnt) {
+        catDist[cat] = (catDist[cat] ?? 0) + cnt;
+      });
+    }
+
+    return ReportStatisticsSummary(
+      totalReports: total,
+      completedReports: completed,
+      inProgressReports: inProgress,
+      rejectedReports: rejected,
+      newReports: newRep,
+      deletedReports: deleted,
+      categoryDistribution: catDist,
+      monthlyTrend: allMonthly,
+      selectedPeriod: null,
+    );
   }
 }

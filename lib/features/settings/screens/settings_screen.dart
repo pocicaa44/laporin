@@ -25,6 +25,7 @@ class SettingsScreen extends StatelessWidget {
     final titleColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final bodyColor = isDark ? AppColors.darkTextBody : AppColors.textBody;
     final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return Scaffold(
       appBar: AppBar(
@@ -34,9 +35,12 @@ class SettingsScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        children: [
+      body: Center(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isDesktop ? 760 : double.infinity),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            children: [
           // ==========================================
           // SECTION 1: TEMA TAMPILAN
           // ==========================================
@@ -393,7 +397,9 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 32),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildSectionHeader({

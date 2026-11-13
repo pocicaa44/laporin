@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/app_image.dart';
+import '../../../core/widgets/app_profile_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/offline_fallback_view.dart';
 import '../../../data/models/announcement_model.dart';
@@ -308,6 +309,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final bgColor = isDark ? AppColors.darkBackground : AppColors.background;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
@@ -318,13 +321,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             tooltip: 'Segarkan Pengumuman',
             onPressed: () => controller.fetchAnnouncements(forceRefresh: true),
           ),
+          if (isDesktop) const AppProfileBar(),
         ],
       ),
       body: Container(
         color: isDark ? AppColors.darkBackground : const Color(0xFFF0F2F5),
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : 720),
             decoration: BoxDecoration(
               color: bgColor,
               border: Border.symmetric(
@@ -336,9 +340,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   controller.fetchAnnouncements(forceRefresh: true),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 24 : 16,
+                  vertical: isDesktop ? 20 : 16,
                 ),
                 children: [
                   // Info Banner
@@ -459,6 +463,44 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                 ? 'Belum ada pengumuman resmi yang diterbitkan saat ini.'
                                 : 'Tidak ada pengumuman dalam kategori "$_selectedCategory".',
                           ))
+                  else if (isDesktop)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMultiColumn = constraints.maxWidth >= 700;
+                        if (!isMultiColumn) {
+                          return Column(
+                            children: filteredList.map((announcement) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _AnnouncementCard(
+                                  announcement: announcement,
+                                  isAdmin: isAdmin,
+                                  onTap: () =>
+                                      _showAnnouncementDetail(announcement),
+                                  onEdit: () => _handleAdminEdit(announcement),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }
+                        return Wrap(
+                          spacing: 14,
+                          runSpacing: 14,
+                          children: filteredList.map((announcement) {
+                            return SizedBox(
+                              width: (constraints.maxWidth - 14) / 2,
+                              child: _AnnouncementCard(
+                                announcement: announcement,
+                                isAdmin: isAdmin,
+                                onTap: () =>
+                                    _showAnnouncementDetail(announcement),
+                                onEdit: () => _handleAdminEdit(announcement),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    )
                   else
                     ...filteredList.map((announcement) {
                       return Padding(

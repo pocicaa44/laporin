@@ -40,7 +40,7 @@ laporin/
 │   │   ├── models/             # ReportModel, ProfileModel, AnnouncementModel, CommentModel, VoteModel
 │   │   └── repositories/       # ReportRepository, AuthRepository, NotificationRepository, CommentRepository
 │   ├── features/
-│   │   ├── admin/              # AdminDashboard, AdminStatusUpdateSheet, AdminProvinceFilter, Announcements
+│   │   ├── admin/              # AdminDashboard, AdminStatusUpdateSheet, AdminProvinceFilter, Announcements, AdminStatistics
 │   │   ├── auth/               # LoginScreen, RegisterScreen, ForgotPassword, SetUsernameScreen
 │   │   ├── create_report/      # CreateReportScreen, Drafts, CategoryPicker, LocationPicker
 │   │   ├── edit_report/        # EditReportScreen (with immutability validations)
@@ -90,6 +90,11 @@ Laporin adheres to a clean, layered architectural pattern:
 - **Voting & Invariants:** Upvote and downvote counters with downvote percentage thresholds in `lib/data/models/report_model.dart` and `lib/features/feed/widgets/report_card.dart`.
 - **Public Discussions:** Discussion thread toggle (`isDiscussionActive`), nested comment replies, interactive top-center success toast (`"komentar diposting"`, 3s duration, slide down/up animation, universal transparent grey via `AppToast`) in `lib/features/report_detail/`.
 - **Resolution Proof:** Mandatory image proof and resolution notes required when marking reports as `completed` via `AdminResolveSheet`.
+- **Full-App Responsive Desktop Ecosystem (Citizen & Admin):**
+  - **Admin Desktop Ecosystem:** `AdminNavigationScreen` (`lib/features/admin/screens/admin_navigation_screen.dart`), `AdminSidebar` (`lib/features/admin/widgets/admin_sidebar.dart`), `AdminDashboardScreen` (`lib/features/admin/screens/admin_dashboard_screen.dart`), `AdminAnnouncementsScreen`, and `AdminStatisticsScreen`. Dynamically switches to desktop layout when screen width $> 800\text{px}$: removes bottom navigation bar and mobile drawer toggler in favor of a persistent 260px left sidebar (DESIGN.md Section 2.3), displays KPI metric cards in a single 4-column row (instead of 2x2 grid), aligns province and status filters in a responsive horizontal bar, and renders reports and announcements in a 2-column responsive card layout.
+  - **Citizen Desktop Ecosystem:** `MainNavigationScreen` (`lib/features/navigation/screens/main_navigation_screen.dart`), `UserSidebar` (`lib/features/navigation/widgets/user_sidebar.dart`), `MyReportsScreen` (`lib/features/my_reports/screens/my_reports_screen.dart`), `AnnouncementsScreen` (`lib/features/announcements/screens/announcements_screen.dart`), `ProfileScreen`, `NotificationsScreen`, `SettingsScreen`, and `EditReportScreen`. When screen width $> 800\text{px}$, replaces bottom navigation bar and mobile drawer with a persistent 260px left sidebar (`UserSidebar`) equipped with Laporin brand header, citizen badge ("WARGA"), prominent "+ Buat Laporan" action button, and main menu items (Beranda, Laporan Saya, Notifikasi with unread badge, Pengumuman, Profil). `MyReportsScreen` and `AnnouncementsScreen` adapt into 2-column card grids within a wide 1200px container, while detail and form screens (`ProfileScreen`, `NotificationsScreen`, `SettingsScreen`, `EditReportScreen`, `ReportDetailScreen`) apply centered responsive width constraints ($760\text{px} - 860\text{px}$) for comfortable ergonomics on wide monitors.
+  - **Desktop Top App Titlebar Profile Bar:** `AppProfileBar` (`lib/core/widgets/app_profile_bar.dart`). On desktop viewports ($> 800\text{px}$), the user profile bar is placed in the top AppBar actions (app titlebar) across both admin and citizen screens, displaying cleanly and exclusively the user avatar photo (`UserAvatar`) and Profile Name (`displayName`), with no subtitle or chevron dropdown icon, navigating directly to the profile screen/tab upon tap.
+- **Desktop Feed & Thumbnail Optimization:** `FeedScreen` (`lib/features/feed/screens/feed_screen.dart`) and `ReportCard` (`lib/features/feed/widgets/report_card.dart`). On desktop viewports ($> 800\text{px}$), the feed container is centered with `maxWidth: 760` and `ReportCard` thumbnails are capped at `height: 220` with `BoxFit.cover` (preventing massive 500-900px tall image blowups on wide screens) and feature a translucent pill indicator (`+N Foto`) for multiple photo attachments per DESIGN.md Section 4.3.
 - **Application Settings & Dark Mode:** `lib/features/settings/` (`SettingsScreen`, `SettingsController`), dynamic ThemeMode toggles (System, Light, Dark) persisted via `SharedPreferences`, role-aware notification switches (Citizen: pengumuman masuk, perubahan status, dukungan warga, komentar; Admin: laporan masuk, pengumuman, balasan), bottom connectivity banner (`BottomConnectivityStrip` positioned between app layer and Android navigation bar), and centralized About Application dialog.
 
 ---
@@ -160,6 +165,7 @@ flutter run -d android
 ## 12. Known Issues and Technical Limitations
 - **Offline Sync:** In-memory fallback is fully functional for tests; production background sync requires network reconnect handlers in active foreground sessions.
 - **Storage Cleanup:** Offline and test environments safely skip remote Supabase Storage deletion calls via `MediaService` bypass.
+- **Desktop Navigation:** On desktop layouts (`width > 800`), the mobile AppBar toggler (`DrawerMenuButton`) is omitted in favor of the permanent `AdminSidebar` on the left; mobile layouts retain drawer togglers and bottom navigation bars.
 
 ---
 
@@ -167,10 +173,17 @@ flutter run -d android
 - `lib/data/models/report_model.dart`: Core report entity and business invariant rules.
 - `lib/data/repositories/report_repository.dart`: Central data access and mutation layer.
 - `lib/features/admin/screens/admin_dashboard_screen.dart`: Admin portal dashboard and action triggers.
+- `lib/features/admin/widgets/admin_sidebar.dart`: Responsive 260px desktop navigation sidebar component.
 - `lib/features/admin/widgets/admin_province_filter_dropdown.dart`: Regional province filter component.
+- `lib/features/admin/screens/admin_statistics_screen.dart`: Admin statistics, monthly trend bar chart, and category/status analytics.
+- `lib/features/admin/controllers/admin_statistics_controller.dart`: State controller for admin report statistics and period filtering.
+- `lib/data/models/report_statistics_model.dart`: Models for monthly and aggregated report statistics.
+- `supabase/migrations/20261113000000_create_report_statistics_and_retention.sql`: Database schema, persistent archives, and triggers for statistics retention even after physical hard-delete.
 - `lib/features/report_detail/screens/report_detail_screen.dart`: Report detail and discussion interface.
 - `test/dual_party_report_deletion_test.dart`: Test specifications for dual-party deletion and storage cleanup.
 - `test/admin_role_and_navigation_test.dart`: Test specifications for admin roles, navigation, and dashboard actions.
+- `test/admin_desktop_responsive_test.dart`: Test specifications for admin desktop sidebar and responsive UI layouts.
+- `test/admin_statistics_test.dart`: Test specifications for admin statistics, monthly filtering, and report deletion retention.
 
 ---
 

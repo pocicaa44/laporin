@@ -16,6 +16,7 @@ import '../../notifications/screens/notifications_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../controllers/navigation_controller.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/user_sidebar.dart';
 
 /// Main navigation shell with 5-item bottom bar per DESIGN.md Section 2.2
 class MainNavigationScreen extends StatefulWidget {
@@ -91,6 +92,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
     final disabledColor = isDark ? AppColors.darkDisabled : AppColors.disabled;
 
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
+    // Layout Desktop: hilangkan navbar bawah, gunakan sidebar di kiri
+    if (isDesktop) {
+      return Container(
+        color: bgColor,
+        child: Scaffold(
+          body: Row(
+            children: [
+              UserSidebar(
+                activeIndex: activeIndex,
+                onTabTapped: _onTabTapped,
+              ),
+              Expanded(
+                child: IndexedStack(
+                  index: activeIndex == 2 ? 0 : activeIndex,
+                  children: _screens,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       color: bgColor,
       child: Center(
@@ -118,21 +144,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               child: SafeArea(
                 top: false,
                 child: SizedBox(
-                  height: 64,
+                  height: 66,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _NavBarItem(
-                        icon: FontAwesomeIcons.house,
-                        label: 'Beranda',
-                        isSelected: activeIndex == 0,
-                        onTap: () => _onTabTapped(0),
+                      Expanded(
+                        child: _NavBarItem(
+                          icon: FontAwesomeIcons.house,
+                          label: 'Beranda',
+                          isSelected: activeIndex == 0,
+                          onTap: () => _onTabTapped(0),
+                        ),
                       ),
-                      _NavBarItem(
-                        icon: FontAwesomeIcons.clipboardList,
-                        label: 'Laporan',
-                        isSelected: activeIndex == 1,
-                        onTap: () => _onTabTapped(1),
+                      Expanded(
+                        child: _NavBarItem(
+                          icon: FontAwesomeIcons.clipboardList,
+                          label: 'Laporan',
+                          isSelected: activeIndex == 1,
+                          onTap: () => _onTabTapped(1),
+                        ),
                       ),
 
                       // Center prominent "+" action button (Buat Laporan) - Rounded modern per DESIGN.md
@@ -162,18 +192,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                       ),
 
-                      _NavBarItem(
-                        icon: FontAwesomeIcons.bell,
-                        label: 'Notifikasi',
-                        isSelected: activeIndex == 3,
-                        badgeCount: unreadNotif,
-                        onTap: () => _onTabTapped(3),
+                      Expanded(
+                        child: _NavBarItem(
+                          icon: FontAwesomeIcons.bell,
+                          label: 'Notifikasi',
+                          isSelected: activeIndex == 3,
+                          badgeCount: unreadNotif,
+                          onTap: () => _onTabTapped(3),
+                        ),
                       ),
-                      _NavBarItem(
-                        icon: FontAwesomeIcons.user,
-                        label: 'Profil',
-                        isSelected: activeIndex == 4,
-                        onTap: () => _onTabTapped(4),
+                      Expanded(
+                        child: _NavBarItem(
+                          icon: FontAwesomeIcons.user,
+                          label: 'Profil',
+                          isSelected: activeIndex == 4,
+                          onTap: () => _onTabTapped(4),
+                        ),
                       ),
                     ],
                   ),
@@ -214,9 +248,10 @@ class _NavBarItem extends StatelessWidget {
       mouseCursor: SystemMouseCursors.click,
       borderRadius: AppRadius.button,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Badge(
               isLabelVisible: badgeCount > 0,

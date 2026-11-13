@@ -112,19 +112,24 @@ class ProfileScreen extends StatelessWidget {
     final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
 
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: isDesktop ? null : const AppDrawer(),
       appBar: AppBar(
-        leading: const DrawerMenuButton(),
+        leading: isDesktop ? null : const DrawerMenuButton(),
+        automaticallyImplyLeading: !isDesktop,
         title: const Text('Profil Saya'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => auth.refreshProfile(),
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          children: [
+      body: Center(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isDesktop ? 760 : double.infinity),
+          child: RefreshIndicator(
+            onRefresh: () => auth.refreshProfile(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              children: [
             // User Card
             Container(
               padding: const EdgeInsets.all(20),
@@ -345,7 +350,9 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

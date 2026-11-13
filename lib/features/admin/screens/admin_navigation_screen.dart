@@ -11,8 +11,10 @@ import '../../feed/screens/feed_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../navigation/controllers/navigation_controller.dart';
 import '../../navigation/widgets/app_drawer.dart';
+import '../widgets/admin_sidebar.dart';
 import 'admin_announcements_screen.dart';
 import 'admin_dashboard_screen.dart';
+import 'admin_statistics_screen.dart';
 
 /// Navigation shell khusus admin dengan tepat 4 menu utama per spesifikasi
 class AdminNavigationScreen extends StatefulWidget {
@@ -29,6 +31,7 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
     FeedScreen(),
     AdminDashboardScreen(isEmbedded: true),
     AdminAnnouncementsScreen(isEmbedded: true),
+    AdminStatisticsScreen(isEmbedded: true),
     ProfileScreen(),
   ];
 
@@ -77,6 +80,29 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
     final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
 
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
+    // Layout Desktop: hilangkan navbar bawah, gunakan sidebar di kiri
+    if (isDesktop) {
+      return Container(
+        color: bgColor,
+        child: Scaffold(
+          body: Row(
+            children: [
+              AdminSidebar(
+                activeIndex: activeIndex,
+                onTabTapped: _onTabTapped,
+              ),
+              Expanded(
+                child: IndexedStack(index: activeIndex, children: _screens),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Layout Mobile: navbar di bawah dengan pembatas layar tengah
     return Container(
       color: bgColor,
       child: Center(
@@ -131,10 +157,18 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
                       ),
                       Expanded(
                         child: _AdminNavBarItem(
-                          icon: FontAwesomeIcons.user,
-                          label: 'Profil',
+                          icon: FontAwesomeIcons.chartSimple,
+                          label: 'Statistik',
                           isSelected: activeIndex == 3,
                           onTap: () => _onTabTapped(3),
+                        ),
+                      ),
+                      Expanded(
+                        child: _AdminNavBarItem(
+                          icon: FontAwesomeIcons.user,
+                          label: 'Profil',
+                          isSelected: activeIndex == 4,
+                          onTap: () => _onTabTapped(4),
                         ),
                       ),
                     ],

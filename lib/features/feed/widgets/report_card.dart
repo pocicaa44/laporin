@@ -44,6 +44,8 @@ class ReportCard extends StatelessWidget {
     final chipText =
         isDark ? AppColors.darkPrimaryLight : AppColors.primary;
 
+    final isDesktop = MediaQuery.sizeOf(context).width > 800;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -62,15 +64,60 @@ class ReportCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Thumbnail if photos exist (rounded top per DESIGN.md Section 4.3)
+                // Thumbnail if photos exist (rounded top per DESIGN.md Section 4.3; capped on desktop)
                 if (report.photoUrls.isNotEmpty)
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(15),
                     ),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: _buildThumbnail(report.photoUrls.first),
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: isDesktop ? 220 : null,
+                          child: isDesktop
+                              ? _buildThumbnail(report.photoUrls.first)
+                              : AspectRatio(
+                                  aspectRatio: 16 / 9,
+                                  child: _buildThumbnail(report.photoUrls.first),
+                                ),
+                        ),
+                        if (report.photoUrls.length > 1)
+                          Positioned(
+                            right: 12,
+                            bottom: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.65),
+                                borderRadius: AppRadius.pill,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.photo_library_outlined,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '+${report.photoUrls.length - 1} Foto',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
 
