@@ -321,15 +321,11 @@ class _MyReportsViewState extends State<_MyReportsView> {
                         vertical: isDesktop ? 20 : 14,
                       ),
                       children: [
-                        // 1. Executive Summary Metric KPI Cards
-                        _buildMetricCards(controller, isDesktop),
-                        const SizedBox(height: 16),
-
-                        // 2. Status Filter Chips
+                        // Status Filter Chips
                         _buildFilterChips(controller),
                         const SizedBox(height: 16),
 
-                        // 3. Reports Grid / List
+                        // Reports Grid / List
                         if (filteredReports.isEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -438,114 +434,7 @@ class _MyReportsViewState extends State<_MyReportsView> {
     );
   }
 
-  Widget _buildMetricCards(MyReportsController controller, bool isDesktop) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
-    final successColor = isDark ? AppColors.darkSuccess : AppColors.success;
-    final waitingColor =
-        isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
-    const inProgressColor = Color(0xFFD98205);
-
-    final totalCount = controller.reports.length;
-    final waitingCount = controller.reports
-        .where((r) =>
-            r.handlingStatus == HandlingStatus.newReport && !r.isDraft)
-        .length;
-    final inProgressCount = controller.reports
-        .where((r) =>
-            (r.handlingStatus == HandlingStatus.inProgress ||
-                r.handlingStatus == HandlingStatus.accepted) &&
-            !r.isDraft)
-        .length;
-    final completedCount = controller.reports
-        .where((r) => r.handlingStatus == HandlingStatus.completed)
-        .length;
-
-    final cards = [
-      _ReportMetricCard(
-        title: 'Total Laporan',
-        value: '$totalCount',
-        color: primaryColor,
-        icon: Icons.assignment_outlined,
-        isSelected: _statusFilter == 'all',
-        onTap: () => setState(() => _statusFilter = 'all'),
-      ),
-      _ReportMetricCard(
-        title: 'Menunggu',
-        value: '$waitingCount',
-        color: waitingColor,
-        icon: Icons.schedule_rounded,
-        isSelected: _statusFilter == 'waiting',
-        onTap: () => setState(() => _statusFilter = 'waiting'),
-      ),
-      _ReportMetricCard(
-        title: 'Diproses',
-        value: '$inProgressCount',
-        color: inProgressColor,
-        icon: Icons.engineering_outlined,
-        isSelected: _statusFilter == 'inProgress',
-        onTap: () => setState(() => _statusFilter = 'inProgress'),
-      ),
-      _ReportMetricCard(
-        title: 'Selesai',
-        value: '$completedCount',
-        color: successColor,
-        icon: Icons.check_circle_outline_rounded,
-        isSelected: _statusFilter == 'completed',
-        onTap: () => setState(() => _statusFilter = 'completed'),
-      ),
-    ];
-
-    if (isDesktop) {
-      return Row(
-        children: [
-          cards[0],
-          const SizedBox(width: 12),
-          cards[1],
-          const SizedBox(width: 12),
-          cards[2],
-          const SizedBox(width: 12),
-          cards[3],
-        ],
-      );
-    }
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            cards[0],
-            const SizedBox(width: 8),
-            cards[1],
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            cards[2],
-            const SizedBox(width: 8),
-            cards[3],
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildFilterChips(MyReportsController controller) {
-    final totalCount = controller.reports.length;
-    final waitingCount = controller.reports
-        .where((r) =>
-            r.handlingStatus == HandlingStatus.newReport && !r.isDraft)
-        .length;
-    final inProgressCount = controller.reports
-        .where((r) =>
-            (r.handlingStatus == HandlingStatus.inProgress ||
-                r.handlingStatus == HandlingStatus.accepted) &&
-            !r.isDraft)
-        .length;
-    final completedCount = controller.reports
-        .where((r) => r.handlingStatus == HandlingStatus.completed)
-        .length;
     final draftCount = controller.reports.where((r) => r.isDraft).length;
 
     return SingleChildScrollView(
@@ -553,120 +442,37 @@ class _MyReportsViewState extends State<_MyReportsView> {
       child: Row(
         children: [
           _FilterChip(
-            label: 'Semua ($totalCount)',
+            label: 'Semua',
             isSelected: _statusFilter == 'all',
             onTap: () => setState(() => _statusFilter = 'all'),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Menunggu ($waitingCount)',
+            label: 'Menunggu',
             isSelected: _statusFilter == 'waiting',
             onTap: () => setState(() => _statusFilter = 'waiting'),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Diproses ($inProgressCount)',
+            label: 'Diproses',
             isSelected: _statusFilter == 'inProgress',
             onTap: () => setState(() => _statusFilter = 'inProgress'),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Selesai ($completedCount)',
+            label: 'Selesai',
             isSelected: _statusFilter == 'completed',
             onTap: () => setState(() => _statusFilter = 'completed'),
           ),
           if (draftCount > 0) ...[
             const SizedBox(width: 8),
             _FilterChip(
-              label: 'Draft ($draftCount)',
+              label: 'Draft',
               isSelected: _statusFilter == 'draft',
               onTap: () => setState(() => _statusFilter = 'draft'),
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _ReportMetricCard extends StatelessWidget {
-  const _ReportMetricCard({
-    required this.title,
-    required this.value,
-    required this.color,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String title;
-  final String value;
-  final Color color;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final surfaceColor = AppColors.surfaceOf(context);
-    final borderColor = AppColors.borderOf(context);
-    final textMuted = AppColors.textMutedOf(context);
-
-    return Expanded(
-      child: Material(
-        color: surfaceColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.card,
-          side: BorderSide(
-            color: isSelected ? color : borderColor,
-            width: isSelected ? 1.6 : 1.0,
-          ),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppRadius.card,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: textMuted,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      icon,
-                      size: 16,
-                      color: isSelected ? color : textMuted,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -766,72 +572,111 @@ class _MyReportItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Header: Report Number & Category (Left) | Status & Publication Badges (Right)
+                // 1. Header: Report Number (Left) | Status & Visibility Badges (Right)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Text(
-                            report.reportNumber,
-                            style: AppTextStyles.label.copyWith(
-                              color: primaryColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (report.category.trim().isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.darkPrimarySoft
-                                    : AppColors.primarySubtle,
-                                borderRadius: AppRadius.pill,
-                                border: Border.all(
-                                  color: isDark
-                                      ? primaryColor.withValues(alpha: 0.3)
-                                      : const Color(0xFFBFDBFE),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                report.category,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                    Text(
+                      report.reportNumber,
+                      style: AppTextStyles.label.copyWith(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HandlingStatusBadge(
-                          status: report.handlingStatus,
-                          createdAt: report.createdAt,
-                          isDraft: report.isDraft,
-                        ),
-                        const SizedBox(width: 6),
-                        PublicationStateBadge(
-                          state: report.publicationState,
-                          isDraft: report.isDraft,
-                          iconOnly: true,
-                        ),
-                      ],
+                    Flexible(
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          HandlingStatusBadge(
+                            status: report.handlingStatus,
+                            createdAt: report.createdAt,
+                            isDraft: report.isDraft,
+                          ),
+                          if (report.isPrivate)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.darkSurfaceElevated
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: AppRadius.badge,
+                                border: Border.all(
+                                  color: isDark
+                                      ? AppColors.darkBorder
+                                      : const Color(0xFFCBD5E1),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.lock_rounded,
+                                    size: 11,
+                                    color: textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Privat',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            PublicationStateBadge(
+                              state: report.publicationState,
+                              isDraft: report.isDraft,
+                              iconOnly: true,
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
+
+                // 2. Category Pill
+                if (report.category.trim().isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.darkPrimarySoft
+                          : AppColors.primarySubtle,
+                      borderRadius: AppRadius.pill,
+                      border: Border.all(
+                        color: isDark
+                            ? primaryColor.withValues(alpha: 0.3)
+                            : const Color(0xFFBFDBFE),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      report.category,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
 
                 // 2. Content Row: Title, Location + Optional Photo Thumbnail
                 Row(

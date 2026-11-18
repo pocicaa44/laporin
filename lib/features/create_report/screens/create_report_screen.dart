@@ -119,7 +119,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
     return leave ?? false;
   }
 
-  Future<String?> _showConfirmationDialog(BuildContext context) {
+  Future<String?> _showConfirmationDialog(BuildContext context, {required bool isPrivate}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = AppColors.primaryOf(context);
     final borderColor = AppColors.borderOf(context);
@@ -143,7 +143,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.send_rounded,
+                isPrivate ? Icons.lock_outline_rounded : Icons.send_rounded,
                 color: primaryColor,
                 size: 20,
               ),
@@ -151,7 +151,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Kirim Laporan',
+                isPrivate ? 'Kirim Laporan Privat' : 'Kirim Laporan',
                 style: AppTextStyles.sectionTitleOf(context).copyWith(fontSize: 18),
               ),
             ),
@@ -162,7 +162,9 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Apakah Anda ingin menyimpan laporan ini sebagai draft atau langsung mempublikasikannya?',
+              isPrivate
+                  ? 'Simpan dan kirim laporan ini secara privat?'
+                  : 'Simpan laporan sebagai draft atau langsung mempublikasikannya?',
               style: TextStyle(
                 fontSize: 14,
                 color: textSecondary,
@@ -199,10 +201,13 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                 ),
                 elevation: 0,
               ),
-              icon: const Icon(Icons.public_rounded, size: 20),
-              label: const Text(
-                'Publikasikan',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              icon: Icon(
+                isPrivate ? Icons.lock_rounded : Icons.public_rounded,
+                size: 20,
+              ),
+              label: Text(
+                isPrivate ? 'Kirim Laporan' : 'Publikasikan',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               onPressed: () => Navigator.pop(ctx, 'publish'),
             ),
@@ -265,7 +270,10 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       return;
     }
 
-    final action = await _showConfirmationDialog(context);
+    final action = await _showConfirmationDialog(
+      context,
+      isPrivate: controller.isPrivate,
+    );
     if (action == null || !mounted) return;
 
     final isDraft = action == 'draft';
@@ -279,6 +287,7 @@ class _CreateReportFormState extends State<_CreateReportForm> {
       description: _descriptionController.text,
       isCallerAdmin: auth.isAdmin,
       isDraft: isDraft,
+      isPrivate: controller.isPrivate,
     );
 
     if (!mounted) return;
@@ -289,7 +298,9 @@ class _CreateReportFormState extends State<_CreateReportForm> {
           content: Text(
             isDraft
                 ? 'Laporan berhasil disimpan ke dalam Draft.'
-                : 'Laporan berhasil dikirim dan siap dipantau.',
+                : (controller.isPrivate
+                    ? 'Laporan privat berhasil dikirim.'
+                    : 'Laporan berhasil dikirim.'),
           ),
           backgroundColor: isDraft
               ? const Color(0xFFD98205)
@@ -407,6 +418,9 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                         onAddPhoto: controller.addPhoto,
                         onRemovePhoto: controller.removePhoto,
                       ),
+                      const SizedBox(height: 20),
+                      // Visibilitas Laporan (Publik atau Privat)
+                      _buildVisibilitySelector(context, controller),
                       const SizedBox(height: 28),
                       AppButton(
                         text: 'Kirim Laporan',
@@ -420,6 +434,147 @@ class _CreateReportFormState extends State<_CreateReportForm> {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisibilitySelector(
+    BuildContext context,
+    CreateReportController controller,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primaryOf(context);
+    final surfaceColor = AppColors.surfaceOf(context);
+    final borderColor = AppColors.borderOf(context);
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Visibilitas Laporan *',
+              style: AppTextStyles.labelOf(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            // Opsi 1: Publik
+            Expanded(
+              child: _VisibilityCard(
+                title: 'Publik',
+                icon: Icons.public_rounded,
+                isSelected: !controller.isPrivate,
+                onTap: () => controller.setIsPrivate(false),
+                isDark: isDark,
+                primaryColor: primaryColor,
+                surfaceColor: surfaceColor,
+                borderColor: borderColor,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Opsi 2: Privat
+            Expanded(
+              child: _VisibilityCard(
+                title: 'Privat',
+                icon: Icons.lock_outline_rounded,
+                isSelected: controller.isPrivate,
+                onTap: () => controller.setIsPrivate(true),
+                isDark: isDark,
+                primaryColor: primaryColor,
+                surfaceColor: surfaceColor,
+                borderColor: borderColor,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _VisibilityCard extends StatelessWidget {
+  const _VisibilityCard({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+    required this.isDark,
+    required this.primaryColor,
+    required this.surfaceColor,
+    required this.borderColor,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool isDark;
+  final Color primaryColor;
+  final Color surfaceColor;
+  final Color borderColor;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBg = isDark
+        ? AppColors.darkPrimarySoft
+        : const Color(0xFFEFF6FF);
+    final activeBorder = primaryColor;
+
+    return Material(
+      color: isSelected ? activeBg : surfaceColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: BorderSide(
+          color: isSelected ? activeBorder : borderColor,
+          width: isSelected ? 1.6 : 1.0,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.card,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? primaryColor : textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected ? primaryColor : textPrimary,
+                ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 16,
+                  color: primaryColor,
+                ),
+              ],
+            ],
           ),
         ),
       ),

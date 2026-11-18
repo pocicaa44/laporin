@@ -242,10 +242,55 @@ class ReportCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          HandlingStatusBadge(
-                            status: report.handlingStatus,
-                            createdAt: report.createdAt,
-                            isDraft: report.isDraft,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              HandlingStatusBadge(
+                                status: report.handlingStatus,
+                                createdAt: report.createdAt,
+                                isDraft: report.isDraft,
+                              ),
+                              if (report.isPrivate) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.darkSurfaceElevated
+                                        : const Color(0xFFF1F5F9),
+                                    borderRadius: AppRadius.badge,
+                                    border: Border.all(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : const Color(0xFFCBD5E1),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.lock_rounded,
+                                        size: 11,
+                                        color: textSecondary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Privat',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),
@@ -297,6 +342,29 @@ class ReportCard extends StatelessWidget {
           // Independent interactions row: Upvote, Downvote, Comments
           Builder(
             builder: (context) {
+              if (report.isPrivate) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 14,
+                        color: textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Laporan Privat • Komentar & vote dinonaktifkan',
+                        style: AppTextStyles.captionOf(context),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
               final isCompleted =
                   report.handlingStatus == HandlingStatus.completed;
 

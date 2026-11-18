@@ -356,7 +356,10 @@ void main() {
         expect(find.byType(DrawerMenuButton), findsNothing);
 
         // Renders Wrap widget for multi-column grid
-        expect(find.byType(Wrap), findsOneWidget);
+        expect(
+          find.byWidgetPredicate((w) => w is Wrap && w.spacing == 14),
+          findsOneWidget,
+        );
         expect(find.text('LAP-2026-001'), findsOneWidget);
         expect(find.text('LAP-2026-002'), findsOneWidget);
 
@@ -369,11 +372,11 @@ void main() {
         expect(cardSize.width, greaterThan(300));
         expect(cardSize.width, lessThan(650));
 
-        // Metric KPI summary cards are rendered
-        expect(find.text('Total Laporan'), findsOneWidget);
+        // Interactive filter chips are rendered (distraction-free KPI removal)
+        expect(find.text('Semua'), findsOneWidget);
         expect(find.text('Menunggu'), findsOneWidget);
-        expect(find.text('Diproses'), findsNWidgets(2)); // metric card + status badge
-        expect(find.text('Selesai'), findsOneWidget);
+        expect(find.text('Diproses'), findsWidgets);
+        expect(find.text('Selesai'), findsWidgets);
 
         // Header "+ Buat Laporan" action button exists on desktop
         expect(
@@ -384,20 +387,15 @@ void main() {
           findsOneWidget,
         );
 
-        // Filter chips exist and filtering works
-        expect(find.text('Semua (2)'), findsOneWidget);
-        expect(find.text('Menunggu (1)'), findsOneWidget);
-        expect(find.text('Diproses (1)'), findsOneWidget);
-
-        // Tap filter "Menunggu (1)" -> only LAP-2026-001 is shown
-        await tester.tap(find.text('Menunggu (1)'));
+        // Tap filter "Menunggu" -> only LAP-2026-001 is shown
+        await tester.tap(find.text('Menunggu'));
         await tester.pumpAndSettle();
 
         expect(find.text('LAP-2026-001'), findsOneWidget);
         expect(find.text('LAP-2026-002'), findsNothing);
 
-        // Tap filter "Semua (2)" -> all reports shown again
-        await tester.tap(find.text('Semua (2)'));
+        // Tap filter "Semua" -> all reports shown again
+        await tester.tap(find.text('Semua'));
         await tester.pumpAndSettle();
 
         expect(find.text('LAP-2026-001'), findsOneWidget);

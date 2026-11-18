@@ -848,7 +848,8 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                           ),
                         ),
                       // Opsi Toggle Diskusi untuk Pemilik Laporan (bisa dinonaktifkan/diaktifkan)
-                      if (report.handlingStatus != HandlingStatus.rejected)
+                      if (!report.isPrivate &&
+                          report.handlingStatus != HandlingStatus.rejected)
                         PopupMenuItem(
                           value: 'toggle_discussion',
                           child: Row(
@@ -902,144 +903,184 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
               ],
             ),
             body: isDesktop
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. BAGIAN KIRI: Detail Laporan, Progress, dan Vote (flex: 6)
-                      Expanded(
-                        flex: 6,
-                        child: RefreshIndicator(
-                          onRefresh: () => controller.loadData(),
-                          child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(24, 20, 20, 32),
-                            children: _buildReportDetailItems(
-                              report: report,
-                              controller: controller,
-                              auth: auth,
-                              isDark: isDark,
-                              primaryColor: primaryColor,
-                              surfaceColor: surfaceColor,
-                              borderColor: borderColor,
-                              borderSubtle: borderSubtle,
-                              textPrimary: textPrimary,
-                              textSecondary: textSecondary,
-                              textBody: textBody,
-                              dangerColor: dangerColor,
-                              dangerSubtle: dangerSubtle,
-                              dangerBorder: dangerBorder,
-                              warningSubtle: warningSubtle,
-                              warningBorder: warningBorder,
-                              warningText: warningText,
-                              successColor: successColor,
-                              successSubtle: successSubtle,
-                              successBorder: successBorder,
-                              isOwner: isOwner,
-                              isAdmin: isAdmin,
-                              isFinalized: isFinalized,
-                              currentUserId: currentUserId,
-                              isOnline: isOnline,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Garis pemisah vertikal antar kolom
-                      VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: borderColor,
-                      ),
-
-                      // 2. BAGIAN KANAN: Section Diskusi dan Komentar (flex: 5)
-                      Expanded(
-                        flex: 5,
+                ? (report.isPrivate
+                    ? Center(
                         child: Container(
-                          color: surfaceColor,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Header Diskusi
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 18, 20, 14),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.chat_bubble_outline_rounded,
-                                          size: 18,
-                                          color: primaryColor,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Diskusi & Komentar (${_formatCommentCount(controller.comments.length)})',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (controller.isLoadingComments &&
-                                        controller.comments.isNotEmpty)
-                                      SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            primaryColor,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: borderSubtle,
-                              ),
-
-                              // Area Komentar Scrollable
-                              Expanded(
-                                child: _buildDesktopCommentsContent(
-                                  controller: controller,
-                                  report: report,
-                                  auth: auth,
-                                  isDark: isDark,
-                                  primaryColor: primaryColor,
-                                  textPrimary: textPrimary,
-                                  textSecondary: textSecondary,
-                                  borderSubtle: borderSubtle,
-                                ),
-                              ),
-
-                              // Composer Komentar di bagian bawah panel kanan
-                              _buildCommentComposer(
+                          constraints: const BoxConstraints(maxWidth: 800),
+                          child: RefreshIndicator(
+                            onRefresh: () => controller.loadData(),
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                              children: _buildReportDetailItems(
                                 report: report,
                                 controller: controller,
+                                auth: auth,
                                 isDark: isDark,
                                 primaryColor: primaryColor,
                                 surfaceColor: surfaceColor,
                                 borderColor: borderColor,
+                                borderSubtle: borderSubtle,
+                                textPrimary: textPrimary,
                                 textSecondary: textSecondary,
-                                isOnline: isOnline,
-                                currentUserId: currentUserId,
+                                textBody: textBody,
+                                dangerColor: dangerColor,
+                                dangerSubtle: dangerSubtle,
+                                dangerBorder: dangerBorder,
+                                warningSubtle: warningSubtle,
+                                warningBorder: warningBorder,
+                                warningText: warningText,
+                                successColor: successColor,
+                                successSubtle: successSubtle,
+                                successBorder: successBorder,
                                 isOwner: isOwner,
+                                isAdmin: isAdmin,
+                                isFinalized: isFinalized,
+                                currentUserId: currentUserId,
+                                isOnline: isOnline,
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  )
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 1. BAGIAN KIRI: Detail Laporan, Progress, dan Vote (flex: 6)
+                          Expanded(
+                            flex: 6,
+                            child: RefreshIndicator(
+                              onRefresh: () => controller.loadData(),
+                              child: ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(24, 20, 20, 32),
+                                children: _buildReportDetailItems(
+                                  report: report,
+                                  controller: controller,
+                                  auth: auth,
+                                  isDark: isDark,
+                                  primaryColor: primaryColor,
+                                  surfaceColor: surfaceColor,
+                                  borderColor: borderColor,
+                                  borderSubtle: borderSubtle,
+                                  textPrimary: textPrimary,
+                                  textSecondary: textSecondary,
+                                  textBody: textBody,
+                                  dangerColor: dangerColor,
+                                  dangerSubtle: dangerSubtle,
+                                  dangerBorder: dangerBorder,
+                                  warningSubtle: warningSubtle,
+                                  warningBorder: warningBorder,
+                                  warningText: warningText,
+                                  successColor: successColor,
+                                  successSubtle: successSubtle,
+                                  successBorder: successBorder,
+                                  isOwner: isOwner,
+                                  isAdmin: isAdmin,
+                                  isFinalized: isFinalized,
+                                  currentUserId: currentUserId,
+                                  isOnline: isOnline,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Garis pemisah vertikal antar kolom
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: borderColor,
+                          ),
+
+                          // 2. BAGIAN KANAN: Section Diskusi dan Komentar (flex: 5)
+                          Expanded(
+                            flex: 5,
+                            child: Container(
+                              color: surfaceColor,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Header Diskusi
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(20, 18, 20, 14),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.chat_bubble_outline_rounded,
+                                              size: 18,
+                                              color: primaryColor,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Diskusi & Komentar (${_formatCommentCount(controller.comments.length)})',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: textPrimary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (controller.isLoadingComments &&
+                                            controller.comments.isNotEmpty)
+                                          SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                primaryColor,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: borderSubtle,
+                                  ),
+
+                                  // Area Komentar Scrollable
+                                  Expanded(
+                                    child: _buildDesktopCommentsContent(
+                                      controller: controller,
+                                      report: report,
+                                      auth: auth,
+                                      isDark: isDark,
+                                      primaryColor: primaryColor,
+                                      textPrimary: textPrimary,
+                                      textSecondary: textSecondary,
+                                      borderSubtle: borderSubtle,
+                                    ),
+                                  ),
+
+                                  // Composer Komentar di bagian bawah panel kanan
+                                  _buildCommentComposer(
+                                    report: report,
+                                    controller: controller,
+                                    isDark: isDark,
+                                    primaryColor: primaryColor,
+                                    surfaceColor: surfaceColor,
+                                    borderColor: borderColor,
+                                    textSecondary: textSecondary,
+                                    isOnline: isOnline,
+                                    currentUserId: currentUserId,
+                                    isOwner: isOwner,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ))
                 : Column(
                     children: [
                       Expanded(
@@ -1076,67 +1117,70 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                                 currentUserId: currentUserId,
                                 isOnline: isOnline,
                               ),
-                              const SizedBox(height: 24),
+                              if (!report.isPrivate) ...[
+                                const SizedBox(height: 24),
 
-                              // Comments header: Komentar & Diskusi
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Komentar & Diskusi (${_formatCommentCount(controller.comments.length)})',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                  if (controller.isLoadingComments &&
-                                      controller.comments.isNotEmpty)
-                                    SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          primaryColor,
-                                        ),
+                                // Comments header: Komentar & Diskusi
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Komentar & Diskusi (${_formatCommentCount(controller.comments.length)})',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: textPrimary,
                                       ),
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
+                                    if (controller.isLoadingComments &&
+                                        controller.comments.isNotEmpty)
+                                      SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            primaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
 
-                              _buildMobileCommentsContent(
-                                controller: controller,
-                                report: report,
-                                auth: auth,
-                                isDark: isDark,
-                                primaryColor: primaryColor,
-                                textSecondary: textSecondary,
-                                surfaceColor: surfaceColor,
-                                borderColor: borderColor,
-                                borderSubtle: borderSubtle,
-                              ),
+                                _buildMobileCommentsContent(
+                                  controller: controller,
+                                  report: report,
+                                  auth: auth,
+                                  isDark: isDark,
+                                  primaryColor: primaryColor,
+                                  textSecondary: textSecondary,
+                                  surfaceColor: surfaceColor,
+                                  borderColor: borderColor,
+                                  borderSubtle: borderSubtle,
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       ),
 
-                      // Comment Composer di bagian bawah layar mobile
-                      _buildCommentComposer(
-                        report: report,
-                        controller: controller,
-                        isDark: isDark,
-                        primaryColor: primaryColor,
-                        surfaceColor: surfaceColor,
-                        borderColor: borderColor,
-                        textSecondary: textSecondary,
-                        isOnline: isOnline,
-                        currentUserId: currentUserId,
-                        isOwner: isOwner,
-                      ),
+                      // Comment Composer di bagian bawah layar mobile (hanya jika bukan laporan privat)
+                      if (!report.isPrivate)
+                        _buildCommentComposer(
+                          report: report,
+                          controller: controller,
+                          isDark: isDark,
+                          primaryColor: primaryColor,
+                          surfaceColor: surfaceColor,
+                          borderColor: borderColor,
+                          textSecondary: textSecondary,
+                          isOnline: isOnline,
+                          currentUserId: currentUserId,
+                          isOwner: isOwner,
+                        ),
                     ],
                   ),
           ),
@@ -1380,6 +1424,46 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
                 ),
               ),
             ),
+            if (report.isPrivate) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkSurfaceElevated
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: AppRadius.pill,
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFCBD5E1),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_rounded,
+                      size: 12,
+                      color: textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Privat',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1815,8 +1899,66 @@ class _ReportDetailViewState extends State<_ReportDetailView> {
         const SizedBox(height: 16),
       ],
 
-      // 11. Upvote & Downvote actions (Vote)
-      if (report.isPubliclyVisible && !report.isTerminal) ...[
+      // Banner jika Laporan Bersifat Privat
+      if (report.isPrivate) ...[
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.darkSurfaceElevated
+                : const Color(0xFFF8FAFC),
+            borderRadius: AppRadius.card,
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkPrimarySoft
+                      : const Color(0xFFEFF6FF),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_rounded,
+                  size: 18,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Laporan Privat',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                        color: textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Laporan ini bersifat privat. Hanya Anda dan petugas berwenang yang dapat melihat. Fitur komentar dan penilaian suara (vote) dinonaktifkan.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+
+      // 11. Upvote & Downvote actions (Vote) - dinonaktifkan / dihilangkan jika laporan privat
+      if (!report.isPrivate && report.isPubliclyVisible && !report.isTerminal) ...[
         VoteActionBar(
           report: report,
           isEnabled: isOnline && report.isVotingActive,

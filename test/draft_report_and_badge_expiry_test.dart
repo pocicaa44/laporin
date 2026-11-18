@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:laporin/core/services/network_service.dart';
 import 'package:laporin/core/utils/date_formatter.dart';
 import 'package:laporin/core/widgets/status_badge.dart';
 import 'package:laporin/data/models/report_model.dart';
@@ -205,6 +206,7 @@ void main() {
       authRepo = AuthRepository();
       reportRepo = ReportRepository();
       commentRepo = CommentRepository();
+      NetworkService.instance.updateStatusForTesting(isOnline: true);
     });
 
     Widget createTestApp({required Widget child}) {
@@ -219,6 +221,9 @@ void main() {
 
       return MultiProvider(
         providers: [
+          ChangeNotifierProvider<NetworkService>.value(
+            value: NetworkService.instance,
+          ),
           Provider<ReportRepository>.value(value: reportRepo),
           Provider<AuthRepository>.value(value: authRepo),
           Provider<CommentRepository>.value(value: commentRepo),
@@ -266,7 +271,7 @@ void main() {
         expect(find.text('Kirim Laporan'), findsWidgets);
         expect(
           find.text(
-            'Apakah Anda ingin menyimpan laporan ini sebagai draft atau langsung mempublikasikannya?',
+            'Simpan laporan sebagai draft atau langsung mempublikasikannya?',
           ),
           findsOneWidget,
         );
@@ -335,7 +340,7 @@ void main() {
 
         // Laporan berhasil dipublikasikan
         expect(
-          find.text('Laporan berhasil dikirim dan siap dipantau.'),
+          find.text('Laporan berhasil dikirim.'),
           findsOneWidget,
         );
 

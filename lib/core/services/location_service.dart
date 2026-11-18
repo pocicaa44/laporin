@@ -233,7 +233,7 @@ class LocationService {
     } else {
       // 2. Pada Mobile: gunakan native Geocoder dengan fallback ke Nominatim
       try {
-        final placemarks = await placemarkFromCoordinates(
+        final placemarks = await Geocoding().placemarkFromCoordinates(
           lat,
           lng,
         ).timeout(const Duration(seconds: 4));

@@ -724,6 +724,7 @@ class ReportRepository {
     List<String> photoUrls = const [],
     bool isCallerAdmin = false,
     bool isDraft = false,
+    bool isPrivate = false,
   }) async {
     // Invarian PRD: Admin tidak dapat membuat laporan baru
     if (isCallerAdmin) {
@@ -791,7 +792,7 @@ class ReportRepository {
     }
 
     var newReport = ReportModel(
-      id: 'rep-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'rep-${DateTime.now().microsecondsSinceEpoch}-${_reports.length + 1}',
       reportNumber: 'LPR-${now.year}-${nextNumber.toString().padLeft(4, '0')}',
       authorId: authorId,
       authorName: authorName,
@@ -812,6 +813,7 @@ class ReportRepository {
           : PublicationState.published,
       publishedAt: isDraft ? null : now,
       isDraft: isDraft,
+      isPrivate: isPrivate,
       createdAt: now,
       updatedAt: now,
       photoUrls: photoUrls,
@@ -1713,6 +1715,140 @@ class ReportRepository {
           year: y,
           month: m,
           periodDate: DateTime(y, m, 1),
+          totalReports: list.length, // Termasuk laporan yang sudah dihapus
+          completedReports: completed,
+          rejectedReports: rejected,
+          inProgressReports: inProgress,
+          newReports: newReports,
+          deletedReports: deleted,
+          categoryCounts: categoryCounts,
+        ),
+      );
+    }
+
+    return stats;
+  }
+
+  /// Mengambil daftar statistik laporan harian (laporan masuk per tanggal).
+  /// Mempertahankan riwayat dan total jumlah laporan pada tanggal terkait
+  /// meskipun laporan sudah dihapus permanen dari basis data utama.
+  Future<List<DailyReportStats>> getDailyStatistics({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? periodYearMonth,
+    bool forceRefresh = false,
+  }) async {
+    final client = _service.client;
+    if (client != null && client.auth.currentUser != null) {
+      try {
+        final rpcParams = <String, dynamic>{};
+        if (periodYearMonth != null) {
+          rpcParams['p_period_year_month'] = periodYearMonth;
+        }
+        if (startDate != null) {
+          rpcParams['p_start_date'] = startDate.toIso8601String();
+        }
+        if (endDate != null) {
+          rpcParams['p_end_date'] = endDate.toIso8601String();
+        }
+
+        final rpcRes = await client.rpc(
+          'get_admin_daily_statistics',
+          params: rpcParams,
+        );
+
+        if (rpcRes is List) {
+          final results = <DailyReportStats>[];
+          for (final item in rpcRes) {
+            if (item is Map<String, dynamic>) {
+              results.add(DailyReportStats.fromJson(item));
+            }
+          }
+          if (results.isNotEmpty) return results;
+        }
+      } catch (e) {
+        debugPrint(
+          'Catatan get_admin_daily_statistics RPC fallback ke in-memory stats: $e',
+        );
+      }
+    }
+
+    // Fallback in-memory / local computation (mendukung offline dan unit test)
+    // Menggabungkan laporan aktif (_reports) dan laporan historis terhapus (_deletedHistoricalReports)
+    final combined = <ReportModel>[..._reports, ..._deletedHistoricalReports];
+
+    final Map<String, List<ReportModel>> grouped = {};
+    for (final r in combined) {
+      final d = r.createdAt;
+      final ym =
+          '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}';
+      if (periodYearMonth != null && ym != periodYearMonth) continue;
+
+      if (startDate != null) {
+        final startZero = DateTime(startDate.year, startDate.month, startDate.day);
+        if (d.isBefore(startZero)) continue;
+      }
+      if (endDate != null) {
+        final endLast =
+            DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999);
+        if (d.isAfter(endLast)) continue;
+      }
+
+      final dateKey =
+          '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      grouped.putIfAbsent(dateKey, () => []).add(r);
+    }
+
+    final stats = <DailyReportStats>[];
+    // Urutkan tanggal secara kronologis (ascending) agar grafik tren harian tampil dari kiri ke kanan
+    final sortedKeys = grouped.keys.toList()..sort();
+
+    for (final dateKey in sortedKeys) {
+      final list = grouped[dateKey]!;
+      final parts = dateKey.split('-');
+      final y = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      final day = int.parse(parts[2]);
+
+      int completed = 0;
+      int rejected = 0;
+      int inProgress = 0;
+      int newReports = 0;
+      int deleted = 0;
+      final categoryCounts = <String, int>{};
+
+      for (final r in list) {
+        final isReportDeleted = r.deletedByUser && r.deletedByAdmin;
+        if (isReportDeleted) {
+          deleted++;
+        } else {
+          switch (r.handlingStatus) {
+            case HandlingStatus.completed:
+              completed++;
+              break;
+            case HandlingStatus.rejected:
+              rejected++;
+              break;
+            case HandlingStatus.accepted:
+            case HandlingStatus.inProgress:
+              inProgress++;
+              break;
+            case HandlingStatus.newReport:
+              newReports++;
+              break;
+            case HandlingStatus.cancelled:
+              deleted++;
+              break;
+          }
+        }
+        final cat = r.category.isNotEmpty ? r.category : 'Lainnya';
+        categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+      }
+
+      stats.add(
+        DailyReportStats(
+          dateString: dateKey,
+          date: DateTime(y, m, day),
           totalReports: list.length, // Termasuk laporan yang sudah dihapus
           completedReports: completed,
           rejectedReports: rejected,

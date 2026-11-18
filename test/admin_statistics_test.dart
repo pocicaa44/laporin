@@ -449,5 +449,288 @@ void main() {
         expect(find.byType(AdminStatisticsScreen), findsOneWidget);
       },
     );
+
+    test(
+      'Daily Statistics: Aggregates reports per date and retains deleted reports',
+      () async {
+        final repDay1 = ReportModel(
+          id: 'rep-day-1',
+          reportNumber: 'LAP-DAY-1',
+          authorId: testCitizen.id,
+          authorName: testCitizen.fullName,
+          authorUsername: testCitizen.username,
+          title: 'Laporan Hari 1',
+          description: 'Desc 1',
+          category: 'Jalan & Jembatan',
+          locationAddress: 'Alamat 1',
+          latitude: -6.2,
+          longitude: 106.8,
+          areaId: 'area-1',
+          areaName: 'DKI Jakarta',
+          handlingStatus: HandlingStatus.completed,
+          publicationState: PublicationState.published,
+          createdAt: DateTime(2026, 11, 15, 10, 0),
+          updatedAt: DateTime(2026, 11, 15, 10, 0),
+        );
+
+        final repDay2 = ReportModel(
+          id: 'rep-day-2',
+          reportNumber: 'LAP-DAY-2',
+          authorId: testCitizen.id,
+          authorName: testCitizen.fullName,
+          authorUsername: testCitizen.username,
+          title: 'Laporan Hari 2 (Sama tanggal)',
+          description: 'Desc 2',
+          category: 'Sampah & Kebersihan',
+          locationAddress: 'Alamat 2',
+          latitude: -6.21,
+          longitude: 106.81,
+          areaId: 'area-1',
+          areaName: 'DKI Jakarta',
+          handlingStatus: HandlingStatus.inProgress,
+          publicationState: PublicationState.published,
+          createdAt: DateTime(2026, 11, 15, 14, 0),
+          updatedAt: DateTime(2026, 11, 15, 14, 0),
+        );
+
+        final repDay3 = ReportModel(
+          id: 'rep-day-3',
+          reportNumber: 'LAP-DAY-3',
+          authorId: testCitizen.id,
+          authorName: testCitizen.fullName,
+          authorUsername: testCitizen.username,
+          title: 'Laporan Tanggal Lain',
+          description: 'Desc 3',
+          category: 'Lampu Jalan',
+          locationAddress: 'Alamat 3',
+          latitude: -6.22,
+          longitude: 106.82,
+          areaId: 'area-1',
+          areaName: 'DKI Jakarta',
+          handlingStatus: HandlingStatus.newReport,
+          publicationState: PublicationState.published,
+          createdAt: DateTime(2026, 11, 16, 9, 0),
+          updatedAt: DateTime(2026, 11, 16, 9, 0),
+        );
+
+        reportRepo.setReportsForTesting([repDay1, repDay2, repDay3]);
+
+        final dailyStats = await reportRepo.getDailyStatistics();
+        expect(dailyStats.length, equals(2));
+
+        final stat15 = dailyStats.firstWhere((d) => d.dateString == '2026-11-15');
+        expect(stat15.totalReports, equals(2));
+        expect(stat15.completedReports, equals(1));
+        expect(stat15.inProgressReports, equals(1));
+        expect(stat15.categoryCounts['Jalan & Jembatan'], equals(1));
+        expect(stat15.categoryCounts['Sampah & Kebersihan'], equals(1));
+
+        final stat16 = dailyStats.firstWhere((d) => d.dateString == '2026-11-16');
+        expect(stat16.totalReports, equals(1));
+        expect(stat16.newReports, equals(1));
+
+        // Test filtering via AdminStatisticsController
+        final controller = AdminStatisticsController(reportRepository: reportRepo);
+        await controller.fetchStatistics();
+        await controller.setFilterMode(StatisticsFilterMode.daily);
+
+        expect(controller.filterMode, equals(StatisticsFilterMode.daily));
+        expect(controller.totalReports, equals(3));
+        expect(controller.availableDates, containsAll(['2026-11-15', '2026-11-16']));
+
+        // Filter ke tanggal spesifik 15 Nov 2026
+        controller.selectDate('2026-11-15');
+        expect(controller.selectedDate, equals('2026-11-15'));
+        expect(controller.totalReports, equals(2));
+        expect(controller.completedReports, equals(1));
+        expect(controller.inProgressReports, equals(1));
+
+        // Reset filter tanggal
+        controller.selectDate(null);
+        expect(controller.selectedDate, isNull);
+        expect(controller.totalReports, equals(3));
+      },
+    );
+
+    testWidgets(
+      'Widget: Switching to Per Hari mode displays daily chart and date filtering',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        reportRepo.setReportsForTesting([
+          ReportModel(
+            id: 'rep-daily-w1',
+            reportNumber: 'LAP-W-1',
+            authorId: testCitizen.id,
+            authorName: testCitizen.fullName,
+            authorUsername: testCitizen.username,
+            title: 'Laporan Hari A',
+            description: 'Desc A',
+            category: 'Jalan & Jembatan',
+            locationAddress: 'Alamat A',
+            latitude: -6.2,
+            longitude: 106.8,
+            areaId: 'area-1',
+            areaName: 'DKI Jakarta',
+            handlingStatus: HandlingStatus.newReport,
+            publicationState: PublicationState.published,
+            createdAt: DateTime(2026, 11, 10, 8, 0),
+            updatedAt: DateTime(2026, 11, 10, 8, 0),
+          ),
+          ReportModel(
+            id: 'rep-daily-w2',
+            reportNumber: 'LAP-W-2',
+            authorId: testCitizen.id,
+            authorName: testCitizen.fullName,
+            authorUsername: testCitizen.username,
+            title: 'Laporan Hari B',
+            description: 'Desc B',
+            category: 'Sampah & Kebersihan',
+            locationAddress: 'Alamat B',
+            latitude: -6.2,
+            longitude: 106.8,
+            areaId: 'area-1',
+            areaName: 'DKI Jakarta',
+            handlingStatus: HandlingStatus.completed,
+            publicationState: PublicationState.published,
+            createdAt: DateTime(2026, 11, 12, 10, 0),
+            updatedAt: DateTime(2026, 11, 12, 10, 0),
+          ),
+        ]);
+
+        await tester.pumpWidget(
+          createTestApp(child: const AdminStatisticsScreen()),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Verifikasi mode default adalah Per Bulan
+        expect(find.text('Per Bulan'), findsOneWidget);
+        expect(find.text('Per Hari'), findsOneWidget);
+        expect(find.text('Grafik Tren Laporan Bulanan'), findsOneWidget);
+
+        // 2. Ketuk tombol 'Per Hari'
+        await tester.tap(find.text('Per Hari'));
+        await tester.pumpAndSettle();
+
+        // 3. Verifikasi grafik berubah ke 'Grafik Laporan Masuk per Tanggal'
+        expect(find.text('Grafik Laporan Masuk per Tanggal'), findsOneWidget);
+        expect(find.text('Rincian Laporan Masuk per Tanggal'), findsOneWidget);
+
+        // 4. Verifikasi tanggal muncul di daftar
+        expect(find.text('10 Nov'), findsWidgets);
+        expect(find.text('12 Nov'), findsWidgets);
+
+        // 5. Ketuk salah satu batang tanggal untuk memfilter
+        await tester.tap(find.text('10 Nov').first);
+        await tester.pumpAndSettle();
+
+        // 6. Tombol reset muncul
+        expect(find.text('Reset Filter Tanggal'), findsOneWidget);
+
+        // 7. Ketuk reset
+        await tester.tap(find.text('Reset Filter Tanggal'));
+        await tester.pumpAndSettle();
+        expect(find.text('Reset Filter Tanggal'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Widget: AdminStatisticsScreen auto-refreshes data when opening tab in AdminNavigationScreen',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        // Awal: 1 laporan
+        reportRepo.setReportsForTesting([
+          ReportModel(
+            id: 'rep-initial',
+            reportNumber: 'LAP-INIT',
+            authorId: testCitizen.id,
+            authorName: testCitizen.fullName,
+            authorUsername: testCitizen.username,
+            title: 'Laporan Awal',
+            description: 'Desc',
+            category: 'Jalan & Jembatan',
+            locationAddress: 'Alamat',
+            latitude: -6.2,
+            longitude: 106.8,
+            areaId: 'area-1',
+            areaName: 'DKI Jakarta',
+            handlingStatus: HandlingStatus.newReport,
+            publicationState: PublicationState.published,
+            createdAt: DateTime(2026, 11, 1),
+            updatedAt: DateTime(2026, 11, 1),
+          ),
+        ]);
+
+        final navCtrl = NavigationController(initialIndex: 0);
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: const AdminNavigationScreen(),
+            navCtrl: navCtrl,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Sementara admin berada di tab 0, tambahkan laporan baru ke repository
+        reportRepo.setReportsForTesting([
+          ReportModel(
+            id: 'rep-initial',
+            reportNumber: 'LAP-INIT',
+            authorId: testCitizen.id,
+            authorName: testCitizen.fullName,
+            authorUsername: testCitizen.username,
+            title: 'Laporan Awal',
+            description: 'Desc',
+            category: 'Jalan & Jembatan',
+            locationAddress: 'Alamat',
+            latitude: -6.2,
+            longitude: 106.8,
+            areaId: 'area-1',
+            areaName: 'DKI Jakarta',
+            handlingStatus: HandlingStatus.newReport,
+            publicationState: PublicationState.published,
+            createdAt: DateTime(2026, 11, 1),
+            updatedAt: DateTime(2026, 11, 1),
+          ),
+          ReportModel(
+            id: 'rep-baru-masuk',
+            reportNumber: 'LAP-BARU',
+            authorId: testCitizen.id,
+            authorName: testCitizen.fullName,
+            authorUsername: testCitizen.username,
+            title: 'Laporan Baru Masuk',
+            description: 'Desc Baru',
+            category: 'Sampah & Kebersihan',
+            locationAddress: 'Alamat Baru',
+            latitude: -6.2,
+            longitude: 106.8,
+            areaId: 'area-1',
+            areaName: 'DKI Jakarta',
+            handlingStatus: HandlingStatus.newReport,
+            publicationState: PublicationState.published,
+            createdAt: DateTime(2026, 11, 16),
+            updatedAt: DateTime(2026, 11, 16),
+          ),
+        ]);
+
+        // Buka tab Statistik (index 3)
+        await tester.tap(find.text('Statistik'));
+        await tester.pumpAndSettle();
+
+        // Verifikasi otomatis refresh menampilkan 2 laporan
+        expect(find.text('2 Laporan'), findsWidgets);
+      },
+    );
   });
 }

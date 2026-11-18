@@ -35,6 +35,9 @@ class CreateReportController extends ChangeNotifier {
   final List<XFile> _selectedPhotos = [];
   List<XFile> get selectedPhotos => List.unmodifiable(_selectedPhotos);
 
+  bool _isPrivate = false;
+  bool get isPrivate => _isPrivate;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -58,6 +61,11 @@ class CreateReportController extends ChangeNotifier {
 
   void setCategory(String newCat) {
     _category = newCat;
+    notifyListeners();
+  }
+
+  void setIsPrivate(bool value) {
+    _isPrivate = value;
     notifyListeners();
   }
 
@@ -99,7 +107,9 @@ class CreateReportController extends ChangeNotifier {
     required String description,
     bool isCallerAdmin = false,
     bool isDraft = false,
+    bool? isPrivate,
   }) async {
+    final effectiveIsPrivate = isPrivate ?? _isPrivate;
     if (_isLoading) return null;
     _isLoading = true;
     _errorMessage = null;
@@ -152,6 +162,7 @@ class CreateReportController extends ChangeNotifier {
         areaName: _areaName,
         photoUrls: photoUrls,
         isDraft: isDraft,
+        isPrivate: effectiveIsPrivate,
       );
 
       _isLoading = false;

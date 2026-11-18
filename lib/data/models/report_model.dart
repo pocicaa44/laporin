@@ -79,6 +79,7 @@ class ReportModel {
     this.completionNotes,
     this.isDiscussionActive = true,
     this.isDraft = false,
+    this.isPrivate = false,
     this.provinceId,
   });
 
@@ -121,6 +122,7 @@ class ReportModel {
   final String? completionNotes;
   final bool isDiscussionActive;
   final bool isDraft;
+  final bool isPrivate;
 
   /// Formatted username (e.g. '@budi_santoso') with fallback if username not set
   String get displayAuthorUsername {
@@ -151,8 +153,9 @@ class ReportModel {
   bool get isPermanentlyDeleted => deletedByUser && deletedByAdmin;
 
   /// Aturan visibilitas publik mutlak (PRD 5.4 & AGENTS.md 3.2):
-  /// Tidak tampil publik jika dihapus oleh salah satu pihak, sedang draft, atau terminal/rejected/cancelled
+  /// Tidak tampil publik jika bersifat privat, dihapus oleh salah satu pihak, sedang draft, atau terminal/rejected/cancelled
   bool get isPubliclyVisible =>
+      !isPrivate &&
       !isDeleted &&
       !deletedByUser &&
       !deletedByAdmin &&
@@ -168,9 +171,10 @@ class ReportModel {
       handlingStatus == HandlingStatus.cancelled;
 
   /// Aturan interaksi voting:
-  /// Upvote & downvote hanya aktif jika laporan publik, belum dihapus,
+  /// Upvote & downvote hanya aktif jika laporan publik, bukan privat, belum dihapus,
   /// dan status BUKAN completed (selesai) atau rejected (ditolak).
   bool get isVotingActive =>
+      !isPrivate &&
       isPubliclyVisible &&
       !isDeleted &&
       handlingStatus != HandlingStatus.completed &&
@@ -178,9 +182,10 @@ class ReportModel {
       handlingStatus != HandlingStatus.cancelled;
 
   /// Aturan diskusi komentar:
-  /// Komentar baru hanya dapat dikirim jika laporan publik, belum dihapus,
+  /// Komentar baru hanya dapat dikirim jika laporan publik, bukan privat, belum dihapus,
   /// status bukan rejected/cancelled, dan diskusi dalam keadaan aktif (isDiscussionActive).
   bool get canAddComment =>
+      !isPrivate &&
       isPubliclyVisible &&
       !isDeleted &&
       handlingStatus != HandlingStatus.rejected &&
@@ -361,6 +366,7 @@ class ReportModel {
     bool clearCompletionNotes = false,
     bool? isDiscussionActive,
     bool? isDraft,
+    bool? isPrivate,
     String? provinceId,
   }) {
     return ReportModel(
@@ -410,6 +416,7 @@ class ReportModel {
           : (completionNotes ?? this.completionNotes),
       isDiscussionActive: isDiscussionActive ?? this.isDiscussionActive,
       isDraft: isDraft ?? this.isDraft,
+      isPrivate: isPrivate ?? this.isPrivate,
       provinceId: provinceId ?? this.provinceId,
     );
   }
@@ -454,6 +461,7 @@ class ReportModel {
       'completion_notes': completionNotes,
       'is_discussion_active': isDiscussionActive,
       'is_draft': isDraft,
+      'is_private': isPrivate,
     };
   }
 
@@ -551,6 +559,7 @@ class ReportModel {
       completionNotes: json['completion_notes'] as String?,
       isDiscussionActive: parsedDiscussionActive,
       isDraft: (json['is_draft'] as bool?) ?? false,
+      isPrivate: (json['is_private'] as bool?) ?? false,
       provinceId: json['province_id']?.toString(),
     );
   }
